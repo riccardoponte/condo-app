@@ -5,10 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestione Condominio</title>
     <style>
+        /* Your existing CSS styles here... */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        html, body {
+            height: auto;
+            min-height: 100vh;
+            overflow-y: auto;
         }
 
         body {
@@ -20,7 +27,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 1rem;
+            padding: 0 2rem;
         }
 
         .min-h-screen {
@@ -384,6 +391,10 @@
         .leading-4 {
             line-height: 1rem;
         }
+        
+        .whitespace-pre-wrap {
+            white-space: pre-wrap;
+        }
 
         .transition-colors {
             transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
@@ -474,7 +485,7 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
-
+        
         input::placeholder {
             color: #6b7280;
         }
@@ -641,6 +652,7 @@
         }
 
         .nav-item {
+            position: relative; /* Needed for the badge */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -663,6 +675,19 @@
         .nav-item span {
             font-size: 0.75rem;
         }
+        
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.75rem;
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: #ef4444; /* red-500 */
+            border-radius: 9999px;
+            border: 1px solid white;
+        }
+
 
         /* Responsive */
         @media (min-width: 768px) {
@@ -740,6 +765,7 @@
             <div class="text-center">
                 <div class="h-12 w-12 mx-auto mb-4 text-blue-600">
                     <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
                     </svg>
                 </div>
                 <p class="text-gray-600">Caricamento...</p>
@@ -749,28 +775,29 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword, 
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
             createUserWithEmailAndPassword,
             signOut,
             onAuthStateChanged,
             sendPasswordResetEmail
         } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            collection, 
-            addDoc, 
-            getDocs, 
-            query, 
-            orderBy, 
-            limit, 
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            addDoc,
+            getDocs,
+            query,
+            orderBy,
+            limit,
             onSnapshot,
             serverTimestamp,
-            updateDoc
+            updateDoc,
+            where
         } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // Firebase configuration
@@ -778,7 +805,7 @@
             apiKey: "AIzaSyCrLAomryfk-0s5Inm2XOsBrJusgmMI87E",
             authDomain: "condo-app-49255.firebaseapp.com",
             projectId: "condo-app-49255",
-            storageBucket: "condo-app-49255.firebasestorage.app",
+            storageBucket: "condo-app-49255.appspot.com",
             messagingSenderId: "485319278595",
             appId: "1:485319278595:web:2997689b234fbba4dece36",
             measurementId: "G-2SM3DH41EZ"
@@ -793,15 +820,13 @@
         let currentUser = null;
         let userProfile = null;
         let currentPage = 'login';
+        let communicationsListener = null;
 
         // Activity logging
         const logActivity = async (type, userId, userName, details = {}) => {
             try {
                 await addDoc(collection(db, 'activities'), {
-                    type,
-                    userId,
-                    userName,
-                    details,
+                    type, userId, userName, details,
                     timestamp: serverTimestamp(),
                     createdAt: new Date()
                 });
@@ -811,13 +836,10 @@
         };
 
         // Auth functions
-        const login = async (email, password) => {
-            return await signInWithEmailAndPassword(auth, email, password);
-        };
+        const login = async (email, password) => await signInWithEmailAndPassword(auth, email, password);
 
         const register = async (email, password, userData) => {
             const result = await createUserWithEmailAndPassword(auth, email, password);
-            
             await setDoc(doc(db, 'users', result.user.uid), {
                 nome: userData.nome,
                 cognome: userData.cognome,
@@ -827,23 +849,23 @@
                 telefono: userData.telefono || '',
                 createdAt: new Date().toISOString()
             });
-
             await logActivity('user_registered', result.user.uid, `${userData.nome} ${userData.cognome}`, { userType: userData.tipoUtente });
             return result;
         };
 
         const logout = async () => {
+            if (communicationsListener) {
+                communicationsListener();
+                communicationsListener = null;
+            }
             await signOut(auth);
             currentUser = null;
             userProfile = null;
             navigateTo('login');
         };
 
-        const resetPassword = async (email) => {
-            return await sendPasswordResetEmail(auth, email);
-        };
+        const resetPassword = async (email) => await sendPasswordResetEmail(auth, email);
 
-        // Load user profile
         const loadUserProfile = async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -853,572 +875,418 @@
             }
         };
 
-        // Navigation
         const navigateTo = (page) => {
             currentPage = page;
             renderCurrentPage();
         };
 
-        // Utility functions
         const getUserTypeColor = (type) => {
             switch (type) {
-                case 'amministratore':
-                    return 'badge-admin';
-                case 'portiere':
-                    return 'badge-portiere';
-                case 'condomino':
-                    return 'badge-condomino';
-                default:
-                    return 'badge-condomino';
+                case 'amministratore': return 'badge-admin';
+                case 'portiere': return 'badge-portiere';
+                case 'condomino': return 'badge-condomino';
+                default: return 'badge-condomino';
             }
         };
 
         const getPriorityColor = (priority) => {
             switch (priority) {
-                case 'alta':
-                    return 'priority-alta';
-                case 'media':
-                    return 'priority-media';
-                case 'bassa':
-                    return 'priority-bassa';
-                default:
-                    return 'priority-bassa';
+                case 'alta': return 'priority-alta';
+                case 'media': return 'priority-media';
+                case 'bassa': return 'priority-bassa';
+                default: return 'priority-bassa';
             }
         };
 
         const getStatusColor = (status) => {
             switch (status) {
-                case 'aperta':
-                    return 'status-aperta';
-                case 'in-corso':
-                    return 'status-in-corso';
-                case 'chiusa':
-                    return 'status-chiusa';
-                default:
-                    return 'status-aperta';
+                case 'aperta': return 'status-aperta';
+                case 'in-corso': return 'status-in-corso';
+                case 'chiusa': return 'status-chiusa';
+                default: return 'status-aperta';
             }
         };
 
         const formatTime = (timestamp) => {
             if (!timestamp) return '';
-            
             const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
             const now = new Date();
             const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-            
             if (diffInMinutes < 1) return 'Ora';
             if (diffInMinutes < 60) return `${diffInMinutes}m fa`;
             if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h fa`;
             return `${Math.floor(diffInMinutes / 1440)}g fa`;
         };
-
-        // Page renderers
-        const renderLoginPage = () => {
-            return `
-                <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-                    <div class="max-w-md w-full space-y-8">
-                        <div class="text-center">
-                            <div class="h-12 w-12 mx-auto text-blue-600">
-                                <svg fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                                </svg>
-                            </div>
-                            <h2 class="mt-6 text-3xl font-extrabold text-gray-900" id="auth-title">Accedi</h2>
-                            <p class="mt-2 text-sm text-gray-600" id="auth-subtitle">Accedi al portale del condominio</p>
+        
+        const renderLoginPage = () => `
+            <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+                <div class="max-w-md w-full space-y-8">
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <div class="h-12 w-12 text-blue-600 mb-4 flex items-center justify-center">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                         </div>
-                        
-                        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded"></div>
-                        <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded"></div>
-                        
-                        <form class="mt-8 space-y-6" id="auth-form">
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                    <input id="email" name="email" type="email" required placeholder="la-tua-email@esempio.com" class="mt-1">
-                                </div>
-                                <div>
-                                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                                    <input id="password" name="password" type="password" required placeholder="••••••••" class="mt-1">
-                                </div>
-                                
-                                <div id="register-fields" class="hidden space-y-4">
-                                    <div>
-                                        <label for="confirm-password" class="block text-sm font-medium text-gray-700">Conferma Password</label>
-                                        <input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="mt-1">
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label for="nome" class="block text-sm font-medium text-gray-700">Nome</label>
-                                            <input id="nome" name="nome" type="text" placeholder="Mario" class="mt-1">
-                                        </div>
-                                        <div>
-                                            <label for="cognome" class="block text-sm font-medium text-gray-700">Cognome</label>
-                                            <input id="cognome" name="cognome" type="text" placeholder="Rossi" class="mt-1">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label for="tipo-utente" class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
-                                        <select id="tipo-utente" name="tipo-utente" class="mt-1">
-                                            <option value="">Seleziona il tipo di utente</option>
-                                            <option value="condomino">Condomino</option>
-                                            <option value="amministratore">Amministratore</option>
-                                            <option value="portiere">Portiere</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="appartamento" class="block text-sm font-medium text-gray-700">Appartamento</label>
-                                        <input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="mt-1">
-                                    </div>
-                                    <div>
-                                        <label for="telefono" class="block text-sm font-medium text-gray-700">Telefono</label>
-                                        <input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="mt-1">
-                                    </div>
-                                </div>
-                            </div>
-
+                        <h2 class="text-3xl font-extrabold text-gray-900" id="auth-title">Accedi</h2>
+                        <p class="mt-2 text-sm text-gray-600" id="auth-subtitle">Accedi al portale del condominio</p>
+                    </div>
+                    <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded"></div>
+                    <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded"></div>
+                    <form class="mt-8 space-y-6" id="auth-form">
+                        <div class="space-y-4">
                             <div>
-                                <button type="submit" id="auth-submit" class="w-full btn-primary">
-                                    Accedi
-                                </button>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                <input id="email" name="email" type="email" required placeholder="la-tua-email@esempio.com" class="mt-1">
                             </div>
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                                <input id="password" name="password" type="password" required placeholder="••••••••" class="mt-1">
+                            </div>
+                            <div id="register-fields" class="hidden space-y-4">
+                                <div>
+                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Conferma Password</label>
+                                    <input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="mt-1">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="nome" class="block text-sm font-medium text-gray-700">Nome</label>
+                                        <input id="nome" name="nome" type="text" placeholder="Mario" class="mt-1">
+                                    </div>
+                                    <div>
+                                        <label for="cognome" class="block text-sm font-medium text-gray-700">Cognome</label>
+                                        <input id="cognome" name="cognome" type="text" placeholder="Rossi" class="mt-1">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="tipo-utente" class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
+                                    <select id="tipo-utente" name="tipo-utente" class="mt-1">
+                                        <option value="">Seleziona il tipo di utente</option>
+                                        <option value="condomino">Condomino</option>
+                                        <option value="amministratore">Amministratore</option>
+                                        <option value="portiere">Portiere</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="appartamento" class="block text-sm font-medium text-gray-700">Appartamento</label>
+                                    <input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="mt-1">
+                                </div>
+                                <div>
+                                    <label for="telefono" class="block text-sm font-medium text-gray-700">Telefono</label>
+                                    <input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="mt-1">
+                                </div>
+                            </div>
+                        </div>
+                        <div><button type="submit" id="auth-submit" class="w-full btn-primary">Accedi</button></div>
+                        <div class="flex items-center justify-between">
+                            <button type="button" id="toggle-auth" class="text-blue-600 hover:text-blue-500 text-sm font-medium">Non hai un account? Registrati</button>
+                            <button type="button" id="forgot-password" class="text-blue-600 hover:text-blue-500 text-sm font-medium">Password dimenticata?</button>
+                        </div>
+                    </form>
+                </div>
+            </div>`;
 
-                            <div class="flex items-center justify-between">
-                                <button type="button" id="toggle-auth" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                                    Non hai un account? Registrati
-                                </button>
-                                <button type="button" id="forgot-password" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                                    Password dimenticata?
-                                </button>
+        const renderBottomNavigation = () => `
+            <nav class="bottom-nav">
+                <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    <span>Home</span>
+                </a>
+                <a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
+                    <span id="bacheca-notification-badge" class="notification-badge hidden"></span>
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                    <span>Bacheca</span>
+                </a>
+                <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${currentPage === 'sondaggi' ? 'active' : ''}">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
+                    <span>Sondaggi</span>
+                </a>
+                <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
+                    <span>Segnala</span>
+                </a>
+                <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+                    <span>Profilo</span>
+                </a>
+            </nav>`;
+
+        const renderDashboard = () => `
+            <div class="min-h-screen bg-gray-50 pb-20">
+                <header class="bg-white shadow-sm border-b border-gray-200">
+                    <div class="container">
+                        <div class="flex justify-between items-center py-4">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 text-blue-600 mr-3"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+                                <h1 class="text-xl font-semibold text-gray-900">Gestione Condominio</h1>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-700">${userProfile?.nome || ''} ${userProfile?.cognome || ''}</span>
+                                    <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">${userProfile?.tipoUtente || ''}</span>
+                                </div>
+                                <button onclick="logout()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Esci</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <main class="container py-6">
+                    <div class="py-6">
+                        <h1 class="text-2xl font-bold text-gray-900">Benvenuto, ${userProfile?.nome || 'Utente'}!</h1>
+                        <p class="mt-1 text-sm text-gray-600">Gestisci le attività del condominio dal tuo pannello di controllo.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <div onclick="navigateTo('bacheca')" class="card cursor-pointer group">
+                            <div class="p-6">
+                                <div class="icon-container bg-blue-500 group-hover:scale-110 transition-transform">
+                                    <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900">Bacheca</h3>
+                                <p class="mt-2 text-sm text-gray-500">Leggi le ultime comunicazioni</p>
+                                <button class="mt-4 w-full bg-blue-50 text-blue-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-blue-100 transition-colors">Leggi</button>
+                            </div>
+                        </div>
+                        <div onclick="navigateTo('sondaggi')" class="card cursor-pointer group">
+                            <div class="p-6">
+                                <div class="icon-container bg-green-500 group-hover:scale-110 transition-transform">
+                                    <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900">Sondaggi</h3>
+                                <p class="mt-2 text-sm text-gray-500">Partecipa ai sondaggi</p>
+                                <button class="mt-4 w-full bg-green-50 text-green-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-green-100 transition-colors">Partecipa</button>
+                            </div>
+                        </div>
+                        <div onclick="navigateTo('segnalazioni')" class="card cursor-pointer group">
+                            <div class="p-6">
+                                <div class="icon-container bg-orange-500 group-hover:scale-110 transition-transform">
+                                    <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900">Segnalazioni</h3>
+                                <p class="mt-2 text-sm text-gray-500">Segnala problemi e guasti</p>
+                                <button class="mt-4 w-full bg-orange-50 text-orange-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-orange-100 transition-colors">Segnala</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white shadow rounded-lg mt-12">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Attività Recenti</h3>
+                        </div>
+                        <div class="p-6">
+                            <div id="recent-activities" class="space-y-3">
+                                <div class="text-center text-gray-500 py-4">Caricamento attività...</div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                ${renderBottomNavigation()}
+            </div>`;
+
+        const renderBacheca = () => {
+            const isAdmin = userProfile?.tipoUtente === 'amministratore';
+            return `
+                <div class="min-h-screen bg-gray-50 pb-20">
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="container">
+                            <div class="flex justify-between items-center py-4">
+                                <h1 class="text-xl font-semibold text-gray-900">Bacheca Comunicazioni</h1>
+                            </div>
+                        </div>
+                    </header>
+                    <main class="container py-6">
+                        ${isAdmin ? `
+                        <div class="bg-white shadow rounded-lg p-6 mb-8">
+                            <h2 class="text-lg font-medium text-gray-900 mb-4">Pubblica una nuova comunicazione</h2>
+                            <form id="create-communication-form" class="space-y-4">
+                                <div>
+                                    <label for="comm-title" class="block text-sm font-medium text-gray-700">Titolo</label>
+                                    <input type="text" id="comm-title" required class="mt-1" placeholder="Es. Interruzione acqua potabile">
+                                </div>
+                                <div>
+                                    <label for="comm-content" class="block text-sm font-medium text-gray-700">Messaggio</label>
+                                    <textarea id="comm-content" rows="4" required class="mt-1" placeholder="Scrivi qui il contenuto della comunicazione..."></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" id="publish-comm-btn" class="btn-primary">Pubblica</button>
+                                </div>
+                            </form>
+                        </div>` : ''}
+                        <div id="communications-list" class="space-y-6">
+                            <div class="p-6 text-center text-gray-500">Caricamento comunicazioni...</div>
+                        </div>
+                    </main>
+                    ${renderBottomNavigation()}
+                </div>`;
+        };
+        
+        const renderSondaggi = () => `
+            <div class="min-h-screen bg-gray-50 pb-20">
+                <header class="bg-white shadow-sm border-b border-gray-200">
+                    <div class="container">
+                        <div class="flex justify-between items-center py-4">
+                            <h1 class="text-xl font-semibold text-gray-900">Sondaggi</h1>
+                        </div>
+                    </div>
+                </header>
+                <main class="container py-6">
+                    ${userProfile?.tipoUtente === 'amministratore' ? `
+                    <div class="bg-white shadow rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Crea Nuovo Sondaggio</h3>
+                        <form id="create-poll-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Titolo</label>
+                                <input type="text" id="poll-title" required class="mt-1">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Descrizione</label>
+                                <textarea id="poll-description" rows="3" class="mt-1"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Opzioni</label>
+                                <div id="poll-options-list" class="space-y-2"></div>
+                                <button type="button" id="add-poll-option" class="btn-primary mt-2" style="width:auto;padding:0.25rem 0.75rem;font-size:1.2rem;">+</button>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Data di scadenza</label>
+                                <input type="date" id="poll-deadline" required class="mt-1">
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-4">
+                                <button type="reset" class="btn-secondary">Annulla</button>
+                                <button type="submit" class="btn-primary">Crea Sondaggio</button>
+                            </div>
+                        </form>
+                    </div>` : ''}
+                    <div id="polls-container" class="space-y-6">
+                        <div class="text-center text-gray-500 py-8">Caricamento sondaggi...</div>
+                    </div>
+                </main>
+                ${renderBottomNavigation()}
+            </div>`;
+
+        const renderSegnalazioni = () => `
+            <div class="min-h-screen bg-gray-50 pb-20">
+                <header class="bg-white shadow-sm border-b border-gray-200">
+                    <div class="container">
+                        <div class="flex justify-between items-center py-4">
+                            <h1 class="text-xl font-semibold text-gray-900">Segnalazioni</h1>
+                        </div>
+                    </div>
+                </header>
+                <main class="container py-6">
+                    <div class="bg-white shadow rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Nuova Segnalazione</h3>
+                        <form id="create-report-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Titolo</label>
+                                <input type="text" id="report-title" required class="mt-1" placeholder="es. Perdita d'acqua">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Descrizione</label>
+                                <textarea id="report-description" rows="4" required class="mt-1" placeholder="Descrivi il problema in dettaglio..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Categoria</label>
+                                <select id="report-category" required class="mt-1">
+                                    <option value="">Seleziona categoria</option>
+                                    <option value="idraulico">Idraulico</option>
+                                    <option value="elettrico">Elettrico</option>
+                                    <option value="riscaldamento">Riscaldamento</option>
+                                    <option value="ascensore">Ascensore</option>
+                                    <option value="pulizie">Pulizie</option>
+                                    <option value="sicurezza">Sicurezza</option>
+                                    <option value="altro">Altro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Priorità</label>
+                                <select id="report-priority" required class="mt-1">
+                                    <option value="">Seleziona priorità</option>
+                                    <option value="bassa">Bassa</option>
+                                    <option value="media">Media</option>
+                                    <option value="alta">Alta</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Ubicazione</label>
+                                <input type="text" id="report-location" required class="mt-1" placeholder="es. Scala A, Piano 2">
+                            </div>
+                            <div class="flex justify-end pt-4">
+                                <button type="submit" class="btn-primary">Invia Segnalazione</button>
                             </div>
                         </form>
                     </div>
-                </div>
-            `;
-        };
+                    <div id="reports-container" class="space-y-6">
+                        <div class="text-center text-gray-500 py-8">Caricamento segnalazioni...</div>
+                    </div>
+                </main>
+                ${renderBottomNavigation()}
+            </div>`;
 
-        const renderBottomNavigation = () => {
-            return `
-                <nav class="bottom-nav">
-                    <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                        </svg>
-                        <span>Home</span>
-                    </a>
-                    
-                    <a href="#" onclick="navigateTo('bacheca')" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                        </svg>
-                        <span>Bacheca</span>
-                    </a>
-                    
-                    <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${currentPage === 'sondaggi' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/>
-                        </svg>
-                        <span>Sondaggi</span>
-                    </a>
-                    
-                    <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
-                        </svg>
-                        <span>Segnala</span>
-                    </a>
-                    
-                    <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                        </svg>
-                        <span>Profilo</span>
-                    </a>
-                </nav>
-            `;
-        };
-
-        const renderDashboard = () => {
-            return `
-                <div class="min-h-screen bg-gray-50 pb-20">
-                    <!-- Header -->
-                    <header class="bg-white shadow-sm border-b border-gray-200">
-                        <div class="container">
-                            <div class="flex justify-between items-center py-4">
-                                <div class="flex items-center">
-                                    <div class="h-8 w-8 text-blue-600 mr-3">
-                                        <svg fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                                        </svg>
-                                    </div>
-                                    <h1 class="text-xl font-semibold text-gray-900">Gestione Condominio</h1>
-                                </div>
-                                
-                                <div class="flex items-center space-x-4">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-sm text-gray-700">
-                                            ${userProfile?.nome || ''} ${userProfile?.cognome || ''}
-                                        </span>
-                                        <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">
-                                            ${userProfile?.tipoUtente || ''}
-                                        </span>
-                                    </div>
-                                    
-                                    <button onclick="logout()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                        Esci
-                                    </button>
-                                </div>
-                            </div>
+        const renderProfilo = () => `
+            <div class="min-h-screen bg-gray-50 pb-20">
+                <header class="bg-white shadow-sm border-b border-gray-200">
+                    <div class="container">
+                        <div class="flex justify-between items-center py-4">
+                            <h1 class="text-xl font-semibold text-gray-900">Il Mio Profilo</h1>
+                            <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">${userProfile?.tipoUtente || ''}</span>
                         </div>
-                    </header>
-
-                    <!-- Main Content -->
-                    <main class="container py-6">
-                        <!-- Welcome Section -->
-                        <div class="py-6">
-                            <h1 class="text-2xl font-bold text-gray-900">Benvenuto, ${userProfile?.nome || 'Utente'}!</h1>
-                            <p class="mt-1 text-sm text-gray-600">Gestisci le attività del condominio dal tuo pannello di controllo.</p>
+                    </div>
+                </header>
+                <main class="container py-8">
+                    <div id="profile-message" class="hidden mb-6 p-4 rounded-lg"></div>
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Informazioni Personali</h3>
+                            <p class="mt-1 text-sm text-gray-600">Aggiorna le tue informazioni personali</p>
                         </div>
-
-                        <!-- Menu Grid -->
-                        <div class="grid grid-cols-1 gap-6 mb-8">
-                            <div onclick="navigateTo('bacheca')" class="card cursor-pointer group">
-                                <div class="p-6">
-                                    <div class="icon-container bg-blue-500 group-hover:scale-110 transition-transform">
-                                        <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                                        </svg>
+                        <div class="p-6">
+                            <form id="profile-form" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Nome</label>
+                                        <input type="text" id="profile-nome" value="${userProfile?.nome || ''}" required class="mt-1">
                                     </div>
-                                    <h3 class="text-lg font-medium text-gray-900">Bacheca</h3>
-                                    <p class="mt-2 text-sm text-gray-500">Documenti e comunicazioni</p>
-                                    <button class="mt-4 w-full bg-blue-50 text-blue-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-blue-100 transition-colors">
-                                        Accedi
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div onclick="navigateTo('sondaggi')" class="card cursor-pointer group">
-                                <div class="p-6">
-                                    <div class="icon-container bg-green-500 group-hover:scale-110 transition-transform">
-                                        <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/>
-                                        </svg>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Cognome</label>
+                                        <input type="text" id="profile-cognome" value="${userProfile?.cognome || ''}" required class="mt-1">
                                     </div>
-                                    <h3 class="text-lg font-medium text-gray-900">Sondaggi</h3>
-                                    <p class="mt-2 text-sm text-gray-500">Partecipa ai sondaggi condominiali</p>
-                                    <button class="mt-4 w-full bg-green-50 text-green-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-green-100 transition-colors">
-                                        Accedi
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div onclick="navigateTo('segnalazioni')" class="card cursor-pointer group">
-                                <div class="p-6">
-                                    <div class="icon-container bg-orange-500 group-hover:scale-110 transition-transform">
-                                        <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                                        </svg>
-                                    </div>
-                                    <h3 class="text-lg font-medium text-gray-900">Segnalazioni</h3>
-                                    <p class="mt-2 text-sm text-gray-500">Segnala problemi e guasti</p>
-                                    <button class="mt-4 w-full bg-orange-50 text-orange-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-orange-100 transition-colors">
-                                        Accedi
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Activities -->
-                        <div class="bg-white shadow rounded-lg">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-medium text-gray-900">Attività Recenti</h3>
-                            </div>
-                            <div class="p-6">
-                                <div id="recent-activities" class="space-y-3">
-                                    <div class="text-center text-gray-500 py-4">
-                                        Caricamento attività...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </main>
-
-                    ${renderBottomNavigation()}
-                </div>
-            `;
-        };
-
-        const renderSondaggi = () => {
-            return `
-                <div class="min-h-screen bg-gray-50 pb-20">
-                    <header class="bg-white shadow-sm border-b border-gray-200">
-                        <div class="container">
-                            <div class="flex justify-between items-center py-4">
-                                <h1 class="text-xl font-semibold text-gray-900">Sondaggi</h1>
-                                <button onclick="showCreatePollModal()" class="btn-primary">
-                                    Nuovo Sondaggio
-                                </button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main class="container py-6">
-                        <div id="polls-container" class="space-y-6">
-                            <div class="text-center text-gray-500 py-8">
-                                Caricamento sondaggi...
-                            </div>
-                        </div>
-                    </main>
-
-                    <!-- Create Poll Modal -->
-                    <div id="create-poll-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Crea Nuovo Sondaggio</h3>
-                            <form id="create-poll-form" class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Titolo</label>
-                                    <input type="text" id="poll-title" required class="mt-1">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Descrizione</label>
-                                    <textarea id="poll-description" rows="3" class="mt-1"></textarea>
+                                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                                    <input type="email" value="${currentUser?.email || ''}" required class="mt-1" disabled>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Opzioni (una per riga)</label>
-                                    <textarea id="poll-options" rows="4" placeholder="Opzione 1&#10;Opzione 2&#10;Opzione 3" required class="mt-1"></textarea>
+                                    <label class="block text-sm font-medium text-gray-700">Telefono</label>
+                                    <input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="123-456-7890" class="mt-1">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Data di scadenza</label>
-                                    <input type="date" id="poll-deadline" required class="mt-1">
+                                    <label class="block text-sm font-medium text-gray-700">Appartamento</label>
+                                    <input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="es. A12" class="mt-1">
                                 </div>
-                                <div class="flex justify-end space-x-3 pt-4">
-                                    <button type="button" onclick="hideCreatePollModal()" class="btn-secondary">
-                                        Annulla
-                                    </button>
-                                    <button type="submit" class="btn-primary">
-                                        Crea Sondaggio
-                                    </button>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
+                                    <input type="text" value="${userProfile?.tipoUtente || ''}" class="mt-1" disabled>
                                 </div>
+                                <button type="submit" class="w-full btn-primary">Salva Modifiche</button>
                             </form>
                         </div>
                     </div>
-
-                    ${renderBottomNavigation()}
-                </div>
-            `;
-        };
-
-        const renderSegnalazioni = () => {
-            return `
-                <div class="min-h-screen bg-gray-50 pb-20">
-                    <header class="bg-white shadow-sm border-b border-gray-200">
-                        <div class="container">
-                            <div class="flex justify-between items-center py-4">
-                                <h1 class="text-xl font-semibold text-gray-900">Segnalazioni</h1>
-                                <button onclick="showCreateReportModal()" class="btn-primary">
-                                    Nuova Segnalazione
-                                </button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main class="container py-6">
-                        <div id="reports-container" class="space-y-6">
-                            <div class="text-center text-gray-500 py-8">
-                                Caricamento segnalazioni...
-                            </div>
-                        </div>
-                    </main>
-
-                    <!-- Create Report Modal -->
-                    <div id="create-report-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Nuova Segnalazione</h3>
-                            <form id="create-report-form" class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Titolo</label>
-                                    <input type="text" id="report-title" required class="mt-1" placeholder="es. Perdita d'acqua">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Descrizione</label>
-                                    <textarea id="report-description" rows="4" required class="mt-1" placeholder="Descrivi il problema in dettaglio..."></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Categoria</label>
-                                    <select id="report-category" required class="mt-1">
-                                        <option value="">Seleziona categoria</option>
-                                        <option value="idraulico">Idraulico</option>
-                                        <option value="elettrico">Elettrico</option>
-                                        <option value="riscaldamento">Riscaldamento</option>
-                                        <option value="ascensore">Ascensore</option>
-                                        <option value="pulizie">Pulizie</option>
-                                        <option value="sicurezza">Sicurezza</option>
-                                        <option value="altro">Altro</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Priorità</label>
-                                    <select id="report-priority" required class="mt-1">
-                                        <option value="">Seleziona priorità</option>
-                                        <option value="bassa">Bassa</option>
-                                        <option value="media">Media</option>
-                                        <option value="alta">Alta</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Ubicazione</label>
-                                    <input type="text" id="report-location" required class="mt-1" placeholder="es. Scala A, Piano 2">
-                                </div>
-                                <div class="flex justify-end space-x-3 pt-4">
-                                    <button type="button" onclick="hideCreateReportModal()" class="btn-secondary">
-                                        Annulla
-                                    </button>
-                                    <button type="submit" class="btn-primary">
-                                        Crea Segnalazione
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    ${renderBottomNavigation()}
-                </div>
-            `;
-        };
-
-        // Simple placeholder pages
-        const renderBacheca = () => {
-            return `
-                <div class="min-h-screen bg-gray-50 pb-20">
-                    <header class="bg-white shadow-sm border-b border-gray-200">
-                        <div class="container">
-                            <div class="flex justify-between items-center py-4">
-                                <h1 class="text-xl font-semibold text-gray-900">Bacheca Documenti</h1>
-                            </div>
-                        </div>
-                    </header>
-                    <main class="container py-6">
-                        <div class="bg-white shadow rounded-lg p-6">
-                            <h2 class="text-lg font-medium text-gray-900 mb-4">Documenti del Condominio</h2>
-                            <p class="text-gray-600">Sezione in sviluppo - Qui potrai visualizzare e scaricare i documenti del condominio.</p>
-                        </div>
-                    </main>
-                    ${renderBottomNavigation()}
-                </div>
-            `;
-        };
-
-        const renderProfilo = () => {
-            return `
-                <div class="min-h-screen bg-gray-50 pb-20">
-                    <header class="bg-white shadow-sm border-b border-gray-200">
-                        <div class="container">
-                            <div class="flex justify-between items-center py-4">
-                                <h1 class="text-xl font-semibold text-gray-900">Il Mio Profilo</h1>
-                                <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">
-                                    ${userProfile?.tipoUtente || ''}
-                                </span>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main class="container py-8">
-                        <div id="profile-message" class="hidden mb-6 p-4 rounded-lg"></div>
-
-                        <div class="bg-white shadow rounded-lg">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-medium text-gray-900">Informazioni Personali</h3>
-                                <p class="mt-1 text-sm text-gray-600">Aggiorna le tue informazioni personali</p>
-                            </div>
-                            <div class="p-6">
-                                <form id="profile-form" class="space-y-4">
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Nome</label>
-                                            <input type="text" id="profile-nome" value="${userProfile?.nome || ''}" required class="mt-1">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Cognome</label>
-                                            <input type="text" id="profile-cognome" value="${userProfile?.cognome || ''}" required class="mt-1">
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Email</label>
-                                        <input type="email" id="profile-email" value="${currentUser?.email || ''}" required class="mt-1">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Telefono</label>
-                                        <input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="123-456-7890" class="mt-1">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Appartamento</label>
-                                        <input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="es. A12" class="mt-1">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
-                                        <select id="profile-tipo-utente" class="mt-1">
-                                            <option value="condomino" ${userProfile?.tipoUtente === 'condomino' ? 'selected' : ''}>Condomino</option>
-                                            <option value="amministratore" ${userProfile?.tipoUtente === 'amministratore' ? 'selected' : ''}>Amministratore</option>
-                                            <option value="portiere" ${userProfile?.tipoUtente === 'portiere' ? 'selected' : ''}>Portiere</option>
-                                        </select>
-                                    </div>
-
-                                    <button type="submit" class="w-full btn-primary">
-                                        Salva Modifiche
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </main>
-
-                    ${renderBottomNavigation()}
-                </div>
-            `;
-        };
-
-        // Main render function
+                </main>
+                ${renderBottomNavigation()}
+            </div>`;
+        
         const renderCurrentPage = () => {
             const app = document.getElementById('app');
-            
             switch (currentPage) {
-                case 'login':
-                    app.innerHTML = renderLoginPage();
-                    setupLoginHandlers();
-                    break;
-                case 'dashboard':
-                    app.innerHTML = renderDashboard();
-                    loadRecentActivities();
-                    break;
-                case 'sondaggi':
-                    app.innerHTML = renderSondaggi();
-                    loadPolls();
-                    setupPollHandlers();
-                    break;
-                case 'segnalazioni':
-                    app.innerHTML = renderSegnalazioni();
-                    loadReports();
-                    setupReportHandlers();
-                    break;
-                case 'profilo':
-                    app.innerHTML = renderProfilo();
-                    setupProfileHandlers();
-                    break;
-                case 'bacheca':
-                    app.innerHTML = renderBacheca();
-                    break;
-                default:
-                    app.innerHTML = renderLoginPage();
-                    setupLoginHandlers();
+                case 'login': app.innerHTML = renderLoginPage(); setupLoginHandlers(); break;
+                case 'dashboard': app.innerHTML = renderDashboard(); loadRecentActivities(); break;
+                case 'bacheca': app.innerHTML = renderBacheca(); loadCommunications(); if (userProfile?.tipoUtente === 'amministratore') setupBachecaHandlers(); break;
+                case 'sondaggi': app.innerHTML = renderSondaggi(); loadPolls(); if (userProfile?.tipoUtente === 'amministratore') setupPollHandlers(); break;
+                case 'segnalazioni': app.innerHTML = renderSegnalazioni(); loadReports(); setupReportHandlers(); break;
+                case 'profilo': app.innerHTML = renderProfilo(); setupProfileHandlers(); break;
+                default: app.innerHTML = renderLoginPage(); setupLoginHandlers();
             }
+            checkForNewCommunications();
         };
 
-        // Event handlers setup
         const setupLoginHandlers = () => {
             let isRegisterMode = false;
-            
             const toggleAuth = document.getElementById('toggle-auth');
             const authTitle = document.getElementById('auth-title');
             const authSubtitle = document.getElementById('auth-subtitle');
@@ -1427,560 +1295,464 @@
             const authForm = document.getElementById('auth-form');
             const forgotPassword = document.getElementById('forgot-password');
 
-            if (toggleAuth) {
-                toggleAuth.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    isRegisterMode = !isRegisterMode;
-                    
+            toggleAuth?.addEventListener('click', (e) => {
+                e.preventDefault();
+                isRegisterMode = !isRegisterMode;
+                authTitle.textContent = isRegisterMode ? 'Registrati' : 'Accedi';
+                authSubtitle.textContent = isRegisterMode ? 'Crea il tuo account per accedere' : 'Accedi al portale del condominio';
+                authSubmit.textContent = isRegisterMode ? 'Registrati' : 'Accedi';
+                toggleAuth.textContent = isRegisterMode ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati';
+                registerFields.classList.toggle('hidden', !isRegisterMode);
+                forgotPassword.classList.toggle('hidden', isRegisterMode);
+            });
+
+            authForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorDiv = document.getElementById('error-message');
+                const successDiv = document.getElementById('success-message');
+                errorDiv.classList.add('hidden');
+                successDiv.classList.add('hidden');
+                try {
                     if (isRegisterMode) {
-                        authTitle.textContent = 'Registrati';
-                        authSubtitle.textContent = 'Crea il tuo account per accedere al portale';
-                        authSubmit.textContent = 'Registrati';
-                        toggleAuth.textContent = 'Hai già un account? Accedi';
-                        registerFields.classList.remove('hidden');
-                        forgotPassword.classList.add('hidden');
-                    } else {
-                        authTitle.textContent = 'Accedi';
-                        authSubtitle.textContent = 'Accedi al portale del condominio';
-                        authSubmit.textContent = 'Accedi';
-                        toggleAuth.textContent = 'Non hai un account? Registrati';
-                        registerFields.classList.add('hidden');
-                        forgotPassword.classList.remove('hidden');
-                    }
-                });
-            }
+                        const confirmPassword = document.getElementById('confirm-password').value;
+                        const nome = document.getElementById('nome').value;
+                        const cognome = document.getElementById('cognome').value;
+                        const tipoUtente = document.getElementById('tipo-utente').value;
+                        const appartamento = document.getElementById('appartamento').value;
+                        const telefono = document.getElementById('telefono').value;
 
-            if (authForm) {
-                authForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    const errorDiv = document.getElementById('error-message');
-                    const successDiv = document.getElementById('success-message');
-                    
-                    errorDiv.classList.add('hidden');
-                    successDiv.classList.add('hidden');
+                        if (password !== confirmPassword) throw new Error('Le password non coincidono');
+                        if (!nome || !cognome || !tipoUtente) throw new Error('Compila tutti i campi obbligatori');
 
-                    try {
-                        if (isRegisterMode) {
-                            const confirmPassword = document.getElementById('confirm-password').value;
-                            const nome = document.getElementById('nome').value;
-                            const cognome = document.getElementById('cognome').value;
-                            const tipoUtente = document.getElementById('tipo-utente').value;
-                            const appartamento = document.getElementById('appartamento').value;
-                            const telefono = document.getElementById('telefono').value;
-
-                            if (password !== confirmPassword) {
-                                throw new Error('Le password non coincidono');
-                            }
-
-                            if (!nome || !cognome || !tipoUtente) {
-                                throw new Error('Compila tutti i campi obbligatori');
-                            }
-
-                            await register(email, password, {
-                                nome,
-                                cognome,
-                                tipoUtente,
-                                appartamento,
-                                telefono
-                            });
-                            
-                            successDiv.textContent = 'Registrazione completata con successo!';
-                            successDiv.classList.remove('hidden');
-                        } else {
-                            await login(email, password);
-                        }
-                    } catch (error) {
-                        errorDiv.textContent = error.message;
-                        errorDiv.classList.remove('hidden');
-                    }
-                });
-            }
-
-            if (forgotPassword) {
-                forgotPassword.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('email').value;
-                    const errorDiv = document.getElementById('error-message');
-                    const successDiv = document.getElementById('success-message');
-                    
-                    if (!email) {
-                        errorDiv.textContent = 'Inserisci la tua email per reimpostare la password';
-                        errorDiv.classList.remove('hidden');
-                        return;
-                    }
-
-                    try {
-                        await resetPassword(email);
-                        successDiv.textContent = 'Email di reset password inviata!';
+                        await register(email, password, { nome, cognome, tipoUtente, appartamento, telefono });
+                        successDiv.textContent = 'Registrazione completata! Ora puoi accedere.';
                         successDiv.classList.remove('hidden');
-                        errorDiv.classList.add('hidden');
-                    } catch (error) {
-                        errorDiv.textContent = error.message;
-                        errorDiv.classList.remove('hidden');
+                    } else {
+                        await login(email, password);
                     }
-                });
-            }
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            });
+
+            forgotPassword?.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const errorDiv = document.getElementById('error-message');
+                const successDiv = document.getElementById('success-message');
+                if (!email) {
+                    errorDiv.textContent = 'Inserisci la tua email per reimpostare la password';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                try {
+                    await resetPassword(email);
+                    successDiv.textContent = 'Email di reset password inviata!';
+                    successDiv.classList.remove('hidden');
+                    errorDiv.classList.add('hidden');
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            });
+        };
+        
+        const setupBachecaHandlers = () => {
+            const form = document.getElementById('create-communication-form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const titleInput = document.getElementById('comm-title');
+                const contentInput = document.getElementById('comm-content');
+                const publishBtn = document.getElementById('publish-comm-btn');
+                const title = titleInput.value.trim();
+                const content = contentInput.value.trim();
+                if (!title || !content) return alert('Compila titolo e messaggio.');
+
+                publishBtn.disabled = true;
+                publishBtn.textContent = 'Pubblicazione...';
+                try {
+                    await addDoc(collection(db, 'communications'), {
+                        title, content,
+                        createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                        createdById: currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    await logActivity('communication_posted', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
+                    form.reset();
+                } catch (error) {
+                    console.error("Errore nella pubblicazione:", error);
+                    alert("Si è verificato un errore.");
+                } finally {
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = 'Pubblica';
+                }
+            });
         };
 
         const setupPollHandlers = () => {
             const createPollForm = document.getElementById('create-poll-form');
-            
-            if (createPollForm) {
-                createPollForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    const title = document.getElementById('poll-title').value;
-                    const description = document.getElementById('poll-description').value;
-                    const optionsText = document.getElementById('poll-options').value;
-                    const deadline = document.getElementById('poll-deadline').value;
-                    
-                    const options = optionsText.split('\n').filter(opt => opt.trim()).map(opt => ({
-                        text: opt.trim(),
-                        votes: 0
-                    }));
+            if (!createPollForm) return;
 
-                    try {
-                        await addDoc(collection(db, 'polls'), {
-                            title,
-                            description,
-                            options,
-                            deadline: new Date(deadline),
-                            createdBy: userProfile.nome + ' ' + userProfile.cognome,
-                            createdById: currentUser.uid,
-                            createdAt: serverTimestamp(),
-                            voters: []
-                        });
+            const pollOptionsList = document.getElementById('poll-options-list');
+            const addPollOptionBtn = document.getElementById('add-poll-option');
 
-                        await logActivity('poll_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
-
-                        hideCreatePollModal();
-                        loadPolls();
-                    } catch (error) {
-                        console.error('Errore nella creazione del sondaggio:', error);
-                    }
-                });
+            function addPollOption(value = '') {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'flex items-center space-x-2';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'mt-1 flex-1';
+                input.required = true;
+                input.placeholder = 'Opzione';
+                input.value = value;
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn-danger';
+                removeBtn.style = 'width:auto;padding:0.25rem 0.75rem;';
+                removeBtn.textContent = '−';
+                removeBtn.onclick = () => {
+                    pollOptionsList.removeChild(optionDiv);
+                    if (pollOptionsList.childElementCount < 2) addPollOption();
+                };
+                optionDiv.appendChild(input);
+                optionDiv.appendChild(removeBtn);
+                pollOptionsList.appendChild(optionDiv);
             }
+
+            if (pollOptionsList.childElementCount === 0) {
+                addPollOption();
+                addPollOption();
+            }
+
+            addPollOptionBtn.onclick = (e) => { e.preventDefault(); addPollOption(); };
+
+            createPollForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('poll-title').value;
+                const description = document.getElementById('poll-description').value;
+                const deadline = document.getElementById('poll-deadline').value;
+                const optionInputs = pollOptionsList.querySelectorAll('input[type="text"]');
+                const options = Array.from(optionInputs).map(input => input.value.trim()).filter(opt => opt).map(opt => ({ text: opt, votes: 0 }));
+
+                if (options.length < 2) return alert('Inserisci almeno due opzioni.');
+                if (!deadline) return alert('Inserisci una data di scadenza.');
+
+                try {
+                    await addDoc(collection(db, 'polls'), {
+                        title, description, options,
+                        deadline: new Date(deadline),
+                        createdBy: userProfile.nome + ' ' + userProfile.cognome,
+                        createdById: currentUser.uid,
+                        createdAt: serverTimestamp(),
+                        voters: []
+                    });
+                    await logActivity('poll_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
+                    createPollForm.reset();
+                } catch (error) {
+                    console.error('Errore nella creazione del sondaggio:', error);
+                }
+            });
+
+            createPollForm.addEventListener('reset', () => {
+                setTimeout(() => {
+                    pollOptionsList.innerHTML = '';
+                    addPollOption(); addPollOption();
+                }, 0);
+            });
         };
 
         const setupReportHandlers = () => {
             const createReportForm = document.getElementById('create-report-form');
-            
-            if (createReportForm) {
-                createReportForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    const title = document.getElementById('report-title').value;
-                    const description = document.getElementById('report-description').value;
-                    const category = document.getElementById('report-category').value;
-                    const priority = document.getElementById('report-priority').value;
-                    const location = document.getElementById('report-location').value;
+            createReportForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('report-title').value;
+                const description = document.getElementById('report-description').value;
+                const category = document.getElementById('report-category').value;
+                const priority = document.getElementById('report-priority').value;
+                const location = document.getElementById('report-location').value;
 
-                    try {
-                        await addDoc(collection(db, 'reports'), {
-                            title,
-                            description,
-                            category,
-                            priority,
-                            location,
-                            status: 'aperta',
-                            createdBy: userProfile.nome + ' ' + userProfile.cognome,
-                            createdById: currentUser.uid,
-                            createdAt: serverTimestamp()
-                        });
+                if(!title || !description || !category || !priority || !location) return alert("Compila tutti i campi.");
 
-                        await logActivity('report_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title, priority });
-
-                        hideCreateReportModal();
-                        loadReports();
-                    } catch (error) {
-                        console.error('Errore nella creazione della segnalazione:', error);
-                    }
-                });
-            }
+                try {
+                    await addDoc(collection(db, 'reports'), {
+                        title, description, category, priority, location,
+                        status: 'aperta',
+                        createdBy: userProfile.nome + ' ' + userProfile.cognome,
+                        createdById: currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    await logActivity('report_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title, priority });
+                    createReportForm.reset();
+                } catch (error) {
+                    console.error('Errore nella creazione della segnalazione:', error);
+                }
+            });
         };
 
         const setupProfileHandlers = () => {
             const profileForm = document.getElementById('profile-form');
-            
-            if (profileForm) {
-                profileForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    const nome = document.getElementById('profile-nome').value;
-                    const cognome = document.getElementById('profile-cognome').value;
-                    const telefono = document.getElementById('profile-telefono').value;
-                    const appartamento = document.getElementById('profile-appartamento').value;
-                    const tipoUtente = document.getElementById('profile-tipo-utente').value;
-                    
-                    try {
-                        await updateDoc(doc(db, 'users', currentUser.uid), {
-                            nome,
-                            cognome,
-                            telefono,
-                            appartamento,
-                            tipoUtente
-                        });
-
-                        await loadUserProfile(currentUser);
-                        showProfileMessage('success', 'Profilo aggiornato con successo!');
-                    } catch (error) {
-                        showProfileMessage('error', 'Errore nell\'aggiornamento del profilo: ' + error.message);
-                    }
-                });
-            }
+            profileForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nome = document.getElementById('profile-nome').value;
+                const cognome = document.getElementById('profile-cognome').value;
+                const telefono = document.getElementById('profile-telefono').value;
+                const appartamento = document.getElementById('profile-appartamento').value;
+                
+                try {
+                    await updateDoc(doc(db, 'users', currentUser.uid), { nome, cognome, telefono, appartamento });
+                    await loadUserProfile(currentUser);
+                    showProfileMessage('success', 'Profilo aggiornato con successo!');
+                } catch (error) {
+                    showProfileMessage('error', `Errore: ${error.message}`);
+                }
+            });
         };
-
-        // Helper functions
+        
         const showProfileMessage = (type, text) => {
             const messageDiv = document.getElementById('profile-message');
             if (messageDiv) {
-                messageDiv.className = `mb-6 p-4 rounded-lg ${type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`;
+                messageDiv.className = `mb-6 p-4 rounded-lg ${type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`;
                 messageDiv.textContent = text;
                 messageDiv.classList.remove('hidden');
-                
-                setTimeout(() => {
-                    messageDiv.classList.add('hidden');
-                }, 5000);
+                setTimeout(() => { messageDiv.classList.add('hidden'); }, 5000);
             }
         };
 
-        const showCreatePollModal = () => {
-            const modal = document.getElementById('create-poll-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-            }
-        };
+        const loadCommunications = () => {
+            const listContainer = document.getElementById('communications-list');
+            if (!listContainer) return;
 
-        const hideCreatePollModal = () => {
-            const modal = document.getElementById('create-poll-modal');
-            const form = document.getElementById('create-poll-form');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-            if (form) {
-                form.reset();
-            }
-        };
-
-        const showCreateReportModal = () => {
-            const modal = document.getElementById('create-report-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-            }
-        };
-
-        const hideCreateReportModal = () => {
-            const modal = document.getElementById('create-report-modal');
-            const form = document.getElementById('create-report-form');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-            if (form) {
-                form.reset();
-            }
-        };
-
-        const updateReportStatus = async (reportId, newStatus) => {
-            try {
-                await updateDoc(doc(db, 'reports', reportId), {
-                    status: newStatus,
-                    updatedAt: serverTimestamp()
-                });
-
-                await logActivity('report_updated', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { 
-                    reportId, 
-                    newStatus 
-                });
-
-                loadReports();
-            } catch (error) {
-                console.error('Errore nell\'aggiornamento dello stato:', error);
-            }
-        };
-
-        const loadPolls = async () => {
-            try {
-                const pollsQuery = query(collection(db, 'polls'), orderBy('createdAt', 'desc'));
-                const pollsSnapshot = await getDocs(pollsQuery);
-                const pollsContainer = document.getElementById('polls-container');
-                
-                if (!pollsContainer) return;
-                
-                if (pollsSnapshot.empty) {
-                    pollsContainer.innerHTML = `
-                        <div class="text-center text-gray-500 py-8">
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">Nessun sondaggio</h3>
-                            <p class="mt-1 text-sm text-gray-500">Inizia creando il primo sondaggio.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                const pollsHtml = pollsSnapshot.docs.map(doc => {
-                    const poll = doc.data();
-                    const deadline = poll.deadline.toDate();
-                    const isExpired = deadline < new Date();
-                    const hasVoted = poll.voters && poll.voters.includes(currentUser.uid);
-                    
-                    return `
-                        <div class="bg-white shadow rounded-lg p-6">
-                            <div class="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 class="text-lg font-medium text-gray-900">${poll.title}</h3>
-                                    <p class="text-sm text-gray-600 mt-1">${poll.description || ''}</p>
-                                    <p class="text-xs text-gray-500 mt-2">
-                                        Creato da ${poll.createdBy} • Scadenza: ${deadline.toLocaleDateString('it-IT')}
-                                    </p>
+            const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (querySnapshot) => {
+                listContainer.innerHTML = querySnapshot.empty
+                    ? `<div class="p-6 text-center text-gray-500">Nessuna comunicazione in bacheca.</div>`
+                    : querySnapshot.docs.map(doc => {
+                        const comm = doc.data();
+                        if (!comm.createdAt) return ''; // Defensive check
+                        const createdAt = comm.createdAt.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        return `
+                            <div class="bg-white shadow rounded-lg p-6">
+                                <div class="border-b border-gray-200 pb-4 mb-4">
+                                    <h3 class="text-lg font-bold text-gray-900">${comm.title}</h3>
+                                    <p class="text-xs text-gray-500 mt-1">Pubblicato da ${comm.createdBy} il ${createdAt}</p>
                                 </div>
-                                <span class="badge ${isExpired ? 'badge-admin' : 'badge-condomino'}">
-                                    ${isExpired ? 'Scaduto' : 'Attivo'}
-                                </span>
-                            </div>
-                            
-                            <div class="space-y-3">
-                                ${poll.options.map((option, index) => {
-                                    const totalVotes = poll.options.reduce((sum, opt) => sum + opt.votes, 0);
-                                    const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
-                                    
-                                    return `
-                                        <div class="relative">
-                                            <div class="flex justify-between items-center mb-1">
-                                                <span class="text-sm font-medium text-gray-900">${option.text}</span>
-                                                <span class="text-sm text-gray-500">${option.votes} voti (${percentage}%)</span>
+                                <div class="text-sm text-gray-700 whitespace-pre-wrap">${comm.content}</div>
+                            </div>`;
+                    }).join('');
+                
+                if (currentPage === 'bacheca' && !querySnapshot.empty) {
+                    const latestTimestamp = querySnapshot.docs[0].data().createdAt.toMillis();
+                    localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestTimestamp);
+                    updateNotificationUI(false);
+                }
+            });
+        };
+
+        const loadPolls = () => {
+            const pollsContainer = document.getElementById('polls-container');
+            if (!pollsContainer) return;
+
+            const q = query(collection(db, 'polls'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                pollsContainer.innerHTML = snapshot.empty
+                    ? `<div class="text-center text-gray-500 py-8">Nessun sondaggio disponibile.</div>`
+                    : snapshot.docs.map(doc => {
+                        const poll = doc.data();
+                        if (!poll.deadline) return ''; // Defensive check for bad data
+
+                        const deadline = poll.deadline.toDate();
+                        const isExpired = deadline < new Date();
+                        const hasVoted = poll.voters && poll.voters.includes(currentUser.uid);
+                        const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
+
+                        return `
+                            <div class="bg-white shadow rounded-lg p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="text-lg font-medium text-gray-900">${poll.title}</h3>
+                                        <p class="text-sm text-gray-600 mt-1">${poll.description || ''}</p>
+                                        <p class="text-xs text-gray-500 mt-2">Scadenza: ${deadline.toLocaleDateString('it-IT')}</p>
+                                    </div>
+                                    <span class="badge ${isExpired ? 'badge-admin' : 'badge-condomino'}">${isExpired ? 'Scaduto' : 'Attivo'}</span>
+                                </div>
+                                <div class="space-y-4">
+                                    ${poll.options.map((option, index) => {
+                                        const percentage = totalVotes > 0 ? Math.round(((option.votes || 0) / totalVotes) * 100) : 0;
+                                        return `
+                                            <div>
+                                                <div class="flex justify-between items-center mb-1">
+                                                    <span class="text-sm font-medium text-gray-900">${option.text}</span>
+                                                    <div class="flex items-center space-x-4">
+                                                        <span class="text-sm text-gray-500">${option.votes || 0} voti (${percentage}%)</span>
+                                                        ${!isExpired && !hasVoted ? `
+                                                            <button onclick="voteOnPoll('${doc.id}', ${index})" class="btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">
+                                                                Vota
+                                                            </button>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${percentage}%"></div>
+                                                </div>
                                             </div>
-                                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${percentage}%"></div>
-                                            </div>
-                                            ${!isExpired && !hasVoted ? `
-                                                <button onclick="voteOnPoll('${doc.id}', ${index})" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"></button>
-                                            ` : ''}
+                                        `;
+                                    }).join('')}
+                                </div>
+                                ${hasVoted ? `<p class="mt-4 text-sm text-green-700 font-medium">✓ Hai già votato</p>` : ''}
+                            </div>`;
+                    }).join('');
+            });
+        };
+
+        const loadReports = () => {
+            const reportsContainer = document.getElementById('reports-container');
+            if (!reportsContainer) return;
+            
+            const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                reportsContainer.innerHTML = snapshot.empty
+                    ? `<div class="text-center text-gray-500 py-8">Nessuna segnalazione.</div>`
+                    : snapshot.docs.map(doc => {
+                        const report = doc.data();
+                        if (!report.createdAt) return ''; // Defensive check
+                        const createdAt = report.createdAt.toDate();
+                        const canManage = userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'portiere';
+
+                        return `
+                            <div class="bg-white shadow rounded-lg p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex-1">
+                                        <div class="flex items-center flex-wrap gap-2 mb-2">
+                                            <h3 class="text-lg font-medium text-gray-900">${report.title}</h3>
+                                            <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
+                                            <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
                                         </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                            
-                            ${hasVoted ? `
-                                <p class="mt-4 text-sm text-green-700 font-medium">✓ Hai già votato in questo sondaggio</p>
-                            ` : isExpired ? `
-                                <p class="mt-4 text-sm text-red-700 font-medium">Sondaggio scaduto</p>
-                            ` : `
-                                <p class="mt-4 text-sm text-blue-600 font-medium">Clicca su un'opzione per votare</p>
-                            `}
-                        </div>
-                    `;
-                }).join('');
-                
-                pollsContainer.innerHTML = pollsHtml;
-            } catch (error) {
-                console.error('Errore nel caricamento dei sondaggi:', error);
-            }
-        };
-
-        const loadReports = async () => {
-            try {
-                const reportsQuery = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
-                const reportsSnapshot = await getDocs(reportsQuery);
-                const reportsContainer = document.getElementById('reports-container');
-                
-                if (!reportsContainer) return;
-                
-                if (reportsSnapshot.empty) {
-                    reportsContainer.innerHTML = `
-                        <div class="text-center text-gray-500 py-8">
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">Nessuna segnalazione</h3>
-                            <p class="mt-1 text-sm text-gray-500">Inizia creando la prima segnalazione.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                const reportsHtml = reportsSnapshot.docs.map(doc => {
-                    const report = doc.data();
-                    const createdAt = report.createdAt.toDate();
-                    const canManage = userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'portiere';
-                    
-                    return `
-                        <div class="bg-white shadow rounded-lg p-6">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex-1">
-                                    <div class="flex items-center space-x-2 mb-2">
-                                        <h3 class="text-lg font-medium text-gray-900">${report.title}</h3>
-                                        <span class="badge ${getPriorityColor(report.priority)}">
-                                            ${report.priority.charAt(0).toUpperCase() + report.priority.slice(1)}
-                                        </span>
-                                        <span class="badge ${getStatusColor(report.status)}">
-                                            ${report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                                        </span>
-                                    </div>
-                                    <p class="text-sm text-gray-600 mb-2">${report.description}</p>
-                                    <div class="text-xs text-gray-500 space-y-1">
-                                        <p><strong>Categoria:</strong> ${report.category}</p>
-                                        <p><strong>Ubicazione:</strong> ${report.location}</p>
-                                        <p><strong>Segnalato da:</strong> ${report.createdBy}</p>
-                                        <p><strong>Data:</strong> ${createdAt.toLocaleDateString('it-IT')} ${createdAt.toLocaleTimeString('it-IT')}</p>
+                                        <p class="text-sm text-gray-600 mb-2">${report.description}</p>
+                                        <div class="text-xs text-gray-500 space-y-1">
+                                            <p><strong>Categoria:</strong> ${report.category}</p>
+                                            <p><strong>Ubicazione:</strong> ${report.location}</p>
+                                            <p><strong>Segnalato da:</strong> ${report.createdBy}</p>
+                                            <p><strong>Data:</strong> ${createdAt.toLocaleString('it-IT')}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            ${canManage && report.status !== 'chiusa' ? `
-                                <div class="flex space-x-2 mt-4">
-                                    ${report.status === 'aperta' ? `
-                                        <button onclick="updateReportStatus('${doc.id}', 'in-corso')" class="btn-warning text-xs">
-                                            Prendi in carico
-                                        </button>
-                                    ` : ''}
-                                    <button onclick="updateReportStatus('${doc.id}', 'chiusa')" class="btn-primary text-xs">
-                                        Chiudi segnalazione
-                                    </button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                }).join('');
-                
-                reportsContainer.innerHTML = reportsHtml;
-            } catch (error) {
-                console.error('Errore nel caricamento delle segnalazioni:', error);
-            }
+                                ${canManage && report.status !== 'chiusa' ? `
+                                    <div class="flex space-x-2 mt-4">
+                                        ${report.status === 'aperta' ? `<button onclick="updateReportStatus('${doc.id}', 'in-corso')" class="btn-warning text-xs">Prendi in carico</button>` : ''}
+                                        <button onclick="updateReportStatus('${doc.id}', 'chiusa')" class="btn-primary text-xs">Chiudi</button>
+                                    </div>` : ''}
+                            </div>`;
+                    }).join('');
+            });
         };
 
         const voteOnPoll = async (pollId, optionIndex) => {
             try {
                 const pollRef = doc(db, 'polls', pollId);
                 const pollDoc = await getDoc(pollRef);
-                
                 if (!pollDoc.exists()) return;
-                
-                const pollData = pollDoc.data();
-                
-                if (pollData.voters && pollData.voters.includes(currentUser.uid)) {
-                    alert('Hai già votato in questo sondaggio!');
-                    return;
-                }
-                
-                const updatedOptions = [...pollData.options];
-                updatedOptions[optionIndex].votes += 1;
-                
-                const updatedVoters = [...(pollData.voters || []), currentUser.uid];
-                
-                await updateDoc(pollRef, {
-                    options: updatedOptions,
-                    voters: updatedVoters
-                });
 
-                await logActivity('poll_voted', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { 
-                    pollTitle: pollData.title, 
-                    option: pollData.options[optionIndex].text 
+                const pollData = pollDoc.data();
+                if (pollData.deadline.toDate() < new Date()) return alert("Questo sondaggio è scaduto.");
+                if (pollData.voters?.includes(currentUser.uid)) return alert('Hai già votato!');
+
+                const updatedOptions = [...pollData.options];
+                updatedOptions[optionIndex].votes = (updatedOptions[optionIndex].votes || 0) + 1;
+                const updatedVoters = [...(pollData.voters || []), currentUser.uid];
+
+                await updateDoc(pollRef, { options: updatedOptions, voters: updatedVoters });
+                await logActivity('poll_voted', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    pollTitle: pollData.title, option: pollData.options[optionIndex].text
                 });
-                
-                loadPolls();
             } catch (error) {
                 console.error('Errore nel voto:', error);
             }
         };
-
-        const loadRecentActivities = async () => {
+        
+        const updateReportStatus = async (reportId, newStatus) => {
             try {
-                const activitiesQuery = query(
-                    collection(db, 'activities'),
-                    orderBy('timestamp', 'desc'),
-                    limit(5)
-                );
+                await updateDoc(doc(db, 'reports', reportId), { status: newStatus, updatedAt: serverTimestamp() });
+                await logActivity('report_updated', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId, newStatus });
+            } catch (error) {
+                console.error("Errore nell'aggiornamento dello stato:", error);
+            }
+        };
 
-                onSnapshot(activitiesQuery, (snapshot) => {
-                    const activitiesContainer = document.getElementById('recent-activities');
-                    
-                    if (!activitiesContainer) return;
-                    
-                    if (snapshot.empty) {
-                        activitiesContainer.innerHTML = `
-                            <div class="text-center text-gray-500 py-4">
-                                Nessuna attività recente
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    const activitiesHtml = snapshot.docs.map(doc => {
+        const loadRecentActivities = () => {
+            const activitiesContainer = document.getElementById('recent-activities');
+            if (!activitiesContainer) return;
+            const q = query(collection(db, 'activities'), orderBy('timestamp', 'desc'), limit(5));
+            onSnapshot(q, (snapshot) => {
+                activitiesContainer.innerHTML = snapshot.empty
+                    ? `<div class="text-center text-gray-500 py-4">Nessuna attività recente</div>`
+                    : snapshot.docs.map(doc => {
                         const activity = doc.data();
+                        if (!activity.timestamp) return '';
                         const timeAgo = formatTime(activity.timestamp);
-                        
                         let activityText = '';
                         switch (activity.type) {
-                            case 'user_registered':
-                                activityText = 'si è registrato';
-                                break;
-                            case 'poll_created':
-                                activityText = `ha creato il sondaggio "${activity.details.title}"`;
-                                break;
-                            case 'poll_voted':
-                                activityText = `ha votato nel sondaggio "${activity.details.pollTitle}"`;
-                                break;
-                            case 'report_created':
-                                activityText = `ha creato una segnalazione "${activity.details.title}"`;
-                                break;
-                            case 'report_updated':
-                                activityText = `ha aggiornato una segnalazione`;
-                                break;
-                            default:
-                                activityText = 'ha eseguito un\'azione';
+                            case 'user_registered': activityText = 'si è registrato'; break;
+                            case 'poll_created': activityText = `ha creato il sondaggio "${activity.details.title}"`; break;
+                            case 'poll_voted': activityText = `ha votato nel sondaggio "${activity.details.pollTitle}"`; break;
+                            case 'report_created': activityText = `ha creato una segnalazione "${activity.details.title}"`; break;
+                            case 'report_updated': activityText = `ha aggiornato una segnalazione`; break;
+                            case 'communication_posted': activityText = `ha pubblicato in bacheca: "${activity.details.title}"`; break;
+                            default: activityText = 'ha eseguito un\'azione';
                         }
-                        
                         return `
                             <div class="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                    </svg>
+                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm text-gray-900">${activity.userName} ${activityText}</p>
                                     <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     }).join('');
-                    
-                    activitiesContainer.innerHTML = activitiesHtml;
-                });
-            } catch (error) {
-                console.error('Errore nel caricamento delle attività:', error);
-            }
+            });
         };
 
-        // Make functions global for onclick handlers
+        const updateNotificationUI = (hasNew) => {
+            const badge = document.getElementById('bacheca-notification-badge');
+            badge?.classList.toggle('hidden', !hasNew);
+        };
+
+        const checkForNewCommunications = () => {
+            if (!currentUser) return;
+            if (communicationsListener) communicationsListener();
+
+            const lastSeenMillis = parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`), 10) || 0;
+            const lastSeenDate = new Date(lastSeenMillis);
+            
+            const q = query(collection(db, "communications"), where("createdAt", ">", lastSeenDate));
+            communicationsListener = onSnapshot(q, (querySnapshot) => {
+                updateNotificationUI(!querySnapshot.empty);
+            });
+        };
+
         window.navigateTo = navigateTo;
         window.logout = logout;
-        window.showCreatePollModal = showCreatePollModal;
-        window.hideCreatePollModal = hideCreatePollModal;
-        window.showCreateReportModal = showCreateReportModal;
-        window.hideCreateReportModal = hideCreateReportModal;
         window.voteOnPoll = voteOnPoll;
         window.updateReportStatus = updateReportStatus;
 
-        // Auth state listener
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 await loadUserProfile(user);
-                if (currentPage === 'login') {
-                    navigateTo('dashboard');
-                } else {
-                    renderCurrentPage();
-                }
+                navigateTo(currentPage === 'login' ? 'dashboard' : currentPage);
             } else {
+                if (communicationsListener) communicationsListener();
                 currentUser = null;
                 userProfile = null;
                 navigateTo('login');
             }
         });
 
-        // Initial render
         renderCurrentPage();
     </script>
 </body>
 </html>
-
