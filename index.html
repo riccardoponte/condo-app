@@ -1561,7 +1561,7 @@
                     ? `<div class="text-center text-gray-500 py-8">Nessun sondaggio disponibile.</div>`
                     : snapshot.docs.map(doc => {
                         const poll = doc.data();
-                        if (!poll.deadline) return ''; // Defensive check for bad data
+                        if (!poll.deadline) return ''; 
 
                         const deadline = poll.deadline.toDate();
                         const isExpired = deadline < new Date();
@@ -1617,7 +1617,7 @@
                     ? `<div class="text-center text-gray-500 py-8">Nessuna segnalazione.</div>`
                     : snapshot.docs.map(doc => {
                         const report = doc.data();
-                        if (!report.createdAt) return ''; // Defensive check
+                        if (!report.createdAt) return '';
                         const createdAt = report.createdAt.toDate();
                         const canManage = userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'portiere';
 
