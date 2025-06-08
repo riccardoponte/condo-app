@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Condominio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .min-h-screen {
+            min-height: 100vh;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .space-y-6 > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .space-x-4 > * + * {
+            margin-left: 1rem;
+        }
+
+        .bg-white {
+            background-color: white;
+        }
+
+        .bg-gray-50 {
+            background-color: #f9fafb;
+        }
+
+        .bg-blue-600 {
+            background-color: #2563eb;
+        }
+
+        .bg-blue-700 {
+            background-color: #1d4ed8;
+        }
+
+        .bg-green-600 {
+            background-color: #059669;
+        }
+
+        .bg-red-50 {
+            background-color: #fef2f2;
+        }
+
+        .bg-green-50 {
+            background-color: #f0fdf4;
+        }
+
+        .text-white {
+            color: white;
+        }
+
+        .text-gray-900 {
+            color: #111827;
+        }
+
+        .text-gray-700 {
+            color: #374151;
+        }
+
+        .text-gray-600 {
+            color: #4b5563;
+        }
+
+        .text-gray-500 {
+            color: #6b7280;
+        }
+
+        .text-blue-600 {
+            color: #2563eb;
+        }
+
+        .text-red-700 {
+            color: #b91c1c;
+        }
+
+        .text-green-700 {
+            color: #15803d;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-lg {
+            font-size: 1.125rem;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+        }
+
+        .text-2xl {
+            font-size: 1.5rem;
+        }
+
+        .text-3xl {
+            font-size: 1.875rem;
+        }
+
+        .font-medium {
+            font-weight: 500;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .font-extrabold {
+            font-weight: 800;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .max-w-md {
+            max-width: 28rem;
+        }
+
+        .h-12 {
+            height: 3rem;
+        }
+
+        .h-8 {
+            height: 2rem;
+        }
+
+        .w-12 {
+            width: 3rem;
+        }
+
+        .w-8 {
+            width: 2rem;
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .p-6 {
+            padding: 1.5rem;
+        }
+
+        .px-3 {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .px-4 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .py-4 {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .py-6 {
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+
+        .py-12 {
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+        }
+
+        .mt-1 {
+            margin-top: 0.25rem;
+        }
+
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem;
+        }
+
+        .mt-8 {
+            margin-top: 2rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mr-2 {
+            margin-right: 0.5rem;
+        }
+
+        .mr-3 {
+            margin-right: 0.75rem;
+        }
+
+        .border {
+            border-width: 1px;
+        }
+
+        .border-gray-300 {
+            border-color: #d1d5db;
+        }
+
+        .border-red-200 {
+            border-color: #fecaca;
+        }
+
+        .border-green-200 {
+            border-color: #bbf7d0;
+        }
+
+        .border-transparent {
+            border-color: transparent;
+        }
+
+        .rounded {
+            border-radius: 0.25rem;
+        }
+
+        .rounded-md {
+            border-radius: 0.375rem;
+        }
+
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        .rounded-full {
+            border-radius: 9999px;
+        }
+
+        .shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .shadow-sm {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .block {
+            display: block;
+        }
+
+        .inline-flex {
+            display: inline-flex;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .gap-6 {
+            gap: 1.5rem;
+        }
+
+        .relative {
+            position: relative;
+        }
+
+        .fixed {
+            position: fixed;
+        }
+
+        .bottom-0 {
+            bottom: 0;
+        }
+
+        .left-0 {
+            left: 0;
+        }
+
+        .right-0 {
+            right: 0;
+        }
+
+        .z-50 {
+            z-index: 50;
+        }
+
+        .pb-20 {
+            padding-bottom: 5rem;
+        }
+
+        .border-t {
+            border-top-width: 1px;
+        }
+
+        .border-b {
+            border-bottom-width: 1px;
+        }
+
+        .border-gray-200 {
+            border-color: #e5e7eb;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-xs {
+            font-size: 0.75rem;
+        }
+
+        .leading-4 {
+            line-height: 1rem;
+        }
+
+        .transition-colors {
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
+        .transition-shadow {
+            transition-property: box-shadow;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
+        .transition-transform {
+            transition-property: transform;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
+        .hover\:bg-blue-700:hover {
+            background-color: #1d4ed8;
+        }
+
+        .hover\:bg-gray-50:hover {
+            background-color: #f9fafb;
+        }
+
+        .hover\:text-blue-500:hover {
+            color: #3b82f6;
+        }
+
+        .hover\:shadow-lg:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .focus\:outline-none:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+
+        .focus\:ring-2:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+
+        .focus\:ring-blue-500:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+
+        .focus\:border-blue-500:focus {
+            border-color: #3b82f6;
+        }
+
+        .group:hover .group-hover\:scale-110 {
+            transform: scale(1.1);
+        }
+
+        .group:hover .group-hover\:bg-blue-100 {
+            background-color: #dbeafe;
+        }
+
+        .group:hover .group-hover\:bg-green-100 {
+            background-color: #dcfce7;
+        }
+
+        .group:hover .group-hover\:bg-orange-100 {
+            background-color: #fed7aa;
+        }
+
+        .group:hover .group-hover\:bg-purple-100 {
+            background-color: #e9d5ff;
+        }
+
+        /* Form styles */
+        input, select, textarea {
+            appearance: none;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: #111827;
+            width: 100%;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        input::placeholder {
+            color: #6b7280;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #4b5563;
+        }
+
+        .btn-danger {
+            background-color: #dc2626;
+            color: white;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #b91c1c;
+        }
+
+        .btn-warning {
+            background-color: #d97706;
+            color: white;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background-color: #b45309;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-container {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .bg-blue-500 {
+            background-color: #3b82f6;
+        }
+
+        .bg-green-500 {
+            background-color: #10b981;
+        }
+
+        .bg-orange-500 {
+            background-color: #f97316;
+        }
+
+        .bg-purple-500 {
+            background-color: #8b5cf6;
+        }
+
+        .bg-blue-50 {
+            background-color: #eff6ff;
+        }
+
+        .text-blue-700 {
+            color: #1d4ed8;
+        }
+
+        .bg-green-50 {
+            background-color: #f0fdf4;
+        }
+
+        .text-green-700 {
+            color: #15803d;
+        }
+
+        .bg-orange-50 {
+            background-color: #fff7ed;
+        }
+
+        .text-orange-700 {
+            color: #c2410c;
+        }
+
+        .bg-purple-50 {
+            background-color: #faf5ff;
+        }
+
+        .text-purple-700 {
+            color: #7c3aed;
+        }
+
+        .bg-red-500 {
+            background-color: #ef4444;
+        }
+
+        .bg-yellow-500 {
+            background-color: #eab308;
+        }
+
+        .bg-red-100 {
+            background-color: #fee2e2;
+        }
+
+        .bg-yellow-100 {
+            background-color: #fef3c7;
+        }
+
+        .text-red-800 {
+            color: #991b1b;
+        }
+
+        .text-yellow-800 {
+            color: #92400e;
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-top: 1px solid #e5e7eb;
+            z-index: 50;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            color: #6b7280;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        .nav-item svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-item span {
+            font-size: 0.75rem;
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .grid-cols-1 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .grid-cols-1 {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        /* User type badges */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+        }
+
+        .badge-admin {
+            background-color: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .badge-portiere {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .badge-condomino {
+            background-color: #f0fdf4;
+            color: #15803d;
+        }
+
+        /* Priority badges */
+        .priority-alta {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .priority-media {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .priority-bassa {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        /* Status badges */
+        .status-aperta {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-in-corso {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-chiusa {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Loading... -->
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="text-center">
+                <div class="h-12 w-12 mx-auto mb-4 text-blue-600">
+                    <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                    </svg>
+                </div>
+                <p class="text-gray-600">Caricamento...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            sendPasswordResetEmail
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            collection, 
+            addDoc, 
+            getDocs, 
+            query, 
+            orderBy, 
+            limit, 
+            onSnapshot,
+            serverTimestamp,
+            updateDoc
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrLAomryfk-0s5Inm2XOsBrJusgmMI87E",
+            authDomain: "condo-app-49255.firebaseapp.com",
+            projectId: "condo-app-49255",
+            storageBucket: "condo-app-49255.firebasestorage.app",
+            messagingSenderId: "485319278595",
+            appId: "1:485319278595:web:2997689b234fbba4dece36",
+            measurementId: "G-2SM3DH41EZ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Global state
+        let currentUser = null;
+        let userProfile = null;
+        let currentPage = 'login';
+
+        // Activity logging
+        const logActivity = async (type, userId, userName, details = {}) => {
+            try {
+                await addDoc(collection(db, 'activities'), {
+                    type,
+                    userId,
+                    userName,
+                    details,
+                    timestamp: serverTimestamp(),
+                    createdAt: new Date()
+                });
+            } catch (error) {
+                console.error('Errore nel logging:', error);
+            }
+        };
+
+        // Auth functions
+        const login = async (email, password) => {
+            return await signInWithEmailAndPassword(auth, email, password);
+        };
+
+        const register = async (email, password, userData) => {
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            
+            await setDoc(doc(db, 'users', result.user.uid), {
+                nome: userData.nome,
+                cognome: userData.cognome,
+                email: email,
+                tipoUtente: userData.tipoUtente,
+                appartamento: userData.appartamento || '',
+                telefono: userData.telefono || '',
+                createdAt: new Date().toISOString()
+            });
+
+            await logActivity('user_registered', result.user.uid, `${userData.nome} ${userData.cognome}`, { userType: userData.tipoUtente });
+            return result;
+        };
+
+        const logout = async () => {
+            await signOut(auth);
+            currentUser = null;
+            userProfile = null;
+            navigateTo('login');
+        };
+
+        const resetPassword = async (email) => {
+            return await sendPasswordResetEmail(auth, email);
+        };
+
+        // Load user profile
+        const loadUserProfile = async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    userProfile = userDoc.data();
+                }
+            }
+        };
+
+        // Navigation
+        const navigateTo = (page) => {
+            currentPage = page;
+            renderCurrentPage();
+        };
+
+        // Utility functions
+        const getUserTypeColor = (type) => {
+            switch (type) {
+                case 'amministratore':
+                    return 'badge-admin';
+                case 'portiere':
+                    return 'badge-portiere';
+                case 'condomino':
+                    return 'badge-condomino';
+                default:
+                    return 'badge-condomino';
+            }
+        };
+
+        const getPriorityColor = (priority) => {
+            switch (priority) {
+                case 'alta':
+                    return 'priority-alta';
+                case 'media':
+                    return 'priority-media';
+                case 'bassa':
+                    return 'priority-bassa';
+                default:
+                    return 'priority-bassa';
+            }
+        };
+
+        const getStatusColor = (status) => {
+            switch (status) {
+                case 'aperta':
+                    return 'status-aperta';
+                case 'in-corso':
+                    return 'status-in-corso';
+                case 'chiusa':
+                    return 'status-chiusa';
+                default:
+                    return 'status-aperta';
+            }
+        };
+
+        const formatTime = (timestamp) => {
+            if (!timestamp) return '';
+            
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const now = new Date();
+            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+            
+            if (diffInMinutes < 1) return 'Ora';
+            if (diffInMinutes < 60) return `${diffInMinutes}m fa`;
+            if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h fa`;
+            return `${Math.floor(diffInMinutes / 1440)}g fa`;
+        };
+
+        // Page renderers
+        const renderLoginPage = () => {
+            return `
+                <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+                    <div class="max-w-md w-full space-y-8">
+                        <div class="text-center">
+                            <div class="h-12 w-12 mx-auto text-blue-600">
+                                <svg fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                                </svg>
+                            </div>
+                            <h2 class="mt-6 text-3xl font-extrabold text-gray-900" id="auth-title">Accedi</h2>
+                            <p class="mt-2 text-sm text-gray-600" id="auth-subtitle">Accedi al portale del condominio</p>
+                        </div>
+                        
+                        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded"></div>
+                        <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded"></div>
+                        
+                        <form class="mt-8 space-y-6" id="auth-form">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                    <input id="email" name="email" type="email" required placeholder="la-tua-email@esempio.com" class="mt-1">
+                                </div>
+                                <div>
+                                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                                    <input id="password" name="password" type="password" required placeholder="••••••••" class="mt-1">
+                                </div>
+                                
+                                <div id="register-fields" class="hidden space-y-4">
+                                    <div>
+                                        <label for="confirm-password" class="block text-sm font-medium text-gray-700">Conferma Password</label>
+                                        <input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="mt-1">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="nome" class="block text-sm font-medium text-gray-700">Nome</label>
+                                            <input id="nome" name="nome" type="text" placeholder="Mario" class="mt-1">
+                                        </div>
+                                        <div>
+                                            <label for="cognome" class="block text-sm font-medium text-gray-700">Cognome</label>
+                                            <input id="cognome" name="cognome" type="text" placeholder="Rossi" class="mt-1">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="tipo-utente" class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
+                                        <select id="tipo-utente" name="tipo-utente" class="mt-1">
+                                            <option value="">Seleziona il tipo di utente</option>
+                                            <option value="condomino">Condomino</option>
+                                            <option value="amministratore">Amministratore</option>
+                                            <option value="portiere">Portiere</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="appartamento" class="block text-sm font-medium text-gray-700">Appartamento</label>
+                                        <input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="mt-1">
+                                    </div>
+                                    <div>
+                                        <label for="telefono" class="block text-sm font-medium text-gray-700">Telefono</label>
+                                        <input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="mt-1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <button type="submit" id="auth-submit" class="w-full btn-primary">
+                                    Accedi
+                                </button>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <button type="button" id="toggle-auth" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                    Non hai un account? Registrati
+                                </button>
+                                <button type="button" id="forgot-password" class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                    Password dimenticata?
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderBottomNavigation = () => {
+            return `
+                <nav class="bottom-nav">
+                    <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                        <span>Home</span>
+                    </a>
+                    
+                    <a href="#" onclick="navigateTo('bacheca')" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        <span>Bacheca</span>
+                    </a>
+                    
+                    <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${currentPage === 'sondaggi' ? 'active' : ''}">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/>
+                        </svg>
+                        <span>Sondaggi</span>
+                    </a>
+                    
+                    <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
+                        </svg>
+                        <span>Segnala</span>
+                    </a>
+                    
+                    <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                        </svg>
+                        <span>Profilo</span>
+                    </a>
+                </nav>
+            `;
+        };
+
+        const renderDashboard = () => {
+            return `
+                <div class="min-h-screen bg-gray-50 pb-20">
+                    <!-- Header -->
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="container">
+                            <div class="flex justify-between items-center py-4">
+                                <div class="flex items-center">
+                                    <div class="h-8 w-8 text-blue-600 mr-3">
+                                        <svg fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                                        </svg>
+                                    </div>
+                                    <h1 class="text-xl font-semibold text-gray-900">Gestione Condominio</h1>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-sm text-gray-700">
+                                            ${userProfile?.nome || ''} ${userProfile?.cognome || ''}
+                                        </span>
+                                        <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">
+                                            ${userProfile?.tipoUtente || ''}
+                                        </span>
+                                    </div>
+                                    
+                                    <button onclick="logout()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        Esci
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Main Content -->
+                    <main class="container py-6">
+                        <!-- Welcome Section -->
+                        <div class="py-6">
+                            <h1 class="text-2xl font-bold text-gray-900">Benvenuto, ${userProfile?.nome || 'Utente'}!</h1>
+                            <p class="mt-1 text-sm text-gray-600">Gestisci le attività del condominio dal tuo pannello di controllo.</p>
+                        </div>
+
+                        <!-- Menu Grid -->
+                        <div class="grid grid-cols-1 gap-6 mb-8">
+                            <div onclick="navigateTo('bacheca')" class="card cursor-pointer group">
+                                <div class="p-6">
+                                    <div class="icon-container bg-blue-500 group-hover:scale-110 transition-transform">
+                                        <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900">Bacheca</h3>
+                                    <p class="mt-2 text-sm text-gray-500">Documenti e comunicazioni</p>
+                                    <button class="mt-4 w-full bg-blue-50 text-blue-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-blue-100 transition-colors">
+                                        Accedi
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div onclick="navigateTo('sondaggi')" class="card cursor-pointer group">
+                                <div class="p-6">
+                                    <div class="icon-container bg-green-500 group-hover:scale-110 transition-transform">
+                                        <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900">Sondaggi</h3>
+                                    <p class="mt-2 text-sm text-gray-500">Partecipa ai sondaggi condominiali</p>
+                                    <button class="mt-4 w-full bg-green-50 text-green-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-green-100 transition-colors">
+                                        Accedi
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div onclick="navigateTo('segnalazioni')" class="card cursor-pointer group">
+                                <div class="p-6">
+                                    <div class="icon-container bg-orange-500 group-hover:scale-110 transition-transform">
+                                        <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900">Segnalazioni</h3>
+                                    <p class="mt-2 text-sm text-gray-500">Segnala problemi e guasti</p>
+                                    <button class="mt-4 w-full bg-orange-50 text-orange-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-orange-100 transition-colors">
+                                        Accedi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activities -->
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-900">Attività Recenti</h3>
+                            </div>
+                            <div class="p-6">
+                                <div id="recent-activities" class="space-y-3">
+                                    <div class="text-center text-gray-500 py-4">
+                                        Caricamento attività...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    ${renderBottomNavigation()}
+                </div>
+            `;
+        };
+
+        const renderSondaggi = () => {
+            return `
+                <div class="min-h-screen bg-gray-50 pb-20">
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="container">
+                            <div class="flex justify-between items-center py-4">
+                                <h1 class="text-xl font-semibold text-gray-900">Sondaggi</h1>
+                                <button onclick="showCreatePollModal()" class="btn-primary">
+                                    Nuovo Sondaggio
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="container py-6">
+                        <div id="polls-container" class="space-y-6">
+                            <div class="text-center text-gray-500 py-8">
+                                Caricamento sondaggi...
+                            </div>
+                        </div>
+                    </main>
+
+                    <!-- Create Poll Modal -->
+                    <div id="create-poll-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Crea Nuovo Sondaggio</h3>
+                            <form id="create-poll-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Titolo</label>
+                                    <input type="text" id="poll-title" required class="mt-1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Descrizione</label>
+                                    <textarea id="poll-description" rows="3" class="mt-1"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Opzioni (una per riga)</label>
+                                    <textarea id="poll-options" rows="4" placeholder="Opzione 1&#10;Opzione 2&#10;Opzione 3" required class="mt-1"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Data di scadenza</label>
+                                    <input type="date" id="poll-deadline" required class="mt-1">
+                                </div>
+                                <div class="flex justify-end space-x-3 pt-4">
+                                    <button type="button" onclick="hideCreatePollModal()" class="btn-secondary">
+                                        Annulla
+                                    </button>
+                                    <button type="submit" class="btn-primary">
+                                        Crea Sondaggio
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    ${renderBottomNavigation()}
+                </div>
+            `;
+        };
+
+        const renderSegnalazioni = () => {
+            return `
+                <div class="min-h-screen bg-gray-50 pb-20">
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="container">
+                            <div class="flex justify-between items-center py-4">
+                                <h1 class="text-xl font-semibold text-gray-900">Segnalazioni</h1>
+                                <button onclick="showCreateReportModal()" class="btn-primary">
+                                    Nuova Segnalazione
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="container py-6">
+                        <div id="reports-container" class="space-y-6">
+                            <div class="text-center text-gray-500 py-8">
+                                Caricamento segnalazioni...
+                            </div>
+                        </div>
+                    </main>
+
+                    <!-- Create Report Modal -->
+                    <div id="create-report-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Nuova Segnalazione</h3>
+                            <form id="create-report-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Titolo</label>
+                                    <input type="text" id="report-title" required class="mt-1" placeholder="es. Perdita d'acqua">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Descrizione</label>
+                                    <textarea id="report-description" rows="4" required class="mt-1" placeholder="Descrivi il problema in dettaglio..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Categoria</label>
+                                    <select id="report-category" required class="mt-1">
+                                        <option value="">Seleziona categoria</option>
+                                        <option value="idraulico">Idraulico</option>
+                                        <option value="elettrico">Elettrico</option>
+                                        <option value="riscaldamento">Riscaldamento</option>
+                                        <option value="ascensore">Ascensore</option>
+                                        <option value="pulizie">Pulizie</option>
+                                        <option value="sicurezza">Sicurezza</option>
+                                        <option value="altro">Altro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Priorità</label>
+                                    <select id="report-priority" required class="mt-1">
+                                        <option value="">Seleziona priorità</option>
+                                        <option value="bassa">Bassa</option>
+                                        <option value="media">Media</option>
+                                        <option value="alta">Alta</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Ubicazione</label>
+                                    <input type="text" id="report-location" required class="mt-1" placeholder="es. Scala A, Piano 2">
+                                </div>
+                                <div class="flex justify-end space-x-3 pt-4">
+                                    <button type="button" onclick="hideCreateReportModal()" class="btn-secondary">
+                                        Annulla
+                                    </button>
+                                    <button type="submit" class="btn-primary">
+                                        Crea Segnalazione
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    ${renderBottomNavigation()}
+                </div>
+            `;
+        };
+
+        // Simple placeholder pages
+        const renderBacheca = () => {
+            return `
+                <div class="min-h-screen bg-gray-50 pb-20">
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="container">
+                            <div class="flex justify-between items-center py-4">
+                                <h1 class="text-xl font-semibold text-gray-900">Bacheca Documenti</h1>
+                            </div>
+                        </div>
+                    </header>
+                    <main class="container py-6">
+                        <div class="bg-white shadow rounded-lg p-6">
+                            <h2 class="text-lg font-medium text-gray-900 mb-4">Documenti del Condominio</h2>
+                            <p class="text-gray-600">Sezione in sviluppo - Qui potrai visualizzare e scaricare i documenti del condominio.</p>
+                        </div>
+                    </main>
+                    ${renderBottomNavigation()}
+                </div>
+            `;
+        };
+
+        const renderProfilo = () => {
+            return `
+                <div class="min-h-screen bg-gray-50 pb-20">
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="container">
+                            <div class="flex justify-between items-center py-4">
+                                <h1 class="text-xl font-semibold text-gray-900">Il Mio Profilo</h1>
+                                <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">
+                                    ${userProfile?.tipoUtente || ''}
+                                </span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="container py-8">
+                        <div id="profile-message" class="hidden mb-6 p-4 rounded-lg"></div>
+
+                        <div class="bg-white shadow rounded-lg">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-900">Informazioni Personali</h3>
+                                <p class="mt-1 text-sm text-gray-600">Aggiorna le tue informazioni personali</p>
+                            </div>
+                            <div class="p-6">
+                                <form id="profile-form" class="space-y-4">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Nome</label>
+                                            <input type="text" id="profile-nome" value="${userProfile?.nome || ''}" required class="mt-1">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Cognome</label>
+                                            <input type="text" id="profile-cognome" value="${userProfile?.cognome || ''}" required class="mt-1">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                                        <input type="email" id="profile-email" value="${currentUser?.email || ''}" required class="mt-1">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Telefono</label>
+                                        <input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="123-456-7890" class="mt-1">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Appartamento</label>
+                                        <input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="es. A12" class="mt-1">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
+                                        <select id="profile-tipo-utente" class="mt-1">
+                                            <option value="condomino" ${userProfile?.tipoUtente === 'condomino' ? 'selected' : ''}>Condomino</option>
+                                            <option value="amministratore" ${userProfile?.tipoUtente === 'amministratore' ? 'selected' : ''}>Amministratore</option>
+                                            <option value="portiere" ${userProfile?.tipoUtente === 'portiere' ? 'selected' : ''}>Portiere</option>
+                                        </select>
+                                    </div>
+
+                                    <button type="submit" class="w-full btn-primary">
+                                        Salva Modifiche
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </main>
+
+                    ${renderBottomNavigation()}
+                </div>
+            `;
+        };
+
+        // Main render function
+        const renderCurrentPage = () => {
+            const app = document.getElementById('app');
+            
+            switch (currentPage) {
+                case 'login':
+                    app.innerHTML = renderLoginPage();
+                    setupLoginHandlers();
+                    break;
+                case 'dashboard':
+                    app.innerHTML = renderDashboard();
+                    loadRecentActivities();
+                    break;
+                case 'sondaggi':
+                    app.innerHTML = renderSondaggi();
+                    loadPolls();
+                    setupPollHandlers();
+                    break;
+                case 'segnalazioni':
+                    app.innerHTML = renderSegnalazioni();
+                    loadReports();
+                    setupReportHandlers();
+                    break;
+                case 'profilo':
+                    app.innerHTML = renderProfilo();
+                    setupProfileHandlers();
+                    break;
+                case 'bacheca':
+                    app.innerHTML = renderBacheca();
+                    break;
+                default:
+                    app.innerHTML = renderLoginPage();
+                    setupLoginHandlers();
+            }
+        };
+
+        // Event handlers setup
+        const setupLoginHandlers = () => {
+            let isRegisterMode = false;
+            
+            const toggleAuth = document.getElementById('toggle-auth');
+            const authTitle = document.getElementById('auth-title');
+            const authSubtitle = document.getElementById('auth-subtitle');
+            const authSubmit = document.getElementById('auth-submit');
+            const registerFields = document.getElementById('register-fields');
+            const authForm = document.getElementById('auth-form');
+            const forgotPassword = document.getElementById('forgot-password');
+
+            if (toggleAuth) {
+                toggleAuth.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    isRegisterMode = !isRegisterMode;
+                    
+                    if (isRegisterMode) {
+                        authTitle.textContent = 'Registrati';
+                        authSubtitle.textContent = 'Crea il tuo account per accedere al portale';
+                        authSubmit.textContent = 'Registrati';
+                        toggleAuth.textContent = 'Hai già un account? Accedi';
+                        registerFields.classList.remove('hidden');
+                        forgotPassword.classList.add('hidden');
+                    } else {
+                        authTitle.textContent = 'Accedi';
+                        authSubtitle.textContent = 'Accedi al portale del condominio';
+                        authSubmit.textContent = 'Accedi';
+                        toggleAuth.textContent = 'Non hai un account? Registrati';
+                        registerFields.classList.add('hidden');
+                        forgotPassword.classList.remove('hidden');
+                    }
+                });
+            }
+
+            if (authForm) {
+                authForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    const errorDiv = document.getElementById('error-message');
+                    const successDiv = document.getElementById('success-message');
+                    
+                    errorDiv.classList.add('hidden');
+                    successDiv.classList.add('hidden');
+
+                    try {
+                        if (isRegisterMode) {
+                            const confirmPassword = document.getElementById('confirm-password').value;
+                            const nome = document.getElementById('nome').value;
+                            const cognome = document.getElementById('cognome').value;
+                            const tipoUtente = document.getElementById('tipo-utente').value;
+                            const appartamento = document.getElementById('appartamento').value;
+                            const telefono = document.getElementById('telefono').value;
+
+                            if (password !== confirmPassword) {
+                                throw new Error('Le password non coincidono');
+                            }
+
+                            if (!nome || !cognome || !tipoUtente) {
+                                throw new Error('Compila tutti i campi obbligatori');
+                            }
+
+                            await register(email, password, {
+                                nome,
+                                cognome,
+                                tipoUtente,
+                                appartamento,
+                                telefono
+                            });
+                            
+                            successDiv.textContent = 'Registrazione completata con successo!';
+                            successDiv.classList.remove('hidden');
+                        } else {
+                            await login(email, password);
+                        }
+                    } catch (error) {
+                        errorDiv.textContent = error.message;
+                        errorDiv.classList.remove('hidden');
+                    }
+                });
+            }
+
+            if (forgotPassword) {
+                forgotPassword.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('email').value;
+                    const errorDiv = document.getElementById('error-message');
+                    const successDiv = document.getElementById('success-message');
+                    
+                    if (!email) {
+                        errorDiv.textContent = 'Inserisci la tua email per reimpostare la password';
+                        errorDiv.classList.remove('hidden');
+                        return;
+                    }
+
+                    try {
+                        await resetPassword(email);
+                        successDiv.textContent = 'Email di reset password inviata!';
+                        successDiv.classList.remove('hidden');
+                        errorDiv.classList.add('hidden');
+                    } catch (error) {
+                        errorDiv.textContent = error.message;
+                        errorDiv.classList.remove('hidden');
+                    }
+                });
+            }
+        };
+
+        const setupPollHandlers = () => {
+            const createPollForm = document.getElementById('create-poll-form');
+            
+            if (createPollForm) {
+                createPollForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const title = document.getElementById('poll-title').value;
+                    const description = document.getElementById('poll-description').value;
+                    const optionsText = document.getElementById('poll-options').value;
+                    const deadline = document.getElementById('poll-deadline').value;
+                    
+                    const options = optionsText.split('\n').filter(opt => opt.trim()).map(opt => ({
+                        text: opt.trim(),
+                        votes: 0
+                    }));
+
+                    try {
+                        await addDoc(collection(db, 'polls'), {
+                            title,
+                            description,
+                            options,
+                            deadline: new Date(deadline),
+                            createdBy: userProfile.nome + ' ' + userProfile.cognome,
+                            createdById: currentUser.uid,
+                            createdAt: serverTimestamp(),
+                            voters: []
+                        });
+
+                        await logActivity('poll_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
+
+                        hideCreatePollModal();
+                        loadPolls();
+                    } catch (error) {
+                        console.error('Errore nella creazione del sondaggio:', error);
+                    }
+                });
+            }
+        };
+
+        const setupReportHandlers = () => {
+            const createReportForm = document.getElementById('create-report-form');
+            
+            if (createReportForm) {
+                createReportForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const title = document.getElementById('report-title').value;
+                    const description = document.getElementById('report-description').value;
+                    const category = document.getElementById('report-category').value;
+                    const priority = document.getElementById('report-priority').value;
+                    const location = document.getElementById('report-location').value;
+
+                    try {
+                        await addDoc(collection(db, 'reports'), {
+                            title,
+                            description,
+                            category,
+                            priority,
+                            location,
+                            status: 'aperta',
+                            createdBy: userProfile.nome + ' ' + userProfile.cognome,
+                            createdById: currentUser.uid,
+                            createdAt: serverTimestamp()
+                        });
+
+                        await logActivity('report_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title, priority });
+
+                        hideCreateReportModal();
+                        loadReports();
+                    } catch (error) {
+                        console.error('Errore nella creazione della segnalazione:', error);
+                    }
+                });
+            }
+        };
+
+        const setupProfileHandlers = () => {
+            const profileForm = document.getElementById('profile-form');
+            
+            if (profileForm) {
+                profileForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const nome = document.getElementById('profile-nome').value;
+                    const cognome = document.getElementById('profile-cognome').value;
+                    const telefono = document.getElementById('profile-telefono').value;
+                    const appartamento = document.getElementById('profile-appartamento').value;
+                    const tipoUtente = document.getElementById('profile-tipo-utente').value;
+                    
+                    try {
+                        await updateDoc(doc(db, 'users', currentUser.uid), {
+                            nome,
+                            cognome,
+                            telefono,
+                            appartamento,
+                            tipoUtente
+                        });
+
+                        await loadUserProfile(currentUser);
+                        showProfileMessage('success', 'Profilo aggiornato con successo!');
+                    } catch (error) {
+                        showProfileMessage('error', 'Errore nell\'aggiornamento del profilo: ' + error.message);
+                    }
+                });
+            }
+        };
+
+        // Helper functions
+        const showProfileMessage = (type, text) => {
+            const messageDiv = document.getElementById('profile-message');
+            if (messageDiv) {
+                messageDiv.className = `mb-6 p-4 rounded-lg ${type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`;
+                messageDiv.textContent = text;
+                messageDiv.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 5000);
+            }
+        };
+
+        const showCreatePollModal = () => {
+            const modal = document.getElementById('create-poll-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        };
+
+        const hideCreatePollModal = () => {
+            const modal = document.getElementById('create-poll-modal');
+            const form = document.getElementById('create-poll-form');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            if (form) {
+                form.reset();
+            }
+        };
+
+        const showCreateReportModal = () => {
+            const modal = document.getElementById('create-report-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        };
+
+        const hideCreateReportModal = () => {
+            const modal = document.getElementById('create-report-modal');
+            const form = document.getElementById('create-report-form');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            if (form) {
+                form.reset();
+            }
+        };
+
+        const updateReportStatus = async (reportId, newStatus) => {
+            try {
+                await updateDoc(doc(db, 'reports', reportId), {
+                    status: newStatus,
+                    updatedAt: serverTimestamp()
+                });
+
+                await logActivity('report_updated', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { 
+                    reportId, 
+                    newStatus 
+                });
+
+                loadReports();
+            } catch (error) {
+                console.error('Errore nell\'aggiornamento dello stato:', error);
+            }
+        };
+
+        const loadPolls = async () => {
+            try {
+                const pollsQuery = query(collection(db, 'polls'), orderBy('createdAt', 'desc'));
+                const pollsSnapshot = await getDocs(pollsQuery);
+                const pollsContainer = document.getElementById('polls-container');
+                
+                if (!pollsContainer) return;
+                
+                if (pollsSnapshot.empty) {
+                    pollsContainer.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Nessun sondaggio</h3>
+                            <p class="mt-1 text-sm text-gray-500">Inizia creando il primo sondaggio.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const pollsHtml = pollsSnapshot.docs.map(doc => {
+                    const poll = doc.data();
+                    const deadline = poll.deadline.toDate();
+                    const isExpired = deadline < new Date();
+                    const hasVoted = poll.voters && poll.voters.includes(currentUser.uid);
+                    
+                    return `
+                        <div class="bg-white shadow rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-900">${poll.title}</h3>
+                                    <p class="text-sm text-gray-600 mt-1">${poll.description || ''}</p>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        Creato da ${poll.createdBy} • Scadenza: ${deadline.toLocaleDateString('it-IT')}
+                                    </p>
+                                </div>
+                                <span class="badge ${isExpired ? 'badge-admin' : 'badge-condomino'}">
+                                    ${isExpired ? 'Scaduto' : 'Attivo'}
+                                </span>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                ${poll.options.map((option, index) => {
+                                    const totalVotes = poll.options.reduce((sum, opt) => sum + opt.votes, 0);
+                                    const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+                                    
+                                    return `
+                                        <div class="relative">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-sm font-medium text-gray-900">${option.text}</span>
+                                                <span class="text-sm text-gray-500">${option.votes} voti (${percentage}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${percentage}%"></div>
+                                            </div>
+                                            ${!isExpired && !hasVoted ? `
+                                                <button onclick="voteOnPoll('${doc.id}', ${index})" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"></button>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            
+                            ${hasVoted ? `
+                                <p class="mt-4 text-sm text-green-700 font-medium">✓ Hai già votato in questo sondaggio</p>
+                            ` : isExpired ? `
+                                <p class="mt-4 text-sm text-red-700 font-medium">Sondaggio scaduto</p>
+                            ` : `
+                                <p class="mt-4 text-sm text-blue-600 font-medium">Clicca su un'opzione per votare</p>
+                            `}
+                        </div>
+                    `;
+                }).join('');
+                
+                pollsContainer.innerHTML = pollsHtml;
+            } catch (error) {
+                console.error('Errore nel caricamento dei sondaggi:', error);
+            }
+        };
+
+        const loadReports = async () => {
+            try {
+                const reportsQuery = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+                const reportsSnapshot = await getDocs(reportsQuery);
+                const reportsContainer = document.getElementById('reports-container');
+                
+                if (!reportsContainer) return;
+                
+                if (reportsSnapshot.empty) {
+                    reportsContainer.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Nessuna segnalazione</h3>
+                            <p class="mt-1 text-sm text-gray-500">Inizia creando la prima segnalazione.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const reportsHtml = reportsSnapshot.docs.map(doc => {
+                    const report = doc.data();
+                    const createdAt = report.createdAt.toDate();
+                    const canManage = userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'portiere';
+                    
+                    return `
+                        <div class="bg-white shadow rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <h3 class="text-lg font-medium text-gray-900">${report.title}</h3>
+                                        <span class="badge ${getPriorityColor(report.priority)}">
+                                            ${report.priority.charAt(0).toUpperCase() + report.priority.slice(1)}
+                                        </span>
+                                        <span class="badge ${getStatusColor(report.status)}">
+                                            ${report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">${report.description}</p>
+                                    <div class="text-xs text-gray-500 space-y-1">
+                                        <p><strong>Categoria:</strong> ${report.category}</p>
+                                        <p><strong>Ubicazione:</strong> ${report.location}</p>
+                                        <p><strong>Segnalato da:</strong> ${report.createdBy}</p>
+                                        <p><strong>Data:</strong> ${createdAt.toLocaleDateString('it-IT')} ${createdAt.toLocaleTimeString('it-IT')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${canManage && report.status !== 'chiusa' ? `
+                                <div class="flex space-x-2 mt-4">
+                                    ${report.status === 'aperta' ? `
+                                        <button onclick="updateReportStatus('${doc.id}', 'in-corso')" class="btn-warning text-xs">
+                                            Prendi in carico
+                                        </button>
+                                    ` : ''}
+                                    <button onclick="updateReportStatus('${doc.id}', 'chiusa')" class="btn-primary text-xs">
+                                        Chiudi segnalazione
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                reportsContainer.innerHTML = reportsHtml;
+            } catch (error) {
+                console.error('Errore nel caricamento delle segnalazioni:', error);
+            }
+        };
+
+        const voteOnPoll = async (pollId, optionIndex) => {
+            try {
+                const pollRef = doc(db, 'polls', pollId);
+                const pollDoc = await getDoc(pollRef);
+                
+                if (!pollDoc.exists()) return;
+                
+                const pollData = pollDoc.data();
+                
+                if (pollData.voters && pollData.voters.includes(currentUser.uid)) {
+                    alert('Hai già votato in questo sondaggio!');
+                    return;
+                }
+                
+                const updatedOptions = [...pollData.options];
+                updatedOptions[optionIndex].votes += 1;
+                
+                const updatedVoters = [...(pollData.voters || []), currentUser.uid];
+                
+                await updateDoc(pollRef, {
+                    options: updatedOptions,
+                    voters: updatedVoters
+                });
+
+                await logActivity('poll_voted', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { 
+                    pollTitle: pollData.title, 
+                    option: pollData.options[optionIndex].text 
+                });
+                
+                loadPolls();
+            } catch (error) {
+                console.error('Errore nel voto:', error);
+            }
+        };
+
+        const loadRecentActivities = async () => {
+            try {
+                const activitiesQuery = query(
+                    collection(db, 'activities'),
+                    orderBy('timestamp', 'desc'),
+                    limit(5)
+                );
+
+                onSnapshot(activitiesQuery, (snapshot) => {
+                    const activitiesContainer = document.getElementById('recent-activities');
+                    
+                    if (!activitiesContainer) return;
+                    
+                    if (snapshot.empty) {
+                        activitiesContainer.innerHTML = `
+                            <div class="text-center text-gray-500 py-4">
+                                Nessuna attività recente
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const activitiesHtml = snapshot.docs.map(doc => {
+                        const activity = doc.data();
+                        const timeAgo = formatTime(activity.timestamp);
+                        
+                        let activityText = '';
+                        switch (activity.type) {
+                            case 'user_registered':
+                                activityText = 'si è registrato';
+                                break;
+                            case 'poll_created':
+                                activityText = `ha creato il sondaggio "${activity.details.title}"`;
+                                break;
+                            case 'poll_voted':
+                                activityText = `ha votato nel sondaggio "${activity.details.pollTitle}"`;
+                                break;
+                            case 'report_created':
+                                activityText = `ha creato una segnalazione "${activity.details.title}"`;
+                                break;
+                            case 'report_updated':
+                                activityText = `ha aggiornato una segnalazione`;
+                                break;
+                            default:
+                                activityText = 'ha eseguito un\'azione';
+                        }
+                        
+                        return `
+                            <div class="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900">${activity.userName} ${activityText}</p>
+                                    <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    activitiesContainer.innerHTML = activitiesHtml;
+                });
+            } catch (error) {
+                console.error('Errore nel caricamento delle attività:', error);
+            }
+        };
+
+        // Make functions global for onclick handlers
+        window.navigateTo = navigateTo;
+        window.logout = logout;
+        window.showCreatePollModal = showCreatePollModal;
+        window.hideCreatePollModal = hideCreatePollModal;
+        window.showCreateReportModal = showCreateReportModal;
+        window.hideCreateReportModal = hideCreateReportModal;
+        window.voteOnPoll = voteOnPoll;
+        window.updateReportStatus = updateReportStatus;
+
+        // Auth state listener
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadUserProfile(user);
+                if (currentPage === 'login') {
+                    navigateTo('dashboard');
+                } else {
+                    renderCurrentPage();
+                }
+            } else {
+                currentUser = null;
+                userProfile = null;
+                navigateTo('login');
+            }
+        });
+
+        // Initial render
+        renderCurrentPage();
+    </script>
+</body>
+</html>
+
