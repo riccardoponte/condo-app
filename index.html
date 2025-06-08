@@ -331,6 +331,10 @@
         .grid-cols-2 {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+        
+        .grid-cols-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
 
         .gap-4 {
             gap: 1rem;
@@ -691,15 +695,14 @@
 
         /* Responsive */
         @media (min-width: 768px) {
-            .grid-cols-1 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+            .grid-cols-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
 
         @media (min-width: 1024px) {
-            .grid-cols-1 {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
+            .lg-grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .lg-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
 
         /* User type badges */
@@ -710,68 +713,25 @@
             border-radius: 9999px;
         }
 
-        .badge-admin {
-            background-color: #fef2f2;
-            color: #b91c1c;
-        }
-
-        .badge-portiere {
-            background-color: #eff6ff;
-            color: #1d4ed8;
-        }
-
-        .badge-condomino {
-            background-color: #f0fdf4;
-            color: #15803d;
-        }
+        .badge-admin { background-color: #fef2f2; color: #b91c1c; }
+        .badge-custode { background-color: #eff6ff; color: #1d4ed8; }
+        .badge-condomino { background-color: #f0fdf4; color: #15803d; }
+        .badge-consigliere { background-color: #fefce8; color: #a16207; }
+        .badge-fornitore { background-color: #f3f4f6; color: #374151; }
 
         /* Priority badges */
-        .priority-alta {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        .priority-media {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        .priority-bassa {
-            background-color: #dcfce7;
-            color: #166534;
-        }
+        .priority-alta { background-color: #fee2e2; color: #991b1b; }
+        .priority-media { background-color: #fef3c7; color: #92400e; }
+        .priority-bassa { background-color: #dcfce7; color: #166534; }
 
         /* Status badges */
-        .status-aperta {
-            background-color: #dbeafe;
-            color: #1e40af;
-        }
-
-        .status-in-corso {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-chiusa {
-            background-color: #dcfce7;
-            color: #166534;
-        }
+        .status-aperta { background-color: #dbeafe; color: #1e40af; }
+        .status-in-corso { background-color: #fef3c7; color: #92400e; }
+        .status-chiusa { background-color: #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Loading... -->
-        <div class="min-h-screen flex items-center justify-center">
-            <div class="text-center">
-                <div class="h-12 w-12 mx-auto mb-4 text-blue-600">
-                    <svg fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600">Caricamento...</p>
-            </div>
-        </div>
-    </div>
+    <div id="app"><!-- App content will be rendered here --></div>
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -790,7 +750,6 @@
             getDoc,
             collection,
             addDoc,
-            getDocs,
             query,
             orderBy,
             limit,
@@ -822,91 +781,60 @@
         let currentPage = 'login';
         let communicationsListener = null;
 
-        // Activity logging
+        // --- Core Functions ---
+
         const logActivity = async (type, userId, userName, details = {}) => {
             try {
-                await addDoc(collection(db, 'activities'), {
-                    type, userId, userName, details,
-                    timestamp: serverTimestamp(),
-                    createdAt: new Date()
-                });
-            } catch (error) {
-                console.error('Errore nel logging:', error);
-            }
+                await addDoc(collection(db, 'activities'), { type, userId, userName, details, timestamp: serverTimestamp(), createdAt: new Date() });
+            } catch (error) { console.error('Errore nel logging:', error); }
         };
-
-        // Auth functions
         const login = async (email, password) => await signInWithEmailAndPassword(auth, email, password);
-
         const register = async (email, password, userData) => {
             const result = await createUserWithEmailAndPassword(auth, email, password);
             await setDoc(doc(db, 'users', result.user.uid), {
-                nome: userData.nome,
-                cognome: userData.cognome,
-                email: email,
-                tipoUtente: userData.tipoUtente,
-                appartamento: userData.appartamento || '',
-                telefono: userData.telefono || '',
-                createdAt: new Date().toISOString()
+                nome: userData.nome, cognome: userData.cognome, email: email, tipoUtente: userData.tipoUtente,
+                appartamento: userData.appartamento || '', telefono: userData.telefono || '', createdAt: new Date().toISOString()
             });
             await logActivity('user_registered', result.user.uid, `${userData.nome} ${userData.cognome}`, { userType: userData.tipoUtente });
             return result;
         };
-
         const logout = async () => {
-            if (communicationsListener) {
-                communicationsListener();
-                communicationsListener = null;
-            }
+            if (communicationsListener) { communicationsListener(); communicationsListener = null; }
             await signOut(auth);
-            currentUser = null;
-            userProfile = null;
-            navigateTo('login');
+            currentUser = null; userProfile = null; navigateTo('login');
         };
-
         const resetPassword = async (email) => await sendPasswordResetEmail(auth, email);
-
         const loadUserProfile = async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
-                if (userDoc.exists()) {
-                    userProfile = userDoc.data();
-                }
+                if (userDoc.exists()) { userProfile = userDoc.data(); }
             }
         };
 
+        // --- Navigation & UI Helpers ---
+
         const navigateTo = (page) => {
+            if (page === 'sondaggi' && userProfile?.tipoUtente === 'custode') {
+                navigateTo('dashboard');
+                return;
+            }
             currentPage = page;
             renderCurrentPage();
         };
 
-        const getUserTypeColor = (type) => {
-            switch (type) {
-                case 'amministratore': return 'badge-admin';
-                case 'portiere': return 'badge-portiere';
-                case 'condomino': return 'badge-condomino';
-                default: return 'badge-condomino';
-            }
-        };
+        const getUserTypeColor = (type) => ({
+            'amministratore': 'badge-admin', 'custode': 'badge-custode', 'condomino': 'badge-condomino',
+            'consigliere': 'badge-consigliere', 'fornitore': 'badge-fornitore'
+        }[type] || 'badge-condomino');
 
-        const getPriorityColor = (priority) => {
-            switch (priority) {
-                case 'alta': return 'priority-alta';
-                case 'media': return 'priority-media';
-                case 'bassa': return 'priority-bassa';
-                default: return 'priority-bassa';
-            }
-        };
-
-        const getStatusColor = (status) => {
-            switch (status) {
-                case 'aperta': return 'status-aperta';
-                case 'in-corso': return 'status-in-corso';
-                case 'chiusa': return 'status-chiusa';
-                default: return 'status-aperta';
-            }
-        };
-
+        const getPriorityColor = (priority) => ({
+            'alta': 'priority-alta', 'media': 'priority-media', 'bassa': 'priority-bassa'
+        }[priority] || 'priority-bassa');
+        
+        const getStatusColor = (status) => ({
+            'aperta': 'status-aperta', 'in-corso': 'status-in-corso', 'chiusa': 'status-chiusa'
+        }[status] || 'status-aperta');
+        
         const formatTime = (timestamp) => {
             if (!timestamp) return '';
             const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -917,7 +845,9 @@
             if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h fa`;
             return `${Math.floor(diffInMinutes / 1440)}g fa`;
         };
-        
+
+        // --- Page Rendering Functions ---
+
         const renderLoginPage = () => `
             <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
                 <div class="max-w-md w-full space-y-8">
@@ -932,46 +862,23 @@
                     <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded"></div>
                     <form class="mt-8 space-y-6" id="auth-form">
                         <div class="space-y-4">
-                            <div>
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                <input id="email" name="email" type="email" required placeholder="la-tua-email@esempio.com" class="mt-1">
-                            </div>
-                            <div>
-                                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                                <input id="password" name="password" type="password" required placeholder="••••••••" class="mt-1">
-                            </div>
+                            <div><label for="email" class="block text-sm font-medium text-gray-700">Email</label><input id="email" name="email" type="email" required placeholder="la-tua-email@esempio.com" class="mt-1"></div>
+                            <div><label for="password" class="block text-sm font-medium text-gray-700">Password</label><input id="password" name="password" type="password" required placeholder="••••••••" class="mt-1"></div>
                             <div id="register-fields" class="hidden space-y-4">
-                                <div>
-                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Conferma Password</label>
-                                    <input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="mt-1">
-                                </div>
+                                <div><label for="confirm-password" class="block text-sm font-medium text-gray-700">Conferma Password</label><input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="mt-1"></div>
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="nome" class="block text-sm font-medium text-gray-700">Nome</label>
-                                        <input id="nome" name="nome" type="text" placeholder="Mario" class="mt-1">
-                                    </div>
-                                    <div>
-                                        <label for="cognome" class="block text-sm font-medium text-gray-700">Cognome</label>
-                                        <input id="cognome" name="cognome" type="text" placeholder="Rossi" class="mt-1">
-                                    </div>
+                                    <div><label for="nome" class="block text-sm font-medium text-gray-700">Nome</label><input id="nome" name="nome" type="text" placeholder="Mario" class="mt-1"></div>
+                                    <div><label for="cognome" class="block text-sm font-medium text-gray-700">Cognome</label><input id="cognome" name="cognome" type="text" placeholder="Rossi" class="mt-1"></div>
                                 </div>
                                 <div>
                                     <label for="tipo-utente" class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
                                     <select id="tipo-utente" name="tipo-utente" class="mt-1">
-                                        <option value="">Seleziona il tipo di utente</option>
-                                        <option value="condomino">Condomino</option>
-                                        <option value="amministratore">Amministratore</option>
-                                        <option value="portiere">Portiere</option>
+                                        <option value="">Seleziona il tipo di utente</option><option value="condomino">Condomino</option><option value="amministratore">Amministratore</option>
+                                        <option value="custode">Custode</option><option value="consigliere">Consigliere</option><option value="fornitore">Fornitore</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label for="appartamento" class="block text-sm font-medium text-gray-700">Appartamento</label>
-                                    <input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="mt-1">
-                                </div>
-                                <div>
-                                    <label for="telefono" class="block text-sm font-medium text-gray-700">Telefono</label>
-                                    <input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="mt-1">
-                                </div>
+                                <div><label for="appartamento" class="block text-sm font-medium text-gray-700">Appartamento</label><input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="mt-1"></div>
+                                <div><label for="telefono" class="block text-sm font-medium text-gray-700">Telefono</label><input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="mt-1"></div>
                             </div>
                         </div>
                         <div><button type="submit" id="auth-submit" class="w-full btn-primary">Accedi</button></div>
@@ -985,484 +892,113 @@
 
         const renderBottomNavigation = () => `
             <nav class="bottom-nav">
-                <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                    <span>Home</span>
-                </a>
-                <a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
-                    <span id="bacheca-notification-badge" class="notification-badge hidden"></span>
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
-                    <span>Bacheca</span>
-                </a>
-                <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${currentPage === 'sondaggi' ? 'active' : ''}">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
-                    <span>Sondaggi</span>
-                </a>
-                <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
-                    <span>Segnala</span>
-                </a>
-                <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}">
-                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
-                    <span>Profilo</span>
-                </a>
+                <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
+                <a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}"><span id="bacheca-notification-badge" class="notification-badge hidden"></span><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg><span>Bacheca</span></a>
+                ${userProfile?.tipoUtente !== 'custode' ? `
+                <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${currentPage === 'sondaggi' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg><span>Sondaggi</span></a>
+                ` : ''}
+                <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg><span>Segnala</span></a>
+                <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg><span>Profilo</span></a>
             </nav>`;
 
-        const renderDashboard = () => `
+        const renderDashboard = () => {
+            const isCustodian = userProfile?.tipoUtente === 'custode';
+            const gridClass = isCustodian ? 'lg-grid-cols-3' : 'lg-grid-cols-4';
+
+            const cards = [
+                `<div onclick="navigateTo('bacheca')" class="card cursor-pointer group"><div class="p-6"><div class="icon-container bg-blue-500 group-hover:scale-110 transition-transform"><svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div><h3 class="text-lg font-medium text-gray-900">Bacheca</h3><p class="mt-2 text-sm text-gray-500">Leggi le ultime comunicazioni</p><button class="mt-4 w-full bg-blue-50 text-blue-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-blue-100 transition-colors">Leggi</button></div></div>`,
+                !isCustodian ? `<div onclick="navigateTo('sondaggi')" class="card cursor-pointer group"><div class="p-6"><div class="icon-container bg-green-500 group-hover:scale-110 transition-transform"><svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div><h3 class="text-lg font-medium text-gray-900">Sondaggi</h3><p class="mt-2 text-sm text-gray-500">Partecipa o crea un sondaggio</p><button class="mt-4 w-full bg-green-50 text-green-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-green-100 transition-colors">Accedi</button></div></div>` : null,
+                `<div onclick="navigateTo('segnalazioni')" class="card cursor-pointer group"><div class="p-6"><div class="icon-container bg-orange-500 group-hover:scale-110 transition-transform"><svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div><h3 class="text-lg font-medium text-gray-900">Segnalazioni</h3><p class="mt-2 text-sm text-gray-500">Invia o visualizza segnalazioni</p><button class="mt-4 w-full bg-orange-50 text-orange-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-orange-100 transition-colors">Accedi</button></div></div>`,
+                `<div onclick="navigateTo('infoUtili')" class="card cursor-pointer group"><div class="p-6"><div class="icon-container bg-purple-500 group-hover:scale-110 transition-transform"><svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div><h3 class="text-lg font-medium text-gray-900">Info utili</h3><p class="mt-2 text-sm text-gray-500">Numeri e orari</p><button class="mt-4 w-full bg-purple-50 text-purple-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-purple-100 transition-colors">Consulta</button></div></div>`
+            ].filter(Boolean).join('');
+
+            return `
             <div class="min-h-screen bg-gray-50 pb-20">
-                <header class="bg-white shadow-sm border-b border-gray-200">
-                    <div class="container">
-                        <div class="flex justify-between items-center py-4">
-                            <div class="flex items-center">
-                                <div class="h-8 w-8 text-blue-600 mr-3"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
-                                <h1 class="text-xl font-semibold text-gray-900">Gestione Condominio</h1>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-sm text-gray-700">${userProfile?.nome || ''} ${userProfile?.cognome || ''}</span>
-                                    <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">${userProfile?.tipoUtente || ''}</span>
-                                </div>
-                                <button onclick="logout()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Esci</button>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                <header class="bg-white shadow-sm border-b border-gray-200"><div class="container"><div class="flex justify-between items-center py-4">
+                    <div class="flex items-center"><div class="h-8 w-8 text-blue-600 mr-3"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div><h1 class="text-xl font-semibold text-gray-900">Gestione Condominio</h1></div>
+                    <div class="flex items-center space-x-4"><div class="flex items-center space-x-2"><span class="text-sm text-gray-700">${userProfile?.nome || ''} ${userProfile?.cognome || ''}</span><span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">${userProfile?.tipoUtente || ''}</span></div><button onclick="logout()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Esci</button></div>
+                </div></div></header>
                 <main class="container py-6">
-                    <div class="py-6">
-                        <h1 class="text-2xl font-bold text-gray-900">Benvenuto, ${userProfile?.nome || 'Utente'}!</h1>
-                        <p class="mt-1 text-sm text-gray-600">Gestisci le attività del condominio dal tuo pannello di controllo.</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <div onclick="navigateTo('bacheca')" class="card cursor-pointer group">
-                            <div class="p-6">
-                                <div class="icon-container bg-blue-500 group-hover:scale-110 transition-transform">
-                                    <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
-                                </div>
-                                <h3 class="text-lg font-medium text-gray-900">Bacheca</h3>
-                                <p class="mt-2 text-sm text-gray-500">Leggi le ultime comunicazioni</p>
-                                <button class="mt-4 w-full bg-blue-50 text-blue-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-blue-100 transition-colors">Leggi</button>
-                            </div>
-                        </div>
-                        <div onclick="navigateTo('sondaggi')" class="card cursor-pointer group">
-                            <div class="p-6">
-                                <div class="icon-container bg-green-500 group-hover:scale-110 transition-transform">
-                                    <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
-                                </div>
-                                <h3 class="text-lg font-medium text-gray-900">Sondaggi</h3>
-                                <p class="mt-2 text-sm text-gray-500">Partecipa o crea un sondaggio</p>
-                                <button class="mt-4 w-full bg-green-50 text-green-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-green-100 transition-colors">Accedi</button>
-                            </div>
-                        </div>
-                        <div onclick="navigateTo('segnalazioni')" class="card cursor-pointer group">
-                            <div class="p-6">
-                                <div class="icon-container bg-orange-500 group-hover:scale-110 transition-transform">
-                                    <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-                                </div>
-                                <h3 class="text-lg font-medium text-gray-900">Segnalazioni</h3>
-                                <p class="mt-2 text-sm text-gray-500">Segnala problemi e guasti</p>
-                                <button class="mt-4 w-full bg-orange-50 text-orange-700 py-2 px-4 rounded-md text-sm font-medium group-hover:bg-orange-100 transition-colors">Segnala</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white shadow rounded-lg mt-12">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Attività Recenti</h3>
-                        </div>
-                        <div class="p-6">
-                            <div id="recent-activities" class="space-y-3">
-                                <div class="text-center text-gray-500 py-4">Caricamento attività...</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="py-6"><h1 class="text-2xl font-bold text-gray-900">Benvenuto, ${userProfile?.nome || 'Utente'}!</h1><p class="mt-1 text-sm text-gray-600">Gestisci le attività del condominio dal tuo pannello di controllo.</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 ${gridClass} gap-6 mb-8">${cards}</div>
+                    <div class="bg-white shadow rounded-lg mt-12"><div class="px-6 py-4 border-b border-gray-200"><h3 class="text-lg font-medium text-gray-900">Attività Recenti</h3></div><div class="p-6"><div id="recent-activities" class="space-y-3"><div class="text-center text-gray-500 py-4">Caricamento attività...</div></div></div></div>
                 </main>
                 ${renderBottomNavigation()}
             </div>`;
-
-        const renderBacheca = () => {
-            const isAdmin = userProfile?.tipoUtente === 'amministratore';
-            return `
-                <div class="min-h-screen bg-gray-50 pb-20">
-                    <header class="bg-white shadow-sm border-b border-gray-200">
-                        <div class="container">
-                            <div class="flex justify-between items-center py-4">
-                                <h1 class="text-xl font-semibold text-gray-900">Bacheca Comunicazioni</h1>
-                            </div>
-                        </div>
-                    </header>
-                    <main class="container py-6">
-                        ${isAdmin ? `
-                        <div class="bg-white shadow rounded-lg p-6 mb-8">
-                            <h2 class="text-lg font-medium text-gray-900 mb-4">Pubblica una nuova comunicazione</h2>
-                            <form id="create-communication-form" class="space-y-4">
-                                <div>
-                                    <label for="comm-title" class="block text-sm font-medium text-gray-700">Titolo</label>
-                                    <input type="text" id="comm-title" required class="mt-1" placeholder="Es. Interruzione acqua potabile">
-                                </div>
-                                <div>
-                                    <label for="comm-content" class="block text-sm font-medium text-gray-700">Messaggio</label>
-                                    <textarea id="comm-content" rows="4" required class="mt-1" placeholder="Scrivi qui il contenuto della comunicazione..."></textarea>
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="submit" id="publish-comm-btn" class="btn-primary">Pubblica</button>
-                                </div>
-                            </form>
-                        </div>` : ''}
-                        <div id="communications-list" class="space-y-6">
-                            <div class="p-6 text-center text-gray-500">Caricamento comunicazioni...</div>
-                        </div>
-                    </main>
-                    ${renderBottomNavigation()}
-                </div>`;
         };
         
-        const renderSondaggi = () => `
-            <div class="min-h-screen bg-gray-50 pb-20">
-                <header class="bg-white shadow-sm border-b border-gray-200">
-                    <div class="container">
-                        <div class="flex justify-between items-center py-4">
-                            <h1 class="text-xl font-semibold text-gray-900">Sondaggi</h1>
-                        </div>
-                    </div>
-                </header>
-                <main class="container py-6">
-                    <div class="bg-white shadow rounded-lg p-6 mb-8">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Crea un Nuovo Sondaggio</h3>
-                        <form id="create-poll-form" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Titolo</label>
-                                <input type="text" id="poll-title" required class="mt-1">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Descrizione (opzionale)</label>
-                                <textarea id="poll-description" rows="3" class="mt-1"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Opzioni</label>
-                                <div id="poll-options-list" class="space-y-2"></div>
-                                <button type="button" id="add-poll-option" class="btn-primary mt-2" style="width:auto;padding:0.25rem 0.75rem;font-size:1.2rem;">+</button>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Data di scadenza</label>
-                                <input type="date" id="poll-deadline" required class="mt-1">
-                            </div>
-                            <div class="flex justify-end space-x-3 pt-4">
-                                <button type="reset" class="btn-secondary">Annulla</button>
-                                <button type="submit" class="btn-primary">Crea Sondaggio</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div id="polls-container" class="space-y-6">
-                        <div class="text-center text-gray-500 py-8">Caricamento sondaggi...</div>
-                    </div>
-                </main>
-                ${renderBottomNavigation()}
-            </div>`;
+        const renderBacheca = () => `<div class="min-h-screen bg-gray-50 pb-20"><header class="bg-white shadow-sm border-b border-gray-200"><div class="container"><div class="flex justify-between items-center py-4"><h1 class="text-xl font-semibold text-gray-900">Bacheca Comunicazioni</h1></div></div></header><main class="container py-6">${userProfile?.tipoUtente === 'amministratore' ? `<div class="bg-white shadow rounded-lg p-6 mb-8"><h2 class="text-lg font-medium text-gray-900 mb-4">Pubblica una nuova comunicazione</h2><form id="create-communication-form" class="space-y-4"><div><label for="comm-title" class="block text-sm font-medium text-gray-700">Titolo</label><input type="text" id="comm-title" required class="mt-1" placeholder="Es. Interruzione acqua potabile"></div><div><label for="comm-content" class="block text-sm font-medium text-gray-700">Messaggio</label><textarea id="comm-content" rows="4" required class="mt-1" placeholder="Scrivi qui il contenuto della comunicazione..."></textarea></div><div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn-primary">Pubblica</button></div></form></div>` : ''}<div id="communications-list" class="space-y-6"><div class="p-6 text-center text-gray-500">Caricamento comunicazioni...</div></div></main>${renderBottomNavigation()}</div>`;
+        const renderSondaggi = () => `<div class="min-h-screen bg-gray-50 pb-20"><header class="bg-white shadow-sm border-b border-gray-200"><div class="container"><div class="flex justify-between items-center py-4"><h1 class="text-xl font-semibold text-gray-900">Sondaggi</h1></div></div></header><main class="container py-6"><div class="bg-white shadow rounded-lg p-6 mb-8"><h3 class="text-lg font-medium text-gray-900 mb-4">Crea un Nuovo Sondaggio</h3><form id="create-poll-form" class="space-y-4"><div><label class="block text-sm font-medium text-gray-700">Titolo</label><input type="text" id="poll-title" required class="mt-1"></div><div><label class="block text-sm font-medium text-gray-700">Descrizione (opzionale)</label><textarea id="poll-description" rows="3" class="mt-1"></textarea></div><div><label class="block text-sm font-medium text-gray-700">Opzioni</label><div id="poll-options-list" class="space-y-2"></div><button type="button" id="add-poll-option" class="btn-primary mt-2" style="width:auto;padding:0.25rem 0.75rem;font-size:1.2rem;">+</button></div><div><label class="block text-sm font-medium text-gray-700">Data di scadenza</label><input type="date" id="poll-deadline" required class="mt-1"></div><div class="flex justify-end space-x-3 pt-4"><button type="reset" class="btn-secondary">Annulla</button><button type="submit" class="btn-primary">Crea Sondaggio</button></div></form></div><div id="polls-container" class="space-y-6"><div class="text-center text-gray-500 py-8">Caricamento sondaggi...</div></div></main>${renderBottomNavigation()}</div>`;
+        
+        // MODIFICATO: Ristrutturata la pagina segnalazioni con titoli fissi per tutti
+        const renderSegnalazioni = () => {
+            const isCustodian = userProfile?.tipoUtente === 'custode';
 
-        const renderSegnalazioni = () => `
+            const formRecipientField = isCustodian ? `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Destinatario</label>
+                    <select id="report-recipient" required class="mt-1">
+                        <option value="">Seleziona destinatario...</option>
+                        <option value="amministratore">Amministratore</option>
+                        <option value="consigliere">Consiglieri</option>
+                        <option value="condomino">Tutti i Condomini</option>
+                    </select>
+                </div>` : '';
+            
+            return `
             <div class="min-h-screen bg-gray-50 pb-20">
-                <header class="bg-white shadow-sm border-b border-gray-200">
-                    <div class="container">
-                        <div class="flex justify-between items-center py-4">
-                            <h1 class="text-xl font-semibold text-gray-900">Segnalazioni</h1>
-                        </div>
-                    </div>
-                </header>
+                <header class="bg-white shadow-sm border-b border-gray-200"><div class="container"><div class="flex justify-between items-center py-4"><h1 class="text-xl font-semibold text-gray-900">Segnalazioni</h1></div></div></header>
                 <main class="container py-6">
                     <div class="bg-white shadow rounded-lg p-6 mb-8">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Nuova Segnalazione</h3>
                         <form id="create-report-form" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Titolo</label>
-                                <input type="text" id="report-title" required class="mt-1" placeholder="es. Perdita d'acqua">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Descrizione</label>
-                                <textarea id="report-description" rows="4" required class="mt-1" placeholder="Descrivi il problema in dettaglio..."></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Categoria</label>
-                                <select id="report-category" required class="mt-1">
-                                    <option value="">Seleziona categoria</option>
-                                    <option value="idraulico">Idraulico</option>
-                                    <option value="elettrico">Elettrico</option>
-                                    <option value="riscaldamento">Riscaldamento</option>
-                                    <option value="ascensore">Ascensore</option>
-                                    <option value="pulizie">Pulizie</option>
-                                    <option value="sicurezza">Sicurezza</option>
-                                    <option value="altro">Altro</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Priorità</label>
-                                <select id="report-priority" required class="mt-1">
-                                    <option value="">Seleziona priorità</option>
-                                    <option value="bassa">Bassa</option>
-                                    <option value="media">Media</option>
-                                    <option value="alta">Alta</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Ubicazione</label>
-                                <input type="text" id="report-location" required class="mt-1" placeholder="es. Scala A, Piano 2">
-                            </div>
-                            <div class="flex justify-end pt-4">
-                                <button type="submit" class="btn-primary">Invia Segnalazione</button>
-                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700">Titolo</label><input type="text" id="report-title" required class="mt-1" placeholder="es. Perdita d'acqua"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Descrizione</label><textarea id="report-description" rows="4" required class="mt-1" placeholder="Descrivi il problema in dettaglio..."></textarea></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Categoria</label><select id="report-category" required class="mt-1"><option value="">Seleziona categoria</option><option value="idraulico">Idraulico</option><option value="elettrico">Elettrico</option><option value="riscaldamento">Riscaldamento</option><option value="ascensore">Ascensore</option><option value="pulizie">Pulizie</option><option value="sicurezza">Sicurezza</option><option value="altro">Altro</option></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Priorità</label><select id="report-priority" required class="mt-1"><option value="">Seleziona priorità</option><option value="bassa">Bassa</option><option value="media">Media</option><option value="alta">Alta</option></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Ubicazione</label><input type="text" id="report-location" required class="mt-1" placeholder="es. Scala A, Piano 2"></div>
+                            ${formRecipientField}
+                            <div class="flex justify-end pt-4"><button type="submit" class="btn-primary">Invia Segnalazione</button></div>
                         </form>
                     </div>
-                    <div id="reports-container" class="space-y-6">
-                        <div class="text-center text-gray-500 py-8">Caricamento segnalazioni...</div>
-                    </div>
-                </main>
-                ${renderBottomNavigation()}
-            </div>`;
 
-        const renderProfilo = () => `
-            <div class="min-h-screen bg-gray-50 pb-20">
-                <header class="bg-white shadow-sm border-b border-gray-200">
-                    <div class="container">
-                        <div class="flex justify-between items-center py-4">
-                            <h1 class="text-xl font-semibold text-gray-900">Il Mio Profilo</h1>
-                            <span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">${userProfile?.tipoUtente || ''}</span>
-                        </div>
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Segnalazioni da Gestire</h3>
+                        <div id="reports-main-container" class="space-y-6"><div class="text-center text-gray-500 py-8">Caricamento...</div></div>
                     </div>
-                </header>
-                <main class="container py-8">
-                    <div id="profile-message" class="hidden mb-6 p-4 rounded-lg"></div>
-                    <div class="bg-white shadow rounded-lg">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Informazioni Personali</h3>
-                            <p class="mt-1 text-sm text-gray-600">Aggiorna le tue informazioni personali</p>
-                        </div>
-                        <div class="p-6">
-                            <form id="profile-form" class="space-y-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Nome</label>
-                                        <input type="text" id="profile-nome" value="${userProfile?.nome || ''}" required class="mt-1">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Cognome</label>
-                                        <input type="text" id="profile-cognome" value="${userProfile?.cognome || ''}" required class="mt-1">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Email</label>
-                                    <input type="email" value="${currentUser?.email || ''}" required class="mt-1" disabled>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Telefono</label>
-                                    <input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="123-456-7890" class="mt-1">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Appartamento</label>
-                                    <input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="es. A12" class="mt-1">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Tipo di Utente</label>
-                                    <input type="text" value="${userProfile?.tipoUtente || ''}" class="mt-1" disabled>
-                                </div>
-                                <button type="submit" class="w-full btn-primary">Salva Modifiche</button>
-                            </form>
-                        </div>
+
+                    <div class="mt-12">
+                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Segnalazioni Inviate da te</h3>
+                        <div id="reports-secondary-container" class="space-y-6"><div class="text-center text-gray-500 py-8">Caricamento...</div></div>
                     </div>
                 </main>
                 ${renderBottomNavigation()}
             </div>`;
+        };
+
+        const renderProfilo = () => `<div class="min-h-screen bg-gray-50 pb-20"><header class="bg-white shadow-sm border-b border-gray-200"><div class="container"><div class="flex justify-between items-center py-4"><h1 class="text-xl font-semibold text-gray-900">Il Mio Profilo</h1><span class="badge ${getUserTypeColor(userProfile?.tipoUtente)}">${userProfile?.tipoUtente || ''}</span></div></div></header><main class="container py-8"><div id="profile-message" class="hidden mb-6 p-4 rounded-lg"></div><div class="bg-white shadow rounded-lg"><div class="px-6 py-4 border-b border-gray-200"><h3 class="text-lg font-medium text-gray-900">Informazioni Personali</h3><p class="mt-1 text-sm text-gray-600">Aggiorna le tue informazioni personali</p></div><div class="p-6"><form id="profile-form" class="space-y-4"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-700">Nome</label><input type="text" id="profile-nome" value="${userProfile?.nome || ''}" required class="mt-1"></div><div><label class="block text-sm font-medium text-gray-700">Cognome</label><input type="text" id="profile-cognome" value="${userProfile?.cognome || ''}" required class="mt-1"></div></div><div><label class="block text-sm font-medium text-gray-700">Email</label><input type="email" value="${currentUser?.email || ''}" required class="mt-1" disabled></div><div><label class="block text-sm font-medium text-gray-700">Telefono</label><input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="123-456-7890" class="mt-1"></div><div><label class="block text-sm font-medium text-gray-700">Appartamento</label><input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="es. A12" class="mt-1"></div><div><label class="block text-sm font-medium text-gray-700">Tipo di Utente</label><input type="text" value="${userProfile?.tipoUtente || ''}" class="mt-1" disabled></div><button type="submit" class="w-full btn-primary">Salva Modifiche</button></form></div></div></main>${renderBottomNavigation()}</div>`;
+        const renderInfoUtili = () => `<div class="min-h-screen bg-gray-50 pb-20"><header class="bg-white shadow-sm border-b border-gray-200"><div class="container"><div class="flex justify-between items-center py-4"><h1 class="text-xl font-semibold text-gray-900">Info Utili</h1></div></div></header><main class="container py-6"><div class="bg-white shadow rounded-lg p-6"><h2 class="text-lg font-medium text-gray-900 mb-4">Numeri di telefono e Orari</h2><div class="mt-4"><h3 class="text-base font-semibold text-gray-800">Orari Servizio di Custodia</h3><ul class="mt-2 list-disc list-inside text-sm text-gray-600 space-y-1"><li>Lunedì - Venerdì: <span class="font-medium">08:00 - 13:00 / 14:00 - 17:00</span></li><li>Sabato: <span class="font-medium">08:00 - 12:00</span></li><li>Domenica: <span class="font-medium">Chiuso</span></li></ul></div><div class="mt-6 border-t border-gray-200 pt-6"><h3 class="text-base font-semibold text-gray-800">Numeri di Emergenza</h3><ul class="mt-2 list-disc list-inside text-sm text-gray-600 space-y-1"><li>Numero Unico Emergenze: <span class="font-medium">112</span></li><li>Amministratore (Reperibilità): <span class="font-medium">333 1234567</span></li><li>Manutentore Ascensore: <span class="font-medium">800 123 456</span></li></ul></div></div></main>${renderBottomNavigation()}</div>`;
         
         const renderCurrentPage = () => {
             const app = document.getElementById('app');
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center"><p class="text-gray-600">Caricamento...</p></div>`;
             switch (currentPage) {
                 case 'login': app.innerHTML = renderLoginPage(); setupLoginHandlers(); break;
                 case 'dashboard': app.innerHTML = renderDashboard(); loadRecentActivities(); break;
                 case 'bacheca': app.innerHTML = renderBacheca(); loadCommunications(); if (userProfile?.tipoUtente === 'amministratore') setupBachecaHandlers(); break;
-                case 'sondaggi': app.innerHTML = renderSondaggi(); loadPolls(); setupPollHandlers(); break;
+                case 'sondaggi': if (userProfile?.tipoUtente !== 'custode') { app.innerHTML = renderSondaggi(); loadPolls(); setupPollHandlers(); } break;
                 case 'segnalazioni': app.innerHTML = renderSegnalazioni(); loadReports(); setupReportHandlers(); break;
                 case 'profilo': app.innerHTML = renderProfilo(); setupProfileHandlers(); break;
+                case 'infoUtili': app.innerHTML = renderInfoUtili(); break; 
                 default: app.innerHTML = renderLoginPage(); setupLoginHandlers();
             }
-            checkForNewCommunications();
+            if (currentPage !== 'login') { checkForNewCommunications(); }
         };
 
-        const setupLoginHandlers = () => {
-            let isRegisterMode = false;
-            const toggleAuth = document.getElementById('toggle-auth');
-            const authTitle = document.getElementById('auth-title');
-            const authSubtitle = document.getElementById('auth-subtitle');
-            const authSubmit = document.getElementById('auth-submit');
-            const registerFields = document.getElementById('register-fields');
-            const authForm = document.getElementById('auth-form');
-            const forgotPassword = document.getElementById('forgot-password');
-
-            toggleAuth?.addEventListener('click', (e) => {
-                e.preventDefault();
-                isRegisterMode = !isRegisterMode;
-                authTitle.textContent = isRegisterMode ? 'Registrati' : 'Accedi';
-                authSubtitle.textContent = isRegisterMode ? 'Crea il tuo account per accedere' : 'Accedi al portale del condominio';
-                authSubmit.textContent = isRegisterMode ? 'Registrati' : 'Accedi';
-                toggleAuth.textContent = isRegisterMode ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati';
-                registerFields.classList.toggle('hidden', !isRegisterMode);
-                forgotPassword.classList.toggle('hidden', isRegisterMode);
-            });
-
-            authForm?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                const errorDiv = document.getElementById('error-message');
-                const successDiv = document.getElementById('success-message');
-                errorDiv.classList.add('hidden');
-                successDiv.classList.add('hidden');
-                try {
-                    if (isRegisterMode) {
-                        const confirmPassword = document.getElementById('confirm-password').value;
-                        const nome = document.getElementById('nome').value;
-                        const cognome = document.getElementById('cognome').value;
-                        const tipoUtente = document.getElementById('tipo-utente').value;
-                        const appartamento = document.getElementById('appartamento').value;
-                        const telefono = document.getElementById('telefono').value;
-
-                        if (password !== confirmPassword) throw new Error('Le password non coincidono');
-                        if (!nome || !cognome || !tipoUtente) throw new Error('Compila tutti i campi obbligatori');
-
-                        await register(email, password, { nome, cognome, tipoUtente, appartamento, telefono });
-                        successDiv.textContent = 'Registrazione completata! Ora puoi accedere.';
-                        successDiv.classList.remove('hidden');
-                    } else {
-                        await login(email, password);
-                    }
-                } catch (error) {
-                    errorDiv.textContent = error.message;
-                    errorDiv.classList.remove('hidden');
-                }
-            });
-
-            forgotPassword?.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const errorDiv = document.getElementById('error-message');
-                const successDiv = document.getElementById('success-message');
-                if (!email) {
-                    errorDiv.textContent = 'Inserisci la tua email per reimpostare la password';
-                    errorDiv.classList.remove('hidden');
-                    return;
-                }
-                try {
-                    await resetPassword(email);
-                    successDiv.textContent = 'Email di reset password inviata!';
-                    successDiv.classList.remove('hidden');
-                    errorDiv.classList.add('hidden');
-                } catch (error) {
-                    errorDiv.textContent = error.message;
-                    errorDiv.classList.remove('hidden');
-                }
-            });
-        };
+        const setupLoginHandlers = () => { let isRegisterMode=!1;const e=document.getElementById("toggle-auth"),t=document.getElementById("auth-title"),o=document.getElementById("auth-subtitle"),n=document.getElementById("auth-submit"),d=document.getElementById("register-fields"),i=document.getElementById("auth-form"),r=document.getElementById("forgot-password");e?.addEventListener("click",(c)=>{c.preventDefault(),isRegisterMode=!isRegisterMode,t.textContent=isRegisterMode?"Registrati":"Accedi",o.textContent=isRegisterMode?"Crea il tuo account per accedere":"Accedi al portale del condominio",n.textContent=isRegisterMode?"Registrati":"Accedi",e.textContent=isRegisterMode?"Hai già un account? Accedi":"Non hai un account? Registrati",d.classList.toggle("hidden",!isRegisterMode),r.classList.toggle("hidden",isRegisterMode)}),i?.addEventListener("submit",async e=>{e.preventDefault();const t=document.getElementById("email").value,o=document.getElementById("password").value,n=document.getElementById("error-message"),d=document.getElementById("success-message");n.classList.add("hidden"),d.classList.add("hidden");try{if(isRegisterMode){const e=document.getElementById("confirm-password").value,c=document.getElementById("nome").value,a=document.getElementById("cognome").value,s=document.getElementById("tipo-utente").value,l=document.getElementById("appartamento").value,m=document.getElementById("telefono").value;if(o!==e)throw new Error("Le password non coincidono");if(!c||!a||!s)throw new Error("Compila tutti i campi obbligatori");await register(t,o,{nome:c,cognome:a,tipoUtente:s,appartamento:l,telefono:m}),d.textContent="Registrazione completata! Ora puoi accedere.",d.classList.remove("hidden")}else await login(t,o)}catch(c){n.textContent=c.message,n.classList.remove("hidden")}}),r?.addEventListener("click",async e=>{e.preventDefault();const t=document.getElementById("email").value,o=document.getElementById("error-message"),n=document.getElementById("success-message");if(!t)return o.textContent="Inserisci la tua email per reimpostare la password",void o.classList.remove("hidden");try{await resetPassword(t),n.textContent="Email di reset password inviata!",n.classList.remove("hidden"),o.classList.add("hidden")}catch(c){o.textContent=c.message,o.classList.remove("hidden")}});};
+        const setupBachecaHandlers = () => { const e=document.getElementById("create-communication-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("comm-title"),n=document.getElementById("comm-content"),d=document.getElementById("publish-comm-btn"),i=o.value.trim(),r=n.value.trim();if(!i||!r)return alert("Compila titolo e messaggio.");d.disabled=!0,d.textContent="Pubblicazione...";try{await addDoc(collection(db,"communications"),{title:i,content:r,createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()}),await logActivity("communication_posted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:i}),e.reset()}catch(c){console.error("Errore nella pubblicazione:",c),alert("Si è verificato un errore.")}finally{d.disabled=!1,d.textContent="Pubblica"}});};
+        const setupPollHandlers = () => { const e=document.getElementById("create-poll-form");if(!e)return;const t=document.getElementById("poll-options-list"),o=document.getElementById("add-poll-option");function n(d=""){const i=document.createElement("div");i.className="flex items-center space-x-2";const r=document.createElement("input");r.type="text",r.className="mt-1 flex-1",r.required=!0,r.placeholder="Opzione",r.value=d;const c=document.createElement("button");c.type="button",c.className="btn-danger",c.style="width:auto;padding:0.25rem 0.75rem;",c.textContent="−",c.onclick=()=>{t.removeChild(i),t.childElementCount<2&&n()},i.appendChild(r),i.appendChild(c),t.appendChild(i)}0===t.childElementCount&&(n(),n()),o.onclick=e=>{e.preventDefault(),n()},e.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("poll-title").value,d=document.getElementById("poll-description").value,i=document.getElementById("poll-deadline").value,r=e.querySelectorAll('input[type="text"]'),c=Array.from(r).map(e=>e.value.trim()).filter(e=>e).map(e=>({text:e,votes:0}));if(c.length<2)return alert("Inserisci almeno due opzioni.");if(!i)return alert("Inserisci una data di scadenza.");try{await addDoc(collection(db,"polls"),{title:o,description:d,options:c,deadline:new Date(i),createdBy:userProfile.nome+" "+userProfile.cognome,createdById:currentUser.uid,createdAt:serverTimestamp(),voters:[]}),await logActivity("poll_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:o}),e.reset()}catch(a){console.error("Errore nella creazione del sondaggio:",a)}}),e.addEventListener("reset",()=>{setTimeout(()=>{t.innerHTML="",n(),n()},0)});};
         
-        const setupBachecaHandlers = () => {
-            const form = document.getElementById('create-communication-form');
-            form?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const titleInput = document.getElementById('comm-title');
-                const contentInput = document.getElementById('comm-content');
-                const publishBtn = document.getElementById('publish-comm-btn');
-                const title = titleInput.value.trim();
-                const content = contentInput.value.trim();
-                if (!title || !content) return alert('Compila titolo e messaggio.');
-
-                publishBtn.disabled = true;
-                publishBtn.textContent = 'Pubblicazione...';
-                try {
-                    await addDoc(collection(db, 'communications'), {
-                        title, content,
-                        createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-                        createdById: currentUser.uid,
-                        createdAt: serverTimestamp()
-                    });
-                    await logActivity('communication_posted', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
-                    form.reset();
-                } catch (error) {
-                    console.error("Errore nella pubblicazione:", error);
-                    alert("Si è verificato un errore.");
-                } finally {
-                    publishBtn.disabled = false;
-                    publishBtn.textContent = 'Pubblica';
-                }
-            });
-        };
-
-        const setupPollHandlers = () => {
-            const createPollForm = document.getElementById('create-poll-form');
-            if (!createPollForm) return;
-
-            const pollOptionsList = document.getElementById('poll-options-list');
-            const addPollOptionBtn = document.getElementById('add-poll-option');
-
-            function addPollOption(value = '') {
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'flex items-center space-x-2';
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'mt-1 flex-1';
-                input.required = true;
-                input.placeholder = 'Opzione';
-                input.value = value;
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'btn-danger';
-                removeBtn.style = 'width:auto;padding:0.25rem 0.75rem;';
-                removeBtn.textContent = '−';
-                removeBtn.onclick = () => {
-                    pollOptionsList.removeChild(optionDiv);
-                    if (pollOptionsList.childElementCount < 2) addPollOption();
-                };
-                optionDiv.appendChild(input);
-                optionDiv.appendChild(removeBtn);
-                pollOptionsList.appendChild(optionDiv);
-            }
-
-            if (pollOptionsList.childElementCount === 0) {
-                addPollOption();
-                addPollOption();
-            }
-
-            addPollOptionBtn.onclick = (e) => { e.preventDefault(); addPollOption(); };
-
-            createPollForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const title = document.getElementById('poll-title').value;
-                const description = document.getElementById('poll-description').value;
-                const deadline = document.getElementById('poll-deadline').value;
-                const optionInputs = pollOptionsList.querySelectorAll('input[type="text"]');
-                const options = Array.from(optionInputs).map(input => input.value.trim()).filter(opt => opt).map(opt => ({ text: opt, votes: 0 }));
-
-                if (options.length < 2) return alert('Inserisci almeno due opzioni.');
-                if (!deadline) return alert('Inserisci una data di scadenza.');
-
-                try {
-                    await addDoc(collection(db, 'polls'), {
-                        title, description, options,
-                        deadline: new Date(deadline),
-                        createdBy: userProfile.nome + ' ' + userProfile.cognome,
-                        createdById: currentUser.uid,
-                        createdAt: serverTimestamp(),
-                        voters: []
-                    });
-                    await logActivity('poll_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
-                    createPollForm.reset();
-                } catch (error) {
-                    console.error('Errore nella creazione del sondaggio:', error);
-                }
-            });
-
-            createPollForm.addEventListener('reset', () => {
-                setTimeout(() => {
-                    pollOptionsList.innerHTML = '';
-                    addPollOption(); addPollOption();
-                }, 0);
-            });
-        };
-
         const setupReportHandlers = () => {
             const createReportForm = document.getElementById('create-report-form');
             createReportForm?.addEventListener('submit', async (e) => {
@@ -1472,17 +1008,25 @@
                 const category = document.getElementById('report-category').value;
                 const priority = document.getElementById('report-priority').value;
                 const location = document.getElementById('report-location').value;
+                
+                if (!title || !description || !category || !priority || !location) return alert("Compila tutti i campi obbligatori.");
 
-                if(!title || !description || !category || !priority || !location) return alert("Compila tutti i campi.");
+                const reportData = {
+                    title, description, category, priority, location, status: 'aperta',
+                    createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                    createdById: currentUser.uid,
+                    createdAt: serverTimestamp()
+                };
+
+                const recipientInput = document.getElementById('report-recipient');
+                if (recipientInput && recipientInput.value) {
+                    reportData.recipientType = recipientInput.value;
+                } else {
+                    reportData.recipientType = 'management'; 
+                }
 
                 try {
-                    await addDoc(collection(db, 'reports'), {
-                        title, description, category, priority, location,
-                        status: 'aperta',
-                        createdBy: userProfile.nome + ' ' + userProfile.cognome,
-                        createdById: currentUser.uid,
-                        createdAt: serverTimestamp()
-                    });
+                    await addDoc(collection(db, 'reports'), reportData);
                     await logActivity('report_created', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title, priority });
                     createReportForm.reset();
                 } catch (error) {
@@ -1491,247 +1035,81 @@
             });
         };
 
-        const setupProfileHandlers = () => {
-            const profileForm = document.getElementById('profile-form');
-            profileForm?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const nome = document.getElementById('profile-nome').value;
-                const cognome = document.getElementById('profile-cognome').value;
-                const telefono = document.getElementById('profile-telefono').value;
-                const appartamento = document.getElementById('profile-appartamento').value;
-                
-                try {
-                    await updateDoc(doc(db, 'users', currentUser.uid), { nome, cognome, telefono, appartamento });
-                    await loadUserProfile(currentUser);
-                    showProfileMessage('success', 'Profilo aggiornato con successo!');
-                } catch (error) {
-                    showProfileMessage('error', `Errore: ${error.message}`);
-                }
-            });
-        };
-        
-        const showProfileMessage = (type, text) => {
-            const messageDiv = document.getElementById('profile-message');
-            if (messageDiv) {
-                messageDiv.className = `mb-6 p-4 rounded-lg ${type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`;
-                messageDiv.textContent = text;
-                messageDiv.classList.remove('hidden');
-                setTimeout(() => { messageDiv.classList.add('hidden'); }, 5000);
-            }
-        };
+        const setupProfileHandlers = () => { const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value,i=document.getElementById("profile-appartamento").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d,appartamento:i}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato con successo!")}catch(r){showProfileMessage("error",`Errore: ${r.message}`)}});};
+        const showProfileMessage = (type, text) => { const messageDiv=document.getElementById("profile-message");if(messageDiv){messageDiv.className=`mb-6 p-4 rounded-lg ${"success"===type?"bg-green-50 text-green-700 border-green-200":"bg-red-50 text-red-700 border-red-200"}`,messageDiv.textContent=text,messageDiv.classList.remove("hidden"),setTimeout(()=>{messageDiv.classList.add("hidden")},5e3)} };
+        const loadCommunications = () => { const e=document.getElementById("communications-list");if(!e)return;const t=query(collection(db,"communications"),orderBy("createdAt","desc"));onSnapshot(t,t=>{e.innerHTML=t.empty?'<div class="p-6 text-center text-gray-500">Nessuna comunicazione in bacheca.</div>':t.docs.map(e=>{const t=e.data();if(!t.createdAt)return"";const o=t.createdAt.toDate().toLocaleString("it-IT",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});return`\n                            <div class="bg-white shadow rounded-lg p-6">\n                                <div class="border-b border-gray-200 pb-4 mb-4">\n                                    <h3 class="text-lg font-bold text-gray-900">${t.title}</h3>\n                                    <p class="text-xs text-gray-500 mt-1">Pubblicato da ${t.createdBy} il ${o}</p>\n                                </div>\n                                <div class="text-sm text-gray-700 whitespace-pre-wrap">${t.content}</div>\n                            </div>`}).join(""),"bacheca"===currentPage&&!t.empty&&(localStorage.setItem(`lastSeenComm_${currentUser.uid}`,t.docs[0].data().createdAt.toMillis()),updateNotificationUI(!1))})};
+        const loadPolls = () => { const e=document.getElementById("polls-container");if(!e)return;const t=query(collection(db,"polls"),orderBy("createdAt","desc"));onSnapshot(t,t=>{e.innerHTML=t.empty?'<div class="text-center text-gray-500 py-8">Nessun sondaggio disponibile.</div>':t.docs.map(t=>{const o=t.data();if(!o.deadline)return"";const n=o.deadline.toDate(),d=n<new Date(),i=o.voters&&o.voters.includes(currentUser.uid),r=o.options.reduce((e,t)=>e+(t.votes||0),0);return`\n                            <div class="bg-white shadow rounded-lg p-6">\n                                <div class="flex justify-between items-start mb-4">\n                                    <div>\n                                        <h3 class="text-lg font-medium text-gray-900">${o.title}</h3>\n                                        <p class="text-sm text-gray-600 mt-1">${o.description||""}</p>\n                                        <p class="text-xs text-gray-500 mt-2">Creato da ${o.createdBy} • Scade il ${n.toLocaleDateString("it-IT")}</p>\n                                    </div>\n                                    <span class="badge ${d?"badge-admin":"badge-condomino"}">${d?"Scaduto":"Attivo"}</span>\n                                </div>\n                                <div class="space-y-4">\n                                    ${o.options.map((o,n)=>{const c=r>0?Math.round((o.votes||0)/r*100):0;return`\n                                            <div>\n                                                <div class="flex justify-between items-center mb-1">\n                                                    <span class="text-sm font-medium text-gray-900">${o.text}</span>\n                                                    <div class="flex items-center space-x-4">\n                                                        <span class="text-sm text-gray-500">${o.votes||0} voti (${c}%)</span>\n                                                        ${d||i?"":`\n                                                            <button onclick="voteOnPoll('${t.id}', ${n})" class="btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">\n                                                                Vota\n                                                            </button>\n                                                        `}\n                                                    </div>\n                                                </div>\n                                                <div class="w-full bg-gray-200 rounded-full h-2">\n                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${c}%"></div>\n                                                </div>\n                                            </div>\n                                        `}).join("")}\n                                </div>\n                                ${i?`<p class="mt-4 text-sm text-green-700 font-medium">✓ Hai già votato</p>`:""}\n                            </div>`}).join("")})};
 
-        const loadCommunications = () => {
-            const listContainer = document.getElementById('communications-list');
-            if (!listContainer) return;
-
-            const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
-            onSnapshot(q, (querySnapshot) => {
-                listContainer.innerHTML = querySnapshot.empty
-                    ? `<div class="p-6 text-center text-gray-500">Nessuna comunicazione in bacheca.</div>`
-                    : querySnapshot.docs.map(doc => {
-                        const comm = doc.data();
-                        if (!comm.createdAt) return '';
-                        const createdAt = comm.createdAt.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                        return `
-                            <div class="bg-white shadow rounded-lg p-6">
-                                <div class="border-b border-gray-200 pb-4 mb-4">
-                                    <h3 class="text-lg font-bold text-gray-900">${comm.title}</h3>
-                                    <p class="text-xs text-gray-500 mt-1">Pubblicato da ${comm.createdBy} il ${createdAt}</p>
-                                </div>
-                                <div class="text-sm text-gray-700 whitespace-pre-wrap">${comm.content}</div>
-                            </div>`;
-                    }).join('');
-                
-                if (currentPage === 'bacheca' && !querySnapshot.empty) {
-                    const latestTimestamp = querySnapshot.docs[0].data().createdAt.toMillis();
-                    localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestTimestamp);
-                    updateNotificationUI(false);
-                }
-            });
-        };
-
-        const loadPolls = () => {
-            const pollsContainer = document.getElementById('polls-container');
-            if (!pollsContainer) return;
-
-            const q = query(collection(db, 'polls'), orderBy('createdAt', 'desc'));
-            onSnapshot(q, (snapshot) => {
-                pollsContainer.innerHTML = snapshot.empty
-                    ? `<div class="text-center text-gray-500 py-8">Nessun sondaggio disponibile.</div>`
-                    : snapshot.docs.map(doc => {
-                        const poll = doc.data();
-                        if (!poll.deadline) return ''; 
-
-                        const deadline = poll.deadline.toDate();
-                        const isExpired = deadline < new Date();
-                        const hasVoted = poll.voters && poll.voters.includes(currentUser.uid);
-                        const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
-
-                        return `
-                            <div class="bg-white shadow rounded-lg p-6">
-                                <div class="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 class="text-lg font-medium text-gray-900">${poll.title}</h3>
-                                        <p class="text-sm text-gray-600 mt-1">${poll.description || ''}</p>
-                                        <p class="text-xs text-gray-500 mt-2">Creato da ${poll.createdBy} • Scade il ${deadline.toLocaleDateString('it-IT')}</p>
-                                    </div>
-                                    <span class="badge ${isExpired ? 'badge-admin' : 'badge-condomino'}">${isExpired ? 'Scaduto' : 'Attivo'}</span>
-                                </div>
-                                <div class="space-y-4">
-                                    ${poll.options.map((option, index) => {
-                                        const percentage = totalVotes > 0 ? Math.round(((option.votes || 0) / totalVotes) * 100) : 0;
-                                        return `
-                                            <div>
-                                                <div class="flex justify-between items-center mb-1">
-                                                    <span class="text-sm font-medium text-gray-900">${option.text}</span>
-                                                    <div class="flex items-center space-x-4">
-                                                        <span class="text-sm text-gray-500">${option.votes || 0} voti (${percentage}%)</span>
-                                                        ${!isExpired && !hasVoted ? `
-                                                            <button onclick="voteOnPoll('${doc.id}', ${index})" class="btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">
-                                                                Vota
-                                                            </button>
-                                                        ` : ''}
-                                                    </div>
-                                                </div>
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${percentage}%"></div>
-                                                </div>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                                ${hasVoted ? `<p class="mt-4 text-sm text-green-700 font-medium">✓ Hai già votato</p>` : ''}
-                            </div>`;
-                    }).join('');
-            });
-        };
-
+        // MODIFICATO: Logica di caricamento delle segnalazioni unificata
         const loadReports = () => {
-            const reportsContainer = document.getElementById('reports-container');
-            if (!reportsContainer) return;
-            
-            const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
-            onSnapshot(q, (snapshot) => {
-                reportsContainer.innerHTML = snapshot.empty
-                    ? `<div class="text-center text-gray-500 py-8">Nessuna segnalazione.</div>`
-                    : snapshot.docs.map(doc => {
-                        const report = doc.data();
-                        if (!report.createdAt) return '';
-                        const createdAt = report.createdAt.toDate();
-                        const canManage = userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'portiere';
+            const mainContainer = document.getElementById('reports-main-container');
+            const secondaryContainer = document.getElementById('reports-secondary-container');
+            if (!mainContainer || !secondaryContainer) return;
 
-                        return `
-                            <div class="bg-white shadow rounded-lg p-6">
-                                <div class="flex justify-between items-start mb-4">
-                                    <div class="flex-1">
-                                        <div class="flex items-center flex-wrap gap-2 mb-2">
-                                            <h3 class="text-lg font-medium text-gray-900">${report.title}</h3>
-                                            <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
-                                            <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
-                                        </div>
-                                        <p class="text-sm text-gray-600 mb-2">${report.description}</p>
-                                        <div class="text-xs text-gray-500 space-y-1">
-                                            <p><strong>Categoria:</strong> ${report.category}</p>
-                                            <p><strong>Ubicazione:</strong> ${report.location}</p>
-                                            <p><strong>Segnalato da:</strong> ${report.createdBy}</p>
-                                            <p><strong>Data:</strong> ${createdAt.toLocaleString('it-IT')}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                ${canManage && report.status !== 'chiusa' ? `
-                                    <div class="flex space-x-2 mt-4">
-                                        ${report.status === 'aperta' ? `<button onclick="updateReportStatus('${doc.id}', 'in-corso')" class="btn-warning text-xs">Prendi in carico</button>` : ''}
-                                        <button onclick="updateReportStatus('${doc.id}', 'chiusa')" class="btn-primary text-xs">Chiudi</button>
-                                    </div>` : ''}
-                            </div>`;
-                    }).join('');
-            });
-        };
+            const renderReportCardHTML = (report, docId) => {
+                if (!report.createdAt) return '';
+                const createdAt = report.createdAt.toDate();
+                const canManage = ['amministratore', 'custode', 'consigliere', 'fornitore'].includes(userProfile?.tipoUtente);
+                const isManagementRole = canManage;
+                const isRecipient = (report.recipientType === 'management' && isManagementRole) || report.recipientType === userProfile?.tipoUtente || (report.recipientType === 'consigliere' && userProfile?.tipoUtente === 'consigliere');
+                
+                return `
+                <div class="bg-white shadow rounded-lg p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center flex-wrap gap-2 mb-2">
+                                <h3 class="text-lg font-medium text-gray-900">${report.title}</h3>
+                                <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
+                                <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
+                                ${report.recipientType && report.recipientType !== 'management' ? `<span class="badge badge-fornitore">a: ${report.recipientType}</span>` : ''}
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">${report.description}</p>
+                            <div class="text-xs text-gray-500 space-y-1">
+                                <p><strong>Categoria:</strong> ${report.category}</p>
+                                <p><strong>Ubicazione:</strong> ${report.location}</p>
+                                <p><strong>Segnalato da:</strong> ${report.createdBy}</p>
+                                <p><strong>Data:</strong> ${createdAt.toLocaleString('it-IT')}</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${canManage && report.status !== 'chiusa' && isRecipient ? `
+                        <div class="flex space-x-2 mt-4">
+                            ${report.status === 'aperta' ? `<button onclick="updateReportStatus('${docId}', 'in-corso')" class="btn-warning text-xs">Prendi in carico</button>` : ''}
+                            <button onclick="updateReportStatus('${docId}', 'chiusa')" class="btn-primary text-xs">Chiudi</button>
+                        </div>` : ''}
+                </div>`;
+            };
 
-        const voteOnPoll = async (pollId, optionIndex) => {
-            try {
-                const pollRef = doc(db, 'polls', pollId);
-                const pollDoc = await getDoc(pollRef);
-                if (!pollDoc.exists()) return;
+            const renderSnapshot = (container, snapshot, emptyMsg) => {
+                container.innerHTML = snapshot.empty ? `<div class="text-center text-gray-500 py-4">${emptyMsg}</div>` : snapshot.docs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join('');
+            };
 
-                const pollData = pollDoc.data();
-                if (pollData.deadline.toDate() < new Date()) return alert("Questo sondaggio è scaduto.");
-                if (pollData.voters?.includes(currentUser.uid)) return alert('Hai già votato!');
+            const userType = userProfile.tipoUtente;
+            const userId = currentUser.uid;
 
-                const updatedOptions = [...pollData.options];
-                updatedOptions[optionIndex].votes = (updatedOptions[optionIndex].votes || 0) + 1;
-                const updatedVoters = [...(pollData.voters || []), currentUser.uid];
+            // Query per "Segnalazioni Inviate da te" - uguale per tutti
+            const qSent = query(collection(db, 'reports'), where('createdById', '==', userId), orderBy('createdAt', 'desc'));
+            onSnapshot(qSent, s => renderSnapshot(secondaryContainer, s, 'Non hai inviato nessuna segnalazione.'));
 
-                await updateDoc(pollRef, { options: updatedOptions, voters: updatedVoters });
-                await logActivity('poll_voted', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
-                    pollTitle: pollData.title, option: pollData.options[optionIndex].text
-                });
-            } catch (error) {
-                console.error('Errore nel voto:', error);
-            }
-        };
-        
-        const updateReportStatus = async (reportId, newStatus) => {
-            try {
-                await updateDoc(doc(db, 'reports', reportId), { status: newStatus, updatedAt: serverTimestamp() });
-                await logActivity('report_updated', currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId, newStatus });
-            } catch (error) {
-                console.error("Errore nell'aggiornamento dello stato:", error);
+            // Query per "Segnalazioni da Gestire" - diversa in base al ruolo
+            const isManagementRole = ['amministratore', 'custode', 'consigliere', 'fornitore'].includes(userType);
+            let qToManage;
+            if (isManagementRole) {
+                // I ruoli gestionali vedono tutte le segnalazioni
+                qToManage = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+                onSnapshot(qToManage, s => renderSnapshot(mainContainer, s, 'Nessuna segnalazione da gestire.'));
+            } else { // Condomino
+                // I condomini vedono solo quelle pubbliche o generali
+                qToManage = query(collection(db, 'reports'), where('recipientType', 'in', ['management', 'condomino']), orderBy('createdAt', 'desc'));
+                onSnapshot(qToManage, s => renderSnapshot(mainContainer, s, 'Nessuna segnalazione pubblica disponibile.'));
             }
         };
 
-        const loadRecentActivities = () => {
-            const activitiesContainer = document.getElementById('recent-activities');
-            if (!activitiesContainer) return;
-            const q = query(collection(db, 'activities'), orderBy('timestamp', 'desc'), limit(5));
-            onSnapshot(q, (snapshot) => {
-                activitiesContainer.innerHTML = snapshot.empty
-                    ? `<div class="text-center text-gray-500 py-4">Nessuna attività recente</div>`
-                    : snapshot.docs.map(doc => {
-                        const activity = doc.data();
-                        if (!activity.timestamp) return '';
-                        const timeAgo = formatTime(activity.timestamp);
-                        let activityText = '';
-                        switch (activity.type) {
-                            case 'user_registered': activityText = 'si è registrato'; break;
-                            case 'poll_created': activityText = `ha creato il sondaggio "${activity.details.title}"`; break;
-                            case 'poll_voted': activityText = `ha votato nel sondaggio "${activity.details.pollTitle}"`; break;
-                            case 'report_created': activityText = `ha creato una segnalazione "${activity.details.title}"`; break;
-                            case 'report_updated': activityText = `ha aggiornato una segnalazione`; break;
-                            case 'communication_posted': activityText = `ha pubblicato in bacheca: "${activity.details.title}"`; break;
-                            default: activityText = 'ha eseguito un\'azione';
-                        }
-                        return `
-                            <div class="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-gray-900">${activity.userName} ${activityText}</p>
-                                    <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
-                                </div>
-                            </div>`;
-                    }).join('');
-            });
-        };
-
-        const updateNotificationUI = (hasNew) => {
-            const badge = document.getElementById('bacheca-notification-badge');
-            badge?.classList.toggle('hidden', !hasNew);
-        };
-
-        const checkForNewCommunications = () => {
-            if (!currentUser) return;
-            if (communicationsListener) communicationsListener();
-
-            const lastSeenMillis = parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`), 10) || 0;
-            const lastSeenDate = new Date(lastSeenMillis);
-            
-            const q = query(collection(db, "communications"), where("createdAt", ">", lastSeenDate));
-            communicationsListener = onSnapshot(q, (querySnapshot) => {
-                updateNotificationUI(!querySnapshot.empty);
-            });
-        };
+        const voteOnPoll = async (pollId, optionIndex) => { try{const e=doc(db,"polls",pollId),t=await getDoc(e);if(!t.exists())return;const o=t.data();if(o.deadline.toDate()<new Date)return alert("Questo sondaggio è scaduto.");if(o.voters?.includes(currentUser.uid))return alert("Hai già votato!");const n=[...o.options];n[optionIndex].votes=(n[optionIndex].votes||0)+1;const d=[...o.voters||[],currentUser.uid];await updateDoc(e,{options:n,voters:d}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:o.title,option:o.options[optionIndex].text})}catch(i){console.error("Errore nel voto:",i)}};
+        const updateReportStatus = async (reportId, newStatus) => { try{await updateDoc(doc(db,"reports",reportId),{status:newStatus,updatedAt:serverTimestamp()}),await logActivity("report_updated",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{reportId,newStatus})}catch(e){console.error("Errore nell'aggiornamento dello stato:",e)}};
+        const loadRecentActivities = () => { const e=document.getElementById("recent-activities");if(!e)return;const t=query(collection(db,"activities"),orderBy("timestamp","desc"),limit(5));onSnapshot(t,t=>{e.innerHTML=t.empty?'<div class="text-center text-gray-500 py-4">Nessuna attività recente</div>':t.docs.map(e=>{const t=e.data();if(!t.timestamp)return"";const o=formatTime(t.timestamp);let n="";switch(t.type){case"user_registered":n="si è registrato";break;case"poll_created":n=`ha creato il sondaggio "${t.details.title}"`;break;case"poll_voted":n=`ha votato nel sondaggio "${t.details.pollTitle}"`;break;case"report_created":n=`ha creato una segnalazione "${t.details.title}"`;break;case"report_updated":n="ha aggiornato una segnalazione";break;case"communication_posted":n=`ha pubblicato in bacheca: "${t.details.title}"`;break;default:n="ha eseguito un'azione"}return`\n                            <div class="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">\n                                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">\n                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>\n                                </div>\n                                <div class="flex-1 min-w-0">\n                                    <p class="text-sm text-gray-900">${t.userName} ${n}</p>\n                                    <p class="text-xs text-gray-500 mt-1">${o}</p>\n                                </div>\n                            </div>`}).join("")})};
+        const updateNotificationUI = (hasNew) => { const badge=document.getElementById("bacheca-notification-badge");badge?.classList.toggle("hidden",!hasNew)};
+        const checkForNewCommunications = () => { if(!currentUser)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
 
         window.navigateTo = navigateTo;
         window.logout = logout;
@@ -1742,16 +1120,13 @@
             if (user) {
                 currentUser = user;
                 await loadUserProfile(user);
-                navigateTo(currentPage === 'login' ? 'dashboard' : currentPage);
+                navigateTo(currentPage === 'login' || !currentPage ? 'dashboard' : currentPage);
             } else {
                 if (communicationsListener) communicationsListener();
-                currentUser = null;
-                userProfile = null;
+                currentUser = null; userProfile = null;
                 navigateTo('login');
             }
         });
-
-        renderCurrentPage();
     </script>
 </body>
 </html>
