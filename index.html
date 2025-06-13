@@ -1216,6 +1216,7 @@
             });
         };
 
+        // ===== INIZIO MODIFICA =====
         const loadReports = () => {
             const mainContainer = document.getElementById('reports-main-container');
             const secondaryContainer = document.getElementById('reports-secondary-container');
@@ -1255,26 +1256,44 @@
                 </div>`;
             };
 
+            // Funzione helper modificata per ordinare i risultati nel codice.
+            // Questo risolve i problemi di visualizzazione senza richiedere complesse configurazioni al database.
             const renderSnapshot = (container, snapshot, emptyMsg) => {
-                container.innerHTML = snapshot.empty ? `<div class="text-center text-gray-500 py-4">${emptyMsg}</div>` : snapshot.docs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join('');
+                 if (snapshot.empty) {
+                    container.innerHTML = `<div class="text-center text-gray-500 py-4">${emptyMsg}</div>`;
+                    return;
+                }
+                const sortedDocs = snapshot.docs.sort((a, b) => {
+                    const timeA = a.data().createdAt?.toMillis() || 0;
+                    const timeB = b.data().createdAt?.toMillis() || 0;
+                    return timeB - timeA; // Ordine decrescente (dal più nuovo al più vecchio)
+                });
+                container.innerHTML = sortedDocs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join('');
             };
 
             const userType = userProfile.tipoUtente;
             const userId = currentUser.uid;
 
-            const qSent = query(collection(db, 'reports'), where('createdById', '==', userId), orderBy('createdAt', 'desc'));
+            // Query modificata per "Segnalazioni Inviate": l'ordinamento viene gestito da renderSnapshot.
+            const qSent = query(collection(db, 'reports'), where('createdById', '==', userId));
             onSnapshot(qSent, s => renderSnapshot(secondaryContainer, s, 'Non hai inviato nessuna segnalazione.'));
 
             const isManagementRole = ['amministratore', 'custode', 'consigliere', 'fornitore'].includes(userType);
             let qToManage;
+
             if (isManagementRole) {
+                // La query per i ruoli gestionali rimane invariata, l'ordinamento extra è innocuo.
                 qToManage = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
                 onSnapshot(qToManage, s => renderSnapshot(mainContainer, s, 'Nessuna segnalazione arrivate.'));
-            } else { // Condomino
-                qToManage = query(collection(db, 'reports'), where('recipientType', 'in', ['management', 'condomino']), orderBy('createdAt', 'desc'));
+            } else { // Profilo Condomino
+                // Query modificata per "Segnalazioni arrivate": l'ordinamento viene gestito da renderSnapshot.
+                // Ora mostra correttamente le segnalazioni inviate agli amministratori o a tutti i condomini.
+                qToManage = query(collection(db, 'reports'), where('recipientType', 'in', ['management', 'condomino']));
                 onSnapshot(qToManage, s => renderSnapshot(mainContainer, s, 'Nessuna segnalazione pubblica disponibile.'));
             }
         };
+        // ===== FINE MODIFICA =====
+
 
         const voteOnPoll = async (pollId, optionIndex) => {
             try {
@@ -1307,9 +1326,6 @@
             const list = document.getElementById(`voters-list-${pollId}`);
             list?.classList.toggle('hidden');
         };
-
-        // MODIFICATO: Funzione rimossa perché non più utilizzata
-        // const loadRecentActivities = () => { ... };
 
         const updateNotificationUI = (hasNew) => { const badge=document.getElementById("bacheca-notification-badge");badge?.classList.toggle("hidden",!hasNew)};
         const checkForNewCommunications = () => { if(!currentUser||userProfile?.tipoUtente==='custode')return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
