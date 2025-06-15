@@ -350,6 +350,60 @@
             border-radius: 99px;
             transition: width 0.5s ease;
         }
+
+        /* --- MODIFICA INIZIO: Stili per il Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+            cursor: pointer;
+        }
+        .modal-content {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            cursor: default;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body p {
+            line-height: 1.6;
+            white-space: pre-wrap; /* Mantiene la formattazione del testo */
+        }
+        .modal-body .voter-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--surface-color-light);
+        }
+        .modal-body .voter-item:last-child {
+            border-bottom: none;
+        }
+        /* --- MODIFICA FINE: Stili per il Modal --- */
         
         /* Utilities */
         .hidden { display: none !important; }
@@ -365,6 +419,18 @@
 </head>
 <body>
     <div id="app"></div>
+
+    <!-- --- MODIFICA INIZIO: Struttura HTML del Modal --- -->
+    <div id="modal-container" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title" class="modal-title"></h3>
+                <button id="modal-close-btn" class="modal-close-btn">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body"></div>
+        </div>
+    </div>
+    <!-- --- MODIFICA FINE: Struttura HTML del Modal --- -->
 
     <script type="module">
         // TUTTO IL JAVASCRIPT E' RIMASTO IDENTICO.
@@ -391,6 +457,30 @@
         let userProfile = null;
         let currentPage = 'login';
         let communicationsListener = null;
+
+        // --- MODIFICA INIZIO: Variabili e funzioni per il Modal ---
+        const modalContainer = document.getElementById('modal-container');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        const showModal = (title, contentHtml) => {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = contentHtml;
+            modalContainer.classList.remove('hidden');
+        };
+
+        const hideModal = () => {
+            modalContainer.classList.add('hidden');
+        };
+
+        modalCloseBtn.addEventListener('click', hideModal);
+        modalContainer.addEventListener('click', (event) => {
+            if (event.target === modalContainer) {
+                hideModal();
+            }
+        });
+        // --- MODIFICA FINE: Variabili e funzioni per il Modal ---
 
         const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,appartamento:o.appartamento||"",telefono:o.telefono||"",createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};const logout=async()=>{communicationsListener&&(communicationsListener(),communicationsListener=null),await signOut(auth),currentUser=null,userProfile=null,navigateTo("login")};const resetPassword=async t=>await sendPasswordResetEmail(auth,t);const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
         const navigateTo=(e)=>{userProfile?.tipoUtente==="custode"&&["dashboard","bacheca","sondaggi"].includes(e)?navigateTo("segnalazioni"):(currentPage=e,renderCurrentPage())};const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");const getStatusColor=t=>({aperta:"status-aperta","in-corso":"status-in-corso",chiusa:"status-chiusa"}[t]||"status-aperta");
@@ -643,6 +733,21 @@
         const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value,i=document.getElementById("profile-appartamento").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d,appartamento:i}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(r){showProfileMessage("error",`Errore: ${r.message}`)}})};
         const showProfileMessage=(e,t)=>{const o=document.getElementById("profile-message");o&&(o.className=`message-box ${e}`,o.textContent=t,o.style.display="block",setTimeout(()=>{o.style.display="none"},5e3))};
         
+        // --- MODIFICA INIZIO: Funzione per visualizzare il dettaglio della comunicazione ---
+        const showCommunicationDetail = async (commId) => {
+            try {
+                const commDoc = await getDoc(doc(db, "communications", commId));
+                if (commDoc.exists()) {
+                    const comm = commDoc.data();
+                    const contentHtml = `<p>${comm.content.replace(/\n/g, '<br>')}</p>`;
+                    showModal(comm.title, contentHtml);
+                }
+            } catch (error) {
+                console.error("Errore nel caricare la comunicazione:", error);
+            }
+        };
+        // --- MODIFICA FINE ---
+
         const loadCommunications = () => {
             const listEl = document.getElementById("communications-list");
             if (!listEl) return;
@@ -652,8 +757,9 @@
                     const comm = docSnap.data();
                     if (!comm.createdAt) return "";
                     const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric"});
+                    // --- MODIFICA INIZIO: Aggiunto onclick per aprire il dettaglio ---
                     return `
-                    <div class="list-item">
+                    <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
                         <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
                         <div class="list-item-content">
                             <div class="title">${comm.title}</div>
@@ -661,6 +767,7 @@
                             <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
                         </div>
                     </div>`;
+                    // --- MODIFICA FINE ---
                 }).join("");
                 if (currentPage === 'bacheca' && !snapshot.empty) {
                     localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
@@ -668,6 +775,31 @@
                 }
             });
         };
+        
+        // --- MODIFICA INIZIO: Funzione per visualizzare i votanti del sondaggio ---
+        const showPollVoters = async (pollId) => {
+            try {
+                const pollDoc = await getDoc(doc(db, "polls", pollId));
+                if (pollDoc.exists()) {
+                    const poll = pollDoc.data();
+                    let votersHtml;
+                    if (poll.voters && poll.voters.length > 0) {
+                        votersHtml = poll.voters.map(voter => `
+                            <div class="voter-item">
+                                <span>${voter.name}</span>
+                                <span style="color:var(--secondary-text)">${voter.vote}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        votersHtml = '<p>Nessun voto registrato per questo sondaggio.</p>';
+                    }
+                    showModal('Dettaglio Voti', votersHtml);
+                }
+            } catch (error) {
+                console.error("Errore nel caricare i votanti:", error);
+            }
+        };
+        // --- MODIFICA FINE ---
 
         const loadPolls = () => {
             const container = document.getElementById("polls-container");
@@ -681,9 +813,11 @@
                     const isExpired = deadline < new Date();
                     const hasVoted = poll.voters && poll.voters.some(v => v.uid === currentUser.uid);
                     const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
+                    // --- MODIFICA INIZIO: Aggiunto pulsante "Mostra Votanti" ---
+                    const showVotersButton = isExpired ? `<button onclick="showPollVoters('${docSnap.id}')" class="btn btn-secondary w-full mt-4">Mostra Votanti</button>` : '';
                     return `
                     <div class="card" style="padding:1rem; margin-bottom:1rem;">
-                        <div class="list-item" style="padding:0; margin-bottom:1rem;">
+                        <div class="list-item" style="padding:0; margin-bottom:1rem; cursor:default;">
                             <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
                             <div class="list-item-content">
                                 <div class="title">${poll.title}</div>
@@ -704,7 +838,9 @@
                                 </div>`
                             }).join("")}
                         </div>
+                        ${showVotersButton}
                     </div>`;
+                    // --- MODIFICA FINE ---
                 }).join("");
             });
         };
@@ -727,6 +863,10 @@
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
         window.updateReportStatus = updateReportStatus;
+        // --- MODIFICA INIZIO: Esponi le nuove funzioni alla finestra globale ---
+        window.showCommunicationDetail = showCommunicationDetail;
+        window.showPollVoters = showPollVoters;
+        // --- MODIFICA FINE ---
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
