@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>CondoApp</title>
+    <title>Con-bridge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -157,6 +157,29 @@
         }
         .form-textarea { resize: vertical; min-height: 100px; }
 
+        /* Stile per pulsante mostra/nascondi password */
+        .password-toggle-container {
+            position: relative;
+        }
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--secondary-text);
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-toggle-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+
         /* Messaggi di notifica */
         .message-box {
             padding: 1rem;
@@ -280,17 +303,25 @@
         }
         .list-item-content {
             flex-grow: 1;
+            min-width: 0; /* Fix per flexbox overflow */
         }
         .list-item-content .title {
             font-weight: 600;
             color: var(--primary-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .list-item-content .subtitle {
             font-size: 0.85rem;
             color: var(--secondary-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .list-item-action {
             color: var(--accent-color);
+            flex-shrink: 0;
         }
 
         /* Filtri "Chips" */
@@ -351,7 +382,7 @@
             transition: width 0.5s ease;
         }
 
-        /* --- MODIFICA INIZIO: Stili per il Modal --- */
+        /* Stili per il Modal */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -397,19 +428,20 @@
         .modal-body .voter-item {
             display: flex;
             justify-content: space-between;
-            padding: 0.5rem 0;
+            padding: 0.75rem 0;
             border-bottom: 1px solid var(--surface-color-light);
         }
         .modal-body .voter-item:last-child {
             border-bottom: none;
         }
-        /* --- MODIFICA FINE: Stili per il Modal --- */
         
         /* Utilities */
         .hidden { display: none !important; }
         .space-y-4 > * + * { margin-top: 1rem; }
         .flex { display: flex; }
+        .gap-2 { gap: 0.5rem; }
         .gap-4 { gap: 1rem; }
+        .items-center { align-items: center; }
         .justify-end { justify-content: flex-end; }
         .w-full { width: 100%; }
         .grid { display: grid; }
@@ -420,7 +452,6 @@
 <body>
     <div id="app"></div>
 
-    <!-- --- MODIFICA INIZIO: Struttura HTML del Modal --- -->
     <div id="modal-container" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -430,15 +461,11 @@
             <div id="modal-body" class="modal-body"></div>
         </div>
     </div>
-    <!-- --- MODIFICA FINE: Struttura HTML del Modal --- -->
 
     <script type="module">
-        // TUTTO IL JAVASCRIPT E' RIMASTO IDENTICO.
-        // NON CI SONO MODIFICHE ALLA LOGICA.
-        
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrLAomryfk-0s5Inm2XOsBrJusgmMI87E",
@@ -458,7 +485,9 @@
         let currentPage = 'login';
         let communicationsListener = null;
 
-        // --- MODIFICA INIZIO: Variabili e funzioni per il Modal ---
+        const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
+        const eyeSlashIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-4 .68l1.64 1.64C9.74 7.13 10.82 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L21.73 23 20.46 21.73 4.54 5.81 3.27 4.54 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`;
+
         const modalContainer = document.getElementById('modal-container');
         const modalTitle = document.getElementById('modal-title');
         const modalBody = document.getElementById('modal-body');
@@ -480,10 +509,30 @@
                 hideModal();
             }
         });
-        // --- MODIFICA FINE: Variabili e funzioni per il Modal ---
-
-        const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,appartamento:o.appartamento||"",telefono:o.telefono||"",createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};const logout=async()=>{communicationsListener&&(communicationsListener(),communicationsListener=null),await signOut(auth),currentUser=null,userProfile=null,navigateTo("login")};const resetPassword=async t=>await sendPasswordResetEmail(auth,t);const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
-        const navigateTo=(e)=>{userProfile?.tipoUtente==="custode"&&["dashboard","bacheca","sondaggi"].includes(e)?navigateTo("segnalazioni"):(currentPage=e,renderCurrentPage())};const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");const getStatusColor=t=>({aperta:"status-aperta","in-corso":"status-in-corso",chiusa:"status-chiusa"}[t]||"status-aperta");
+        
+        const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
+        const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
+        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,appartamento:o.appartamento||"",telefono:o.telefono||"",millesimi:parseFloat(o.millesimi)||0,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
+        const logout=async()=>{communicationsListener&&(communicationsListener(),communicationsListener=null),await signOut(auth),currentUser=null,userProfile=null,navigateTo("login")};
+        const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
+        const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
+        
+        const navigateTo=(e)=>{
+            const userType = userProfile?.tipoUtente;
+            if (userType === 'supervisore' && e === 'userManagement') {
+                 currentPage = e;
+                 renderCurrentPage();
+                 return;
+            }
+            if(userType==="custode"&&["dashboard","bacheca","sondaggi"].includes(e)){
+                navigateTo("segnalazioni");
+            } else {
+                currentPage=e,renderCurrentPage();
+            }
+        };
+        
+        const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");
+        const getStatusColor=t=>({aperta:"status-aperta","in-corso":"status-in-corso",chiusa:"status-chiusa"}[t]||"status-aperta");
         
         const renderHeader = (title) => {
             const userInitial = userProfile?.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U';
@@ -496,7 +545,7 @@
 
         const renderLoginPage = () => `
             <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:1rem;">
-                <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--accent-color);">CondoApp</h1>
+                <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--accent-color);">Con-bridge</h1>
                 <h2 id="auth-title" style="font-size: 1.5rem; font-weight: 600; margin-bottom: 2rem;">Accedi</h2>
                 
                 <div id="error-message" class="message-box error w-full" style="max-width:400px;"></div>
@@ -504,21 +553,38 @@
 
                 <form id="auth-form" class="space-y-4 w-full" style="max-width:400px;">
                     <div class="form-group"><label for="email" class="form-label">Email</label><input id="email" name="email" type="email" required placeholder="la-tua-email@esempio.com" class="form-input"></div>
-                    <div class="form-group"><label for="password" class="form-label">Password</label><input id="password" name="password" type="password" required placeholder="••••••••" class="form-input"></div>
+                    
+                    <div class="form-group password-toggle-container">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" name="password" type="password" required placeholder="••••••••" class="form-input" style="padding-right: 3.5rem;">
+                        <button type="button" class="password-toggle-btn" data-target="password">${eyeIcon}</button>
+                    </div>
                     
                     <div id="register-fields" class="hidden space-y-4">
-                        <div class="form-group"><label for="confirm-password" class="form-label">Conferma Password</label><input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="form-input"></div>
+                        <div class="form-group password-toggle-container">
+                            <label for="confirm-password" class="form-label">Conferma Password</label>
+                            <input id="confirm-password" name="confirm-password" type="password" placeholder="••••••••" class="form-input" style="padding-right: 3.5rem;">
+                            <button type="button" class="password-toggle-btn" data-target="confirm-password">${eyeIcon}</button>
+                        </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="form-group"><label for="nome" class="form-label">Nome</label><input id="nome" name="nome" type="text" placeholder="Mario" class="form-input"></div>
                             <div class="form-group"><label for="cognome" class="form-label">Cognome</label><input id="cognome" name="cognome" type="text" placeholder="Rossi" class="form-input"></div>
                         </div>
                         <div class="form-group"><label for="tipo-utente" class="form-label">Tipo di Utente</label>
                             <select id="tipo-utente" name="tipo-utente" class="form-select">
-                                <option value="">Seleziona...</option><option value="condomino">Condomino</option><option value="amministratore">Amministratore</option>
-                                <option value="custode">Custode</option><option value="consigliere">Consigliere</option><option value="fornitore">Fornitore</option>
+                                <option value="">Seleziona...</option>
+                                <option value="condomino">Condomino</option>
+                                <option value="amministratore">Amministratore</option>
+                                <option value="custode">Custode</option>
+                                <option value="consigliere">Consigliere</option>
+                                <option value="fornitore">Fornitore</option>
+                                <option value="supervisore">Supervisore</option>
                             </select>
                         </div>
-                        <div class="form-group"><label for="appartamento" class="form-label">Appartamento</label><input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="form-input"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group"><label for="appartamento" class="form-label">Appartamento</label><input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="form-input"></div>
+                            <div class="form-group"><label for="millesimi" class="form-label">Millesimi</label><input id="millesimi" name="millesimi" type="number" step="0.01" placeholder="es. 35.12" class="form-input"></div>
+                        </div>
                         <div class="form-group"><label for="telefono" class="form-label">Telefono</label><input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="form-input"></div>
                     </div>
                     
@@ -559,7 +625,17 @@
             return `<nav class="bottom-nav">${navItems}</nav>`;
         };
         
-        const renderDashboard = () => `
+        const renderDashboard = () => {
+            let extraItems = '';
+            if (userProfile?.tipoUtente === 'supervisore') {
+                extraItems = `
+                    <div onclick="navigateTo('userManagement')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 17v-2c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H5v-2c0-2.21 1.79-4 4-4h2c2.21 0 4 1.79 4 4v2h-2zm-4-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg></div>
+                        <p>Gestione Utenti</p>
+                    </div>
+                `;
+            }
+            return `
             ${renderHeader('Home')}
             <main>
                 <h2 class="section-title">Accesso Rapido</h2>
@@ -580,18 +656,19 @@
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
                         <p>Info Utili</p>
                     </div>
+                    ${extraItems}
                 </div>
                 <div style="margin-top: 2rem;">
                   <button onclick="logout()" class="btn btn-secondary w-full">Esci</button>
                 </div>
             </main>
             ${renderBottomNavigation()}
-        `;
+        `;}
 
         const renderBacheca = () => `
             ${renderHeader('Bacheca')}
             <main>
-                ${userProfile?.tipoUtente === 'amministratore' ? `<div class="card" style="margin-bottom:2rem;"><h3 class="card-title">Nuova comunicazione</h3><form id="create-communication-form" class="space-y-4"><div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div><div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div><div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div></form></div>` : ''}
+                ${(userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'supervisore') ? `<div class="card" style="margin-bottom:2rem;"><h3 class="card-title">Nuova comunicazione</h3><form id="create-communication-form" class="space-y-4"><div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div><div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div><div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div></form></div>` : ''}
                 <div id="communications-list" class="list-container"></div>
             </main>
             ${renderBottomNavigation()}
@@ -600,7 +677,7 @@
         const renderSondaggi = () => `
             ${renderHeader('Sondaggi')}
             <main>
-                <div class="card" style="margin-bottom:2rem;">
+                ${(userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'supervisore') ? `<div class="card" style="margin-bottom:2rem;">
                     <h3 class="card-title">Crea un Nuovo Sondaggio</h3>
                     <form id="create-poll-form" class="space-y-4">
                         <div><label class="form-label">Titolo</label><input type="text" id="poll-title" required class="form-input"></div>
@@ -612,7 +689,7 @@
                         </div>
                         <div class="flex justify-end gap-4 pt-4"><button type="reset" class="btn btn-secondary">Annulla</button><button type="submit" class="btn btn-primary">Crea</button></div>
                     </form>
-                </div>
+                </div>` : ''}
                 <div id="polls-container" class="list-container"></div>
             </main>
             ${renderBottomNavigation()}
@@ -658,10 +735,16 @@
                         </div>
                         <div><label class="form-label">Email</label><input type="email" value="${currentUser?.email || ''}" required class="form-input" disabled></div>
                         <div><label class="form-label">Telefono</label><input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="Nessun numero" class="form-input"></div>
-                        <div><label class="form-label">Appartamento</label><input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="Non specificato" class="form-input"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="form-label">Appartamento</label><input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="Non specificato" class="form-input"></div>
+                            <div><label class="form-label">Millesimi</label><input type="number" step="0.01" id="profile-millesimi" value="${userProfile?.millesimi || 0}" class="form-input"></div>
+                        </div>
                         <div><label class="form-label">Tipo Utente</label><input type="text" value="${userProfile?.tipoUtente || ''}" class="form-input" disabled></div>
                         <button type="submit" class="btn btn-primary w-full">Salva Modifiche</button>
                     </form>
+                </div>
+                 <div style="margin-top: 2rem;">
+                  <button onclick="logout()" class="btn btn-secondary w-full">Esci</button>
                 </div>
             </main>
             ${renderBottomNavigation()}
@@ -686,11 +769,18 @@
             ${renderBottomNavigation()}
         `;
         
-        // --- LOGICA DI RENDER E HANDLER (modificata per i nuovi selettori e layout) ---
+        const renderUserManagement = () => `
+            ${renderHeader('Gestione Utenti')}
+            <main>
+                <div id="user-list-container" class="list-container">
+                    <p>Caricamento utenti...</p>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
 
         const renderCurrentPage = () => {
             const app = document.getElementById('app');
-            // La pagina di login ora ha il suo contenitore a schermo intero
             if (currentPage === 'login') {
                 app.innerHTML = renderLoginPage();
                 setupLoginHandlers();
@@ -709,6 +799,10 @@
                 case 'segnalazioni': content = renderSegnalazioni(); break;
                 case 'profilo': content = renderProfilo(); break;
                 case 'infoUtili': content = renderInfoUtili(); break;
+                case 'userManagement': 
+                    if (userType === 'supervisore') content = renderUserManagement(); 
+                    else navigateTo('dashboard'); // fallback
+                    break;
                 default: content = renderLoginPage();
             }
 
@@ -719,6 +813,7 @@
                 case 'sondaggi': if (userType !== 'custode') { loadPolls(); setupPollHandlers(); } break;
                 case 'segnalazioni': loadReports(); setupReportHandlers(); break;
                 case 'profilo': setupProfileHandlers(); break;
+                case 'userManagement': if (userType === 'supervisore') { loadUsers(); } break;
             }
 
             if (currentPage !== 'login') {
@@ -726,14 +821,25 @@
             }
         };
 
-        const setupLoginHandlers=()=>{let e=!1;const t=document.getElementById("toggle-auth"),o=document.getElementById("auth-title"),n=document.getElementById("auth-submit"),d=document.getElementById("register-fields"),i=document.getElementById("auth-form"),r=document.getElementById("forgot-password");t?.addEventListener("click",t=>{t.preventDefault(),e=!e,o.textContent=e?"Registrati":"Accedi",n.textContent=e?"Registrati":"Accedi",t.target.textContent=e?"Hai già un account? Accedi":"Non hai un account? Registrati",d.classList.toggle("hidden",!e),r.classList.toggle("hidden",e)}),i?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("email").value,n=document.getElementById("password").value,d=document.getElementById("error-message"),r=document.getElementById("success-message");d.style.display="none",r.style.display="none";try{if(e){const t=document.getElementById("confirm-password").value,i=document.getElementById("nome").value,s=document.getElementById("cognome").value,a=document.getElementById("tipo-utente").value,c=document.getElementById("appartamento").value,l=document.getElementById("telefono").value;if(n!==t)throw new Error("Le password non coincidono");if(!i||!s||!a)throw new Error("Compila tutti i campi obbligatori");await register(o,n,{nome:i,cognome:s,tipoUtente:a,appartamento:c,telefono:l}),r.textContent="Registrazione completata! Ora puoi accedere.",r.style.display="block"}else await login(o,n)}catch(m){d.textContent=m.message,d.style.display="block"}}),r?.addEventListener("click",async t=>{t.preventDefault();const e=document.getElementById("email").value,o=document.getElementById("error-message"),n=document.getElementById("success-message");if(!e)return o.textContent="Inserisci la tua email per reimpostare la password",void(o.style.display="block");try{await resetPassword(e),n.textContent="Email di reset password inviata!",n.style.display="block",o.style.display="none"}catch(d){o.textContent=d.message,o.style.display="block"}})};
+        const setupLoginHandlers=()=>{let e=!1;const t=document.getElementById("toggle-auth"),o=document.getElementById("auth-title"),n=document.getElementById("auth-submit"),d=document.getElementById("register-fields"),i=document.getElementById("auth-form"),r=document.getElementById("forgot-password");t?.addEventListener("click",t=>{t.preventDefault(),e=!e,o.textContent=e?"Registrati":"Accedi",n.textContent=e?"Registrati":"Accedi",t.target.textContent=e?"Hai già un account? Accedi":"Non hai un account? Registrati",d.classList.toggle("hidden",!e),r.classList.toggle("hidden",e)}),i?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("email").value,n=document.getElementById("password").value,d=document.getElementById("error-message"),r=document.getElementById("success-message");d.style.display="none",r.style.display="none";try{if(e){const t=document.getElementById("confirm-password").value,i=document.getElementById("nome").value,s=document.getElementById("cognome").value,a=document.getElementById("tipo-utente").value,c=document.getElementById("appartamento").value,l=document.getElementById("telefono").value,m=document.getElementById("millesimi").value;if(n!==t)throw new Error("Le password non coincidono");if(!i||!s||!a)throw new Error("Compila tutti i campi obbligatori (nome, cognome, tipo utente).");if(a === 'condomino' && !m) throw new Error("I condomini devono inserire i millesimi.");await register(o,n,{nome:i,cognome:s,tipoUtente:a,appartamento:c,telefono:l,millesimi:m}),r.textContent="Registrazione completata! Ora puoi accedere.",r.style.display="block"}else await login(o,n)}catch(p){d.textContent=p.message,d.style.display="block"}}),r?.addEventListener("click",async t=>{t.preventDefault();const e=document.getElementById("email").value,o=document.getElementById("error-message"),n=document.getElementById("success-message");if(!e)return o.textContent="Inserisci la tua email per reimpostare la password",void(o.style.display="block");try{await resetPassword(e),n.textContent="Email di reset password inviata!",n.style.display="block",o.style.display="none"}catch(d){o.textContent=d.message,o.style.display="block"}});
+        document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const button = e.currentTarget;
+                const targetId = button.dataset.target;
+                const passwordInput = document.getElementById(targetId);
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                button.innerHTML = isPassword ? eyeSlashIcon : eyeIcon;
+            });
+        });
+        };
+
         const setupBachecaHandlers=()=>{const e=document.getElementById("create-communication-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("comm-title"),n=document.getElementById("comm-content"),d=document.getElementById("publish-comm-btn"),i=o.value.trim(),r=n.value.trim();if(!i||!r)return alert("Compila titolo e messaggio.");d.disabled=!0,d.textContent="...";try{await addDoc(collection(db,"communications"),{title:i,content:r,createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()}),await logActivity("communication_posted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:i}),e.reset()}catch(c){console.error("Errore:",c),alert("Si è verificato un errore.")}finally{d.disabled=!1,d.textContent="Pubblica"}})};
         const setupPollHandlers=()=>{const e=document.getElementById("create-poll-form");if(!e)return;const t=document.getElementById("poll-options-list"),o=document.getElementById("add-poll-option");function n(e=""){const o=document.createElement("div");o.className="flex items-center gap-2",o.innerHTML=`<input type="text" class="form-input" style="flex:1" required placeholder="Testo opzione" value="${e}"><button type="button" class="btn-remove-option" style="background:var(--surface-color-light); border:none; color:var(--primary-text); width:36px; height:36px; border-radius:50%; cursor:pointer;">−</button>`,o.querySelector(".btn-remove-option").onclick=()=>{t.removeChild(o),t.childElementCount<2&&n()},t.appendChild(o)}0===t.childElementCount&&(n(),n()),o.onclick=e=>{e.preventDefault(),n()},e.addEventListener("submit",async o=>{o.preventDefault();const n=document.getElementById("poll-title").value,t=document.getElementById("poll-description").value,d=document.getElementById("poll-deadline").value,i=document.getElementById("poll-deadline-time").value,l=e.querySelectorAll('#poll-options-list input[type="text"]'),r=Array.from(l).map(e=>e.value.trim()).filter(Boolean).map(e=>({text:e,votes:0}));if(r.length<2)return alert("Inserisci almeno due opzioni.");if(!d||!i)return alert("Inserisci una data e un'ora di scadenza.");const c=`${d}T${i}`,s=new Date(c);try{await addDoc(collection(db,"polls"),{title:n,description:t,options:r,deadline:s,createdBy:userProfile.nome+" "+userProfile.cognome,createdById:currentUser.uid,createdAt:serverTimestamp(),voters:[]}),await logActivity("poll_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:n}),e.reset()}catch(p){console.error("Errore:",p)}}),e.addEventListener("reset",()=>{setTimeout(()=>{t.innerHTML="",n(),n()},0)})};
         const setupReportHandlers = () => { const e=document.getElementById("create-report-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("report-title").value,n=document.getElementById("report-description").value,i=document.getElementById("report-category").value,d=document.getElementById("report-priority").value,r=document.getElementById("report-location").value;if(!o||!n||!i||!d||!r)return alert("Compila tutti i campi.");const c={title:o,description:n,category:i,priority:d,location:r,status:"aperta",createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()},l=document.getElementById("report-recipient");l&&l.value?c.recipientType=l.value:c.recipientType="management";try{await addDoc(collection(db,"reports"),c),await logActivity("report_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:o,priority:d}),e.reset()}catch(a){console.error("Errore:",a)}})};
-        const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value,i=document.getElementById("profile-appartamento").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d,appartamento:i}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(r){showProfileMessage("error",`Errore: ${r.message}`)}})};
+        const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value,i=document.getElementById("profile-appartamento").value,l=parseFloat(document.getElementById("profile-millesimi").value)||0;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d,appartamento:i,millesimi:l}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
         const showProfileMessage=(e,t)=>{const o=document.getElementById("profile-message");o&&(o.className=`message-box ${e}`,o.textContent=t,o.style.display="block",setTimeout(()=>{o.style.display="none"},5e3))};
         
-        // --- MODIFICA INIZIO: Funzione per visualizzare il dettaglio della comunicazione ---
         const showCommunicationDetail = async (commId) => {
             try {
                 const commDoc = await getDoc(doc(db, "communications", commId));
@@ -746,7 +852,6 @@
                 console.error("Errore nel caricare la comunicazione:", error);
             }
         };
-        // --- MODIFICA FINE ---
 
         const loadCommunications = () => {
             const listEl = document.getElementById("communications-list");
@@ -757,7 +862,6 @@
                     const comm = docSnap.data();
                     if (!comm.createdAt) return "";
                     const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric"});
-                    // --- MODIFICA INIZIO: Aggiunto onclick per aprire il dettaglio ---
                     return `
                     <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
                         <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
@@ -767,7 +871,6 @@
                             <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
                         </div>
                     </div>`;
-                    // --- MODIFICA FINE ---
                 }).join("");
                 if (currentPage === 'bacheca' && !snapshot.empty) {
                     localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
@@ -776,7 +879,6 @@
             });
         };
         
-        // --- MODIFICA INIZIO: Funzione per visualizzare i votanti del sondaggio ---
         const showPollVoters = async (pollId) => {
             try {
                 const pollDoc = await getDoc(doc(db, "polls", pollId));
@@ -784,23 +886,39 @@
                     const poll = pollDoc.data();
                     let votersHtml;
                     if (poll.voters && poll.voters.length > 0) {
-                        votersHtml = poll.voters.map(voter => `
+                        const totalVoters = poll.voters.length;
+                        const totalMillesimi = poll.voters.reduce((sum, voter) => sum + (parseFloat(voter.millesimi) || 0), 0);
+
+                        const summaryHtml = `
+                            <div style="background: var(--surface-color-light); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                                <div style="display:flex; justify-content:space-between; font-weight:600;"><span>N. Condomini Votanti:</span><span>${totalVoters}</span></div>
+                                <hr style="border:none; border-top: 1px solid var(--surface-color); margin: 0.75rem 0;">
+                                <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Tot. Millesimi Votanti:</span><span>${totalMillesimi.toFixed(2)} ‰</span></div>
+                            </div>
+                            <h4 style="font-weight: 600; margin-bottom: 0.5rem;">Dettaglio per Condomino:</h4>
+                        `;
+
+                        const votersListHtml = poll.voters.map(voter => `
                             <div class="voter-item">
                                 <span>${voter.name}</span>
-                                <span style="color:var(--secondary-text)">${voter.vote}</span>
+                                <span style="color:var(--secondary-text); text-align:right;">
+                                    <div>${voter.vote}</div>
+                                    <div style="font-size:0.8rem">${(parseFloat(voter.millesimi) || 0).toFixed(2)} ‰</div>
+                                </span>
                             </div>
                         `).join('');
+                        votersHtml = summaryHtml + votersListHtml;
                     } else {
                         votersHtml = '<p>Nessun voto registrato per questo sondaggio.</p>';
                     }
-                    showModal('Dettaglio Voti', votersHtml);
+                    showModal('Dettaglio Voti e Millesimi', votersHtml);
                 }
             } catch (error) {
                 console.error("Errore nel caricare i votanti:", error);
             }
         };
-        // --- MODIFICA FINE ---
 
+        // --- CORREZIONE APPLICATA QUI ---
         const loadPolls = () => {
             const container = document.getElementById("polls-container");
             if (!container) return;
@@ -813,8 +931,9 @@
                     const isExpired = deadline < new Date();
                     const hasVoted = poll.voters && poll.voters.some(v => v.uid === currentUser.uid);
                     const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
-                    // --- MODIFICA INIZIO: Aggiunto pulsante "Mostra Votanti" ---
+                    
                     const showVotersButton = isExpired ? `<button onclick="showPollVoters('${docSnap.id}')" class="btn btn-secondary w-full mt-4">Mostra Votanti</button>` : '';
+
                     return `
                     <div class="card" style="padding:1rem; margin-bottom:1rem;">
                         <div class="list-item" style="padding:0; margin-bottom:1rem; cursor:default;">
@@ -840,7 +959,6 @@
                         </div>
                         ${showVotersButton}
                     </div>`;
-                    // --- MODIFICA FINE ---
                 }).join("");
             });
         };
@@ -849,12 +967,66 @@
             const mainContainer = document.getElementById('reports-main-container');
             const secondaryContainer = document.getElementById('reports-secondary-container');
             if (!mainContainer || !secondaryContainer) return;
-            const renderReportCardHTML=(e,t)=>{if(!e.createdAt)return"";const o=e.createdAt.toDate().toLocaleString("it-IT",{day:"2-digit",month:"short"});const a=["amministratore","custode","consigliere","fornitore"].includes(userProfile?.tipoUtente);const n=a,d="management"===e.recipientType&&n||e.recipientType===userProfile?.tipoUtente||"consigliere"===e.recipientType&&"consigliere"===userProfile?.tipoUtente;return`<div class="list-item"><div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div><div class="list-item-content"><div class="title">${e.title}</div><div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;"><span class="badge ${getPriorityColor(e.priority)}">${e.priority}</span><span class="badge ${getStatusColor(e.status)}">${e.status}</span></div></div>${a&&"chiusa"!==e.status&&d?`<div class="list-item-action"><button onclick="updateReportStatus('${t}','${"aperta"===e.status?"in-corso":"chiusa"}')" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${"aperta"===e.status?"Prendi":"Chiudi"}</button></div>`:""}</div>`};
+            const renderReportCardHTML=(e,t)=>{if(!e.createdAt)return"";const o=e.createdAt.toDate().toLocaleString("it-IT",{day:"2-digit",month:"short"});const a=["amministratore","custode","consigliere","fornitore","supervisore"].includes(userProfile?.tipoUtente);const n=a,d="management"===e.recipientType&&n||e.recipientType===userProfile?.tipoUtente||"consigliere"===e.recipientType&&"consigliere"===userProfile?.tipoUtente;return`<div class="list-item"><div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div><div class="list-item-content"><div class="title">${e.title}</div><div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;"><span class="badge ${getPriorityColor(e.priority)}">${e.priority}</span><span class="badge ${getStatusColor(e.status)}">${e.status}</span></div></div>${a&&"chiusa"!==e.status&&d?`<div class="list-item-action"><button onclick="updateReportStatus('${t}','${"aperta"===e.status?"in-corso":"chiusa"}')" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${"aperta"===e.status?"Prendi":"Chiudi"}</button></div>`:""}</div>`};
             const renderSnapshot=(e,t,o)=>{if(t.empty)return void(e.innerHTML=`<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`);const a=t.docs.sort((e,t)=>{const o=e.data().createdAt?.toMillis()||0,n=t.data().createdAt?.toMillis()||0;return n-o});e.innerHTML=a.map(e=>renderReportCardHTML(e.data(),e.id)).join("")};
-            const userType=userProfile.tipoUtente,userId=currentUser.uid,qSent=query(collection(db,"reports"),where("createdById","==",userId));onSnapshot(qSent,s=>renderSnapshot(secondaryContainer,s,"Non hai inviato segnalazioni."));let qToManage;if(["amministratore","custode","consigliere","fornitore"].includes(userType)){qToManage=query(collection(db,"reports"),orderBy("createdAt","desc"));onSnapshot(qToManage,s=>renderSnapshot(mainContainer,s,"Nessuna segnalazione ricevuta."))}else{qToManage=query(collection(db,"reports"),where("recipientType","in",["management","condomino"]));onSnapshot(qToManage,s=>renderSnapshot(mainContainer,s,"Nessuna segnalazione pubblica."))}
+            const userType=userProfile.tipoUtente,userId=currentUser.uid,qSent=query(collection(db,"reports"),where("createdById","==",userId));onSnapshot(qSent,s=>renderSnapshot(secondaryContainer,s,"Non hai inviato segnalazioni."));let qToManage;if(["amministratore","custode","consigliere","fornitore", "supervisore"].includes(userType)){qToManage=query(collection(db,"reports"),orderBy("createdAt","desc"));onSnapshot(qToManage,s=>renderSnapshot(mainContainer,s,"Nessuna segnalazione ricevuta."))}else{qToManage=query(collection(db,"reports"),where("recipientType","in",["management","condomino"]));onSnapshot(qToManage,s=>renderSnapshot(mainContainer,s,"Nessuna segnalazione pubblica."))}
         };
 
-        const voteOnPoll=async(e,t)=>{try{const o=doc(db,"polls",e),n=await getDoc(o);if(!n.exists())return;const i=n.data();if(i.deadline.toDate()<new Date)return alert("Sondaggio scaduto.");if(i.voters?.some(e=>e.uid===currentUser.uid))return alert("Hai già votato!");const d=[...i.options];d[t].votes=(d[t].votes||0)+1;const a=i.options[t].text,r=[...i.voters||[],{uid:currentUser.uid,name:`${userProfile.nome} ${userProfile.cognome}`,vote:a}];await updateDoc(o,{options:d,voters:r}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:i.title,option:a})}catch(l){console.error("Errore nel voto:",l)}};
+        const loadUsers = async () => {
+            const container = document.getElementById('user-list-container');
+            if (!container) return;
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                container.innerHTML = '<p>Accesso non autorizzato.</p>';
+                return;
+            }
+            try {
+                const usersSnapshot = await getDocs(query(collection(db, "users"), orderBy("cognome")));
+                if (usersSnapshot.empty) {
+                    container.innerHTML = '<p>Nessun utente trovato.</p>';
+                } else {
+                    container.innerHTML = usersSnapshot.docs.map(docSnap => {
+                        const user = docSnap.data();
+                        const userId = docSnap.id;
+                        return `
+                        <div class="list-item" style="cursor:default; flex-wrap:wrap;">
+                            <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg></div>
+                            <div class="list-item-content">
+                                <div class="title">${user.nome} ${user.cognome}</div>
+                                <div class="subtitle">${user.email} - ${user.tipoUtente}</div>
+                            </div>
+                            <div class="list-item-action flex items-center gap-2 mt-4 w-full" style="padding-left: 64px;">
+                                <label for="millesimi-${userId}" class="form-label" style="margin:0;">Millesimi:</label>
+                                <input type="number" step="0.01" id="millesimi-${userId}" value="${user.millesimi || 0}" class="form-input" style="width: 100px; padding: 0.5rem;">
+                                <button onclick="updateUserMillesimi('${userId}')" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size: 0.8rem;">Salva</button>
+                            </div>
+                        </div>`;
+                    }).join("");
+                }
+            } catch (error) {
+                console.error("Errore nel caricare gli utenti:", error);
+                container.innerHTML = '<p>Errore nel caricamento degli utenti.</p>';
+            }
+        };
+
+        const updateUserMillesimi = async (userId) => {
+            const input = document.getElementById(`millesimi-${userId}`);
+            const newMillesimi = parseFloat(input.value);
+            if (isNaN(newMillesimi)) {
+                alert('Valore millesimi non valido.');
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'users', userId), { millesimi: newMillesimi });
+                await logActivity("millesimi_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { targetUserId: userId, newMillesimi: newMillesimi });
+                showModal('Successo', 'Millesimi aggiornati correttamente.');
+            } catch (error) {
+                console.error('Errore aggiornamento millesimi:', error);
+                showModal('Errore', 'Si è verificato un errore durante l\'aggiornamento.');
+            }
+        };
+
+        const voteOnPoll=async(e,t)=>{try{const o=doc(db,"polls",e),n=await getDoc(o);if(!n.exists())return;const i=n.data();if(i.deadline.toDate()<new Date)return alert("Sondaggio scaduto.");if(i.voters?.some(e=>e.uid===currentUser.uid))return alert("Hai già votato!");const d=[...i.options];d[t].votes=(d[t].votes||0)+1;const a=i.options[t].text;const userMillesimi=userProfile?.millesimi||0;const r=[...i.voters||[],{uid:currentUser.uid,name:`${userProfile.nome} ${userProfile.cognome}`,vote:a,millesimi:userMillesimi}];await updateDoc(o,{options:d,voters:r}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:i.title,option:a})}catch(l){console.error("Errore nel voto:",l)}};
+
         const updateReportStatus=async(e,t)=>{try{await updateDoc(doc(db,"reports",e),{status:t,updatedAt:serverTimestamp()}),await logActivity("report_updated",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{reportId:e,newStatus:t})}catch(o){console.error("Errore nell'aggiornamento:",o)}};
         const updateNotificationUI=e=>{const t=document.getElementById("bacheca-notification-badge");t?.classList.toggle("hidden",!e)};
         const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
@@ -863,17 +1035,17 @@
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
         window.updateReportStatus = updateReportStatus;
-        // --- MODIFICA INIZIO: Esponi le nuove funzioni alla finestra globale ---
         window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
-        // --- MODIFICA FINE ---
+        window.updateUserMillesimi = updateUserMillesimi;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 await loadUserProfile(user);
-                const isCustodian = userProfile?.tipoUtente === 'custode';
-                const landingPage = isCustodian ? 'segnalazioni' : 'dashboard';
+                const userType = userProfile?.tipoUtente;
+                let landingPage = 'dashboard';
+                if (userType === 'custode') landingPage = 'segnalazioni';
                 navigateTo(currentPage === 'login' || !currentPage ? landingPage : currentPage);
             } else {
                 if (communicationsListener) communicationsListener();
