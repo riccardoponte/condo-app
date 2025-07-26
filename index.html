@@ -550,7 +550,7 @@
         
         const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
         const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
-        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,appartamento:o.appartamento||"",telefono:o.telefono||"",millesimi:parseFloat(o.millesimi)||0,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
+        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
         const logout=async()=>{communicationsListener&&(communicationsListener(),communicationsListener=null),await signOut(auth),currentUser=null,userProfile=null,navigateTo("login")};
         const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
         const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
@@ -614,9 +614,25 @@
                         </div>
                         <input id="tipo-utente" name="tipo-utente" type="hidden" value="condomino">
                         <p style="font-size: 0.8rem; color: var(--secondary-text); text-align: center; margin-top: -0.5rem; margin-bottom: 1rem;">La registrazione è consentita solo ai condomini. Per altri ruoli, contattare il supervisore.</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group"><label for="appartamento" class="form-label">Appartamento</label><input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="form-input"></div>
-                            <div class="form-group"><label for="millesimi" class="form-label">Millesimi</label><input id="millesimi" name="millesimi" type="number" step="0.01" placeholder="es. 35.12" class="form-input"></div>
+                        <div class="form-group">
+                            <label for="nominativo-select" class="form-label">Nominativo Titolare</label>
+                            <input id="nominativo-select" name="nominativo-select" list="nominativi-list" type="text" placeholder="Cerca e seleziona il titolare..." class="form-input" autocomplete="off">
+                            <datalist id="nominativi-list"></datalist>
+                        </div>
+
+                        <!-- Questo box apparirà solo se l'utente ha più proprietà -->
+                        <div id="multi-property-checkbox-container" class="form-group hidden" style="background: var(--surface-color-light); padding: 1rem; border-radius: var(--radius-sm);">
+                             <label class="form-label" style="margin-bottom: 1rem;">Seleziona le tue Unità Immobiliari</label>
+                             <div id="property-checkboxes" class="space-y-4">
+                                 <!-- Le checkbox verranno aggiunte dinamicamente qui -->
+                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Riepilogo Selezione</label>
+                            <div id="selection-summary" style="background: var(--surface-color-light); padding: 1rem; border-radius: var(--radius-sm); min-height: 60px; color: var(--secondary-text);">
+                                Seleziona un nominativo per continuare...
+                            </div>
                         </div>
                         <div class="form-group"><label for="telefono" class="form-label">Telefono</label><input id="telefono" name="telefono" type="tel" placeholder="123-456-7890" class="form-input"></div>
                     </div>
@@ -776,12 +792,19 @@
                         </div>
                         <div><label class="form-label">Email</label><input type="email" value="${currentUser?.email || ''}" required class="form-input" disabled></div>
                         <div><label class="form-label">Telefono</label><input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="Nessun numero" class="form-input"></div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="form-label">Appartamento</label><input type="text" id="profile-appartamento" value="${userProfile?.appartamento || ''}" placeholder="Non specificato" class="form-input"></div>
-                            <div><label class="form-label">Millesimi</label><input type="number" step="0.01" id="profile-millesimi" value="${userProfile?.millesimi || 0}" class="form-input"></div>
+                        <div class="form-group">
+                            <label class="form-label">Le Tue Proprietà</label>
+                            <div style="background: var(--surface-color-light); padding: 1rem; border-radius: var(--radius-sm);">
+                                ${userProfile?.proprieta && userProfile.proprieta.length > 0
+                                    ? `<ul>${userProfile.proprieta.map(p => `<li style="list-style-type: disc; margin-left: 20px;">${p.interno} (${(p.millesimi || 0).toFixed(2)} ‰)</li>`).join('')}</ul>
+                                       <hr style="border-color: var(--surface-color); margin: 0.75rem 0;">
+                                       <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Millesimi Totali:</span><span>${(userProfile.millesimiTotali || 0).toFixed(2)} ‰</span></div>`
+                                    : '<p style="color:var(--secondary-text);">Nessuna proprietà associata.</p>'
+                                }
+                            </div>
                         </div>
                         <div><label class="form-label">Tipo Utente</label><input type="text" value="${userProfile?.tipoUtente || ''}" class="form-input" disabled></div>
-                        <button type="submit" class="btn btn-primary w-full">Salva Modifiche</button>
+                        <button type="submit" class="btn btn-primary w-full">Salva Nome e Telefono</button>
                     </form>
                 </div>
                  <div style="margin-top: 2rem;">
@@ -979,23 +1002,178 @@
             }
         };
 
-        const setupLoginHandlers=()=>{let e=!1;const t=document.getElementById("toggle-auth"),o=document.getElementById("auth-title"),n=document.getElementById("auth-submit"),d=document.getElementById("register-fields"),i=document.getElementById("auth-form"),r=document.getElementById("forgot-password");t?.addEventListener("click",t=>{t.preventDefault(),e=!e,o.textContent=e?"Registrati":"Accedi",n.textContent=e?"Registrati":"Accedi",t.target.textContent=e?"Hai già un account? Accedi":"Non hai un account? Registrati",d.classList.toggle("hidden",!e),r.classList.toggle("hidden",e)}),i?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("email").value,n=document.getElementById("password").value,d=document.getElementById("error-message"),r=document.getElementById("success-message");d.style.display="none",r.style.display="none";try{if(e){const t=document.getElementById("confirm-password").value,i=document.getElementById("nome").value,s=document.getElementById("cognome").value,a=document.getElementById("tipo-utente").value,c=document.getElementById("appartamento").value,l=document.getElementById("telefono").value,m=document.getElementById("millesimi").value;if(n!==t)throw new Error("Le password non coincidono");if(!i||!s||!a)throw new Error("Compila tutti i campi obbligatori (nome, cognome, tipo utente).");if(a === 'condomino' && !m) throw new Error("I condomini devono inserire i millesimi.");await register(o,n,{nome:i,cognome:s,tipoUtente:a,appartamento:c,telefono:l,millesimi:m}),r.textContent="Registrazione completata! Ora puoi accedere.",r.style.display="block"}else await login(o,n)}catch(p){d.textContent=p.message,d.style.display="block"}}),r?.addEventListener("click",async t=>{t.preventDefault();const e=document.getElementById("email").value,o=document.getElementById("error-message"),n=document.getElementById("success-message");if(!e)return o.textContent="Inserisci la tua email per reimpostare la password",void(o.style.display="block");try{await resetPassword(e),n.textContent="Email di reset password inviata!",n.style.display="block",o.style.display="none"}catch(d){o.textContent=d.message,o.style.display="block"}});
-        document.querySelectorAll('.password-toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const button = e.currentTarget;
-                const targetId = button.dataset.target;
-                const passwordInput = document.getElementById(targetId);
-                const isPassword = passwordInput.type === 'password';
-                passwordInput.type = isPassword ? 'text' : 'password';
-                button.innerHTML = isPassword ? eyeSlashIcon : eyeIcon;
+        const setupLoginHandlers=()=>{
+    let isRegistering=!1;
+    const toggleAuthBtn=document.getElementById("toggle-auth"),
+        authTitle=document.getElementById("auth-title"),
+        authSubmitBtn=document.getElementById("auth-submit"),
+        registerFields=document.getElementById("register-fields"),
+        authForm=document.getElementById("auth-form"),
+        forgotPasswordBtn=document.getElementById("forgot-password");
+
+    // Riferimenti diretti agli elementi del form di registrazione
+    const nominativoInput = document.getElementById('nominativo-select');
+    const checkboxContainer = document.getElementById('multi-property-checkbox-container');
+    const summaryEl = document.getElementById('selection-summary');
+
+    let groupedProperties = {};
+    
+    const findHeader = (headers, keywords) => {
+        const lowerCaseKeywords = keywords.map(k => k.toLowerCase());
+        return headers.find(header => lowerCaseKeywords.includes(header.toLowerCase()));
+    };
+
+    const loadPropertyDataForRegistration = async () => {
+        try {
+            if (Object.keys(groupedProperties).length > 0) return;
+            const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) return;
+            
+            const tableData = querySnapshot.docs[0].data().tableData || [];
+            if (tableData.length === 0) return;
+
+            const headers = Object.keys(tableData[0]);
+            const nominativoHeader = findHeader(headers, ['nominativo']);
+            const apartmentHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
+            const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
+
+            if (!nominativoHeader || !apartmentHeader || !millesimiHeader) {
+                console.error("Intestazioni non trovate! Assicurarsi che il file Excel contenga colonne per 'Nominativo', 'Interno' e 'Millesimi'.");
+                return;
+            }
+            
+            tableData.forEach(item => {
+                const nominativo = item[nominativoHeader];
+                if (!nominativo) return;
+                if (!groupedProperties[nominativo]) groupedProperties[nominativo] = [];
+                groupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
             });
+            
+            const datalistEl = document.getElementById('nominativi-list');
+            datalistEl.innerHTML = Object.keys(groupedProperties).map(name => `<option value="${name}"></option>`).join('');
+            
+        } catch (error) { console.error("Errore nel caricamento dati per la registrazione:", error); }
+    };
+    
+    const updateSummary = () => {
+        const checkedBoxes = checkboxContainer.querySelectorAll('input[type="checkbox"]:checked');
+        
+        if (checkedBoxes.length === 0) {
+            summaryEl.innerHTML = '<span style="color:var(--warning);">Seleziona almeno una proprietà.</span>';
+            return;
+        }
+
+        let totalMillesimi = 0;
+        let summaryHtml = '<strong>Unità Selezionate:</strong><ul>';
+        checkedBoxes.forEach(box => {
+            const apartment = box.dataset.apartment;
+            const millesimi = parseFloat(box.dataset.millesimi) || 0;
+            summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${apartment} (${millesimi.toFixed(2)} ‰)</li>`;
+            totalMillesimi += millesimi;
         });
-        };
+        summaryHtml += `</ul><hr style="border-color: var(--surface-color); margin: 0.5rem 0;"><strong style="display: flex; justify-content: space-between;"><span>Totale Millesimi:</span><span>${totalMillesimi.toFixed(2)} ‰</span></strong>`;
+        summaryEl.innerHTML = summaryHtml;
+    };
+
+    const handleNominativoSelection = (event) => {
+        const selectedName = event.target.value;
+        const properties = groupedProperties[selectedName];
+        
+        const checkboxes = document.getElementById('property-checkboxes');
+
+        checkboxes.innerHTML = '';
+        checkboxContainer.classList.add('hidden');
+        summaryEl.innerHTML = 'Seleziona un nominativo per continuare...';
+
+        if (!properties) return;
+
+        if (properties.length === 1) {
+            const prop = properties[0];
+            summaryEl.innerHTML = `<strong>Unità Selezionata:</strong><br>${prop.apartment} (${(parseFloat(prop.millesimi)||0).toFixed(2)} ‰)`;
+        } else {
+            properties.forEach((prop, index) => {
+                checkboxes.innerHTML += `
+                    <label for="prop-${index}" class="flex items-center gap-4" style="cursor:pointer;">
+                        <input type="checkbox" id="prop-${index}" data-apartment="${prop.apartment}" data-millesimi="${prop.millesimi}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">
+                        <span>${prop.apartment} - ${prop.millesimi} ‰</span>
+                    </label>`;
+            });
+            checkboxContainer.classList.remove('hidden');
+            updateSummary();
+        }
+    };
+
+    // Collega gli eventi direttamente agli elementi del form
+    nominativoInput?.addEventListener('input', handleNominativoSelection);
+    checkboxContainer?.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
+            updateSummary();
+        }
+    });
+
+    toggleAuthBtn?.addEventListener("click",event=>{
+        event.preventDefault(); isRegistering=!isRegistering;
+        authTitle.textContent=isRegistering?"Registrati":"Accedi";
+        authSubmitBtn.textContent=isRegistering?"Registrati":"Accedi";
+        event.target.textContent=isRegistering?"Hai già un account? Accedi":"Non hai un account? Registrati";
+        registerFields.classList.toggle("hidden",!isRegistering);
+        forgotPasswordBtn.classList.toggle("hidden",isRegistering);
+        if(isRegistering) loadPropertyDataForRegistration();
+    });
+
+    authForm?.addEventListener("submit",async t=>{
+        t.preventDefault();
+        const o=document.getElementById("email").value, n=document.getElementById("password").value, d=document.getElementById("error-message"), r=document.getElementById("success-message");
+        d.style.display="none"; r.style.display="none";
+        try{
+            if(isRegistering){
+                const t=document.getElementById("confirm-password").value, i=document.getElementById("nome").value, s=document.getElementById("cognome").value, a=document.getElementById("tipo-utente").value, l=document.getElementById("telefono").value;
+                const selectedName = document.getElementById('nominativo-select').value;
+                const propertiesForUser = [];
+                
+                if (!groupedProperties[selectedName]) throw new Error("Seleziona un nominativo valido.");
+
+                if (groupedProperties[selectedName].length === 1) {
+                    const prop = groupedProperties[selectedName][0];
+                    propertiesForUser.push({ interno: prop.apartment, millesimi: parseFloat(prop.millesimi) || 0 });
+                } else {
+                    const checkedBoxes = document.querySelectorAll('#property-checkboxes input:checked');
+                    if (checkedBoxes.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
+                    checkedBoxes.forEach(box => {
+                        propertiesForUser.push({ interno: box.dataset.apartment, millesimi: parseFloat(box.dataset.millesimi) || 0 });
+                    });
+                }
+                
+                if(n!==t)throw new Error("Le password non coincidono");
+                if(!i||!s||!a)throw new Error("Compila tutti i campi obbligatori.");
+                
+                await register(o,n,{nome:i,cognome:s,tipoUtente:a,telefono:l,proprieta:propertiesForUser});
+                r.textContent="Registrazione completata! Ora puoi accedere."; r.style.display="block"; authForm.reset();
+            }else{ await login(o,n); }
+        }catch(p){ d.textContent=p.message; d.style.display="block"; }
+    });
+    
+    forgotPasswordBtn?.addEventListener("click",async t=>{
+        t.preventDefault(); const e=document.getElementById("email").value, o=document.getElementById("error-message"), n=document.getElementById("success-message");
+        if(!e)return o.textContent="Inserisci la tua email per reimpostare la password",void(o.style.display="block");
+        try{ await resetPassword(e); n.textContent="Email di reset password inviata!"; n.style.display="block"; o.style.display="none";
+        }catch(d){ o.textContent=d.message; o.style.display="block"; }
+    });
+
+    document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const button = e.currentTarget; const targetId = button.dataset.target; const passwordInput = document.getElementById(targetId);
+            const isPassword = passwordInput.type === 'password'; passwordInput.type = isPassword ? 'text' : 'password';
+            button.innerHTML = isPassword ? eyeSlashIcon : eyeIcon;
+        });
+    });
+};
 
         const setupBachecaHandlers=()=>{const e=document.getElementById("create-communication-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("comm-title"),n=document.getElementById("comm-content"),d=document.getElementById("publish-comm-btn"),i=o.value.trim(),r=n.value.trim();if(!i||!r)return alert("Compila titolo e messaggio.");d.disabled=!0,d.textContent="...";try{await addDoc(collection(db,"communications"),{title:i,content:r,createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()}),await logActivity("communication_posted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:i}),e.reset()}catch(c){console.error("Errore:",c),alert("Si è verificato un errore.")}finally{d.disabled=!1,d.textContent="Pubblica"}})};
         const setupPollHandlers=()=>{const e=document.getElementById("create-poll-form");if(!e)return;const t=document.getElementById("poll-options-list"),o=document.getElementById("add-poll-option");function n(e=""){const o=document.createElement("div");o.className="flex items-center gap-2",o.innerHTML=`<input type="text" class="form-input" style="flex:1" required placeholder="Testo opzione" value="${e}"><button type="button" class="btn-remove-option" style="background:var(--surface-color-light); border:none; color:var(--primary-text); width:36px; height:36px; border-radius:50%; cursor:pointer;">−</button>`,o.querySelector(".btn-remove-option").onclick=()=>{t.removeChild(o),t.childElementCount<2&&n()},t.appendChild(o)}0===t.childElementCount&&(n(),n()),o.onclick=e=>{e.preventDefault(),n()},e.addEventListener("submit",async o=>{o.preventDefault();const n=document.getElementById("poll-title").value,t=document.getElementById("poll-description").value,d=document.getElementById("poll-deadline").value,i=document.getElementById("poll-deadline-time").value,l=e.querySelectorAll('#poll-options-list input[type="text"]'),r=Array.from(l).map(e=>e.value.trim()).filter(Boolean).map(e=>({text:e,votes:0}));if(r.length<2)return alert("Inserisci almeno due opzioni.");if(!d||!i)return alert("Inserisci una data e un'ora di scadenza.");const c=`${d}T${i}`,s=new Date(c);try{await addDoc(collection(db,"polls"),{title:n,description:t,options:r,deadline:s,createdBy:userProfile.nome+" "+userProfile.cognome,createdById:currentUser.uid,createdAt:serverTimestamp(),voters:[]}),await logActivity("poll_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:n}),e.reset()}catch(p){console.error("Errore:",p)}}),e.addEventListener("reset",()=>{setTimeout(()=>{t.innerHTML="",n(),n()},0)})};
         const setupReportHandlers = () => { const e=document.getElementById("create-report-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("report-title").value,n=document.getElementById("report-description").value,i=document.getElementById("report-category").value,d=document.getElementById("report-priority").value,r=document.getElementById("report-location").value;if(!o||!n||!i||!d||!r)return alert("Compila tutti i campi.");const c={title:o,description:n,category:i,priority:d,location:r,status:"aperta",createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()},l=document.getElementById("report-recipient");l&&l.value?c.recipientType=l.value:c.recipientType="management";try{await addDoc(collection(db,"reports"),c),await logActivity("report_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:o,priority:d}),e.reset()}catch(a){console.error("Errore:",a)}})};
-        const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value,i=document.getElementById("profile-appartamento").value,l=parseFloat(document.getElementById("profile-millesimi").value)||0;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d,appartamento:i,millesimi:l}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
+        const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
 
         const setupImportazioneHandlers = async () => {
             // Riferimenti agli elementi DOM
@@ -1415,17 +1593,26 @@
                     container.innerHTML = usersSnapshot.docs.map(docSnap => {
                         const user = docSnap.data();
                         const userId = docSnap.id;
+                        const propertiesHtml = user.proprieta && user.proprieta.length > 0
+                            ? user.proprieta.map(p => `<li>${p.interno}: ${p.millesimi.toFixed(2)} ‰</li>`).join('')
+                            : '<li>Nessuna proprietà</li>';
+                        
                         return `
-                        <div class="list-item" style="cursor:default; flex-wrap:wrap;">
-                            <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg></div>
-                            <div class="list-item-content">
-                                <div class="title">${user.nome} ${user.cognome}</div>
-                                <div class="subtitle">${user.email} - ${user.tipoUtente}</div>
+                        <div class="card" style="margin-bottom: 1rem;">
+                            <div class="list-item" style="padding:0; cursor:default;">
+                                <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg></div>
+                                <div class="list-item-content">
+                                    <div class="title">${user.nome} ${user.cognome}</div>
+                                    <div class="subtitle">${user.email} - ${user.tipoUtente}</div>
+                                </div>
                             </div>
-                            <div class="list-item-action flex items-center gap-2 mt-4 w-full" style="padding-left: 64px;">
-                                <label for="millesimi-${userId}" class="form-label" style="margin:0;">Millesimi:</label>
-                                <input type="number" step="0.01" id="millesimi-${userId}" value="${user.millesimi || 0}" class="form-input" style="width: 100px; padding: 0.5rem;">
-                                <button onclick="updateUserMillesimi('${userId}')" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size: 0.8rem;">Salva</button>
+                            <div style="padding-left: 64px; margin-top: 1rem; font-size: 0.9rem;">
+                                <strong class="form-label" style="color:var(--primary-text);">Proprietà e Millesimi:</strong>
+                                <ul style="list-style-type: disc; margin-left: 20px; color: var(--secondary-text);">
+                                   ${propertiesHtml}
+                                </ul>
+                                <hr style="border-color: var(--surface-color); margin: 0.75rem 0;">
+                                <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Millesimi Totali:</span><span>${(user.millesimiTotali || 0).toFixed(2)} ‰</span></div>
                             </div>
                         </div>`;
                     }).join("");
@@ -1436,24 +1623,9 @@
             }
         };
 
-        const updateUserMillesimi = async (userId) => {
-            const input = document.getElementById(`millesimi-${userId}`);
-            const newMillesimi = parseFloat(input.value);
-            if (isNaN(newMillesimi)) {
-                alert('Valore millesimi non valido.');
-                return;
-            }
-            try {
-                await updateDoc(doc(db, 'users', userId), { millesimi: newMillesimi });
-                await logActivity("millesimi_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { targetUserId: userId, newMillesimi: newMillesimi });
-                showModal('Successo', 'Millesimi aggiornati correttamente.');
-            } catch (error) {
-                console.error('Errore aggiornamento millesimi:', error);
-                showModal('Errore', 'Si è verificato un errore durante l\'aggiornamento.');
-            }
-        };
+        // LA FUNZIONE updateUserMillesimi È STATA RIMOSSA
 
-        const voteOnPoll=async(e,t)=>{try{const o=doc(db,"polls",e),n=await getDoc(o);if(!n.exists())return;const i=n.data();if(i.deadline.toDate()<new Date)return alert("Sondaggio scaduto.");if(i.voters?.some(e=>e.uid===currentUser.uid))return alert("Hai già votato!");const d=[...i.options];d[t].votes=(d[t].votes||0)+1;const a=i.options[t].text;const userMillesimi=userProfile?.millesimi||0;const r=[...i.voters||[],{uid:currentUser.uid,name:`${userProfile.nome} ${userProfile.cognome}`,vote:a,millesimi:userMillesimi}];await updateDoc(o,{options:d,voters:r}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:i.title,option:a})}catch(l){console.error("Errore nel voto:",l)}};
+        const voteOnPoll=async(e,t)=>{try{const o=doc(db,"polls",e),n=await getDoc(o);if(!n.exists())return;const i=n.data();if(i.deadline.toDate()<new Date)return alert("Sondaggio scaduto.");if(i.voters?.some(e=>e.uid===currentUser.uid))return alert("Hai già votato!");const d=[...i.options];d[t].votes=(d[t].votes||0)+1;const a=i.options[t].text;const userMillesimi=userProfile?.millesimiTotali||0;const r=[...i.voters||[],{uid:currentUser.uid,name:`${userProfile.nome} ${userProfile.cognome}`,vote:a,millesimi:userMillesimi}];await updateDoc(o,{options:d,voters:r}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:i.title,option:a})}catch(l){console.error("Errore nel voto:",l)}};
 
         const updateReportStatus=async(e,t)=>{try{await updateDoc(doc(db,"reports",e),{status:t,updatedAt:serverTimestamp()}),await logActivity("report_updated",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{reportId:e,newStatus:t})}catch(o){console.error("Errore nell'aggiornamento:",o)}};
         const updateNotificationUI=e=>{const t=document.getElementById("bacheca-notification-badge");t?.classList.toggle("hidden",!e)};
