@@ -79,6 +79,13 @@
         .page-title {
             font-size: 1.75rem;
             font-weight: 800;
+            line-height: 1.2;
+        }
+        .page-subtitle {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--secondary-text);
+            text-transform: capitalize;
         }
 
         /* Titoli di Sezione */
@@ -447,7 +454,38 @@
         .grid { display: grid; }
         .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .mt-4 { margin-top: 1rem; }
+
+        /* Stili per Tabella Dati */
+        .data-table-container {
+            overflow-x: auto; /* Per responsività su schermi piccoli */
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--surface-color-light);
+            white-space: nowrap;
+        }
+        .data-table th {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+        }
+        .data-table td {
+            font-size: 0.95rem;
+        }
+        .data-table tr:hover {
+            background-color: var(--surface-color-light);
+        }
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="app"></div>
@@ -465,7 +503,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrLAomryfk-0s5Inm2XOsBrJusgmMI87E",
@@ -519,7 +557,7 @@
         
         const navigateTo=(e)=>{
             const userType = userProfile?.tipoUtente;
-            if (userType === 'supervisore' && e === 'userManagement') {
+            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione'].includes(e)) {
                  currentPage = e;
                  renderCurrentPage();
                  return;
@@ -536,10 +574,14 @@
         
         const renderHeader = (title) => {
             const userInitial = userProfile?.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U';
+            const userType = userProfile?.tipoUtente || '';
             return `
             <header class="page-header">
                 <div class="user-avatar">${userInitial}</div>
-                <h1 class="page-title">${title}</h1>
+                <div>
+                    <h1 class="page-title">${title}</h1>
+                    <p class="page-subtitle">${userType}</p>
+                </div>
             </header>`;
         }
 
@@ -570,17 +612,8 @@
                             <div class="form-group"><label for="nome" class="form-label">Nome</label><input id="nome" name="nome" type="text" placeholder="Mario" class="form-input"></div>
                             <div class="form-group"><label for="cognome" class="form-label">Cognome</label><input id="cognome" name="cognome" type="text" placeholder="Rossi" class="form-input"></div>
                         </div>
-                        <div class="form-group"><label for="tipo-utente" class="form-label">Tipo di Utente</label>
-                            <select id="tipo-utente" name="tipo-utente" class="form-select">
-                                <option value="">Seleziona...</option>
-                                <option value="condomino">Condomino</option>
-                                <option value="amministratore">Amministratore</option>
-                                <option value="custode">Custode</option>
-                                <option value="consigliere">Consigliere</option>
-                                <option value="fornitore">Fornitore</option>
-                                <option value="supervisore">Supervisore</option>
-                            </select>
-                        </div>
+                        <input id="tipo-utente" name="tipo-utente" type="hidden" value="condomino">
+                        <p style="font-size: 0.8rem; color: var(--secondary-text); text-align: center; margin-top: -0.5rem; margin-bottom: 1rem;">La registrazione è consentita solo ai condomini. Per altri ruoli, contattare il supervisore.</p>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="form-group"><label for="appartamento" class="form-label">Appartamento</label><input id="appartamento" name="appartamento" type="text" placeholder="es. A12" class="form-input"></div>
                             <div class="form-group"><label for="millesimi" class="form-label">Millesimi</label><input id="millesimi" name="millesimi" type="number" step="0.01" placeholder="es. 35.12" class="form-input"></div>
@@ -627,11 +660,19 @@
         
         const renderDashboard = () => {
             let extraItems = '';
-            if (userProfile?.tipoUtente === 'supervisore') {
+            if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 extraItems = `
                     <div onclick="navigateTo('userManagement')" class="dashboard-item">
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 17v-2c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H5v-2c0-2.21 1.79-4 4-4h2c2.21 0 4 1.79 4 4v2h-2zm-4-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg></div>
                         <p>Gestione Utenti</p>
+                    </div>
+                    <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 4v4h4V4h-4m6 12v4h4v-4h-4m-6 0v4h4v-4h-4m6-6v4h4v-4h-4m-6 0v4h4v-4h-4m-6-6v4h4V4H4m6 6v4h4v-4h-4M4 16v4h4v-4H4m14-2h2v-4h-2v4m0 6h2v-4h-2v4m-12-2h2v-4H6v4m0 6h2v-4H6v4M2 2v20h20V2H2z"/></svg></div>
+                        <p>Gestione Gruppi</p>
+                    </div>
+                     <div onclick="navigateTo('importazione')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"/></svg></div>
+                        <p>Importa Dati</p>
                     </div>
                 `;
             }
@@ -768,10 +809,117 @@
             </main>
             ${renderBottomNavigation()}
         `;
+
+                const renderImportazione = () => `
+            ${renderHeader('Importazione Dati')}
+            <main>
+                <!-- Vista per i dati già salvati -->
+                <div id="saved-data-view" class="hidden">
+                    <div class="card">
+                         <div class="flex items-center justify-between">
+                            <h3 class="card-title" style="margin-bottom: 0;">Dati Attualmente Salvati</h3>
+                            <button id="show-upload-form-btn" class="btn btn-secondary">Carica Nuovo</button>
+                        </div>
+                        <div id="saved-data-info" class="mt-4" style="color: var(--secondary-text); font-size: 0.9rem;"></div>
+                    </div>
+                    <div class="card mt-4">
+                        <div id="saved-data-table-container" class="data-table-container">
+                            <p>Caricamento dati...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista per il caricamento di un nuovo file -->
+                <div id="upload-view" class="hidden">
+                     <div class="card">
+                        <h3 class="card-title">Carica Nuovo File Excel</h3>
+                        <p class="form-label" style="margin-bottom: 1rem; color: var(--secondary-text);">
+                            Seleziona un file in formato .xlsx o .xls. Il nuovo file sostituirà i dati esistenti.
+                        </p>
+                        <div class="form-group">
+                            <input type="file" id="excel-file-input" class="form-input" accept=".xlsx, .xls">
+                        </div>
+                        <div id="message-import" class="message-box"></div>
+                        <div id="save-button-container" class="hidden mt-4">
+                            <button id="save-imported-data-btn" class="btn btn-primary w-full">Salva e Sostituisci Dati</button>
+                        </div>
+                    </div>
+                    <div class="card mt-4">
+                        <h3 class="card-title">Anteprima Dati</h3>
+                        <div id="excel-table-container" class="data-table-container">
+                            <p style="color:var(--secondary-text);">Nessun file selezionato.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
         
+        const renderGestioneGruppi = () => `
+            ${renderHeader('Gestione Gruppi')}
+            <main>
+                <div class="card" style="margin-bottom:2rem;">
+                    <h3 class="card-title">Crea Condominio Parziale</h3>
+                    <form id="create-partial-condo-form" class="flex gap-4">
+                        <div class="form-group" style="flex-grow:1; margin-bottom:0;">
+                            <label for="partial-condo-name" class="form-label hidden">Nome Gruppo</label>
+                            <input type="text" id="partial-condo-name" required class="form-input" placeholder="Es. Scala A, Box, Giardino...">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Crea</button>
+                    </form>
+                </div>
+
+                <h2 class="section-title">Elenco Condomini Parziali</h2>
+                <div id="partial-condos-list" class="list-container">
+                    <p>Caricamento...</p>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
         const renderUserManagement = () => `
             ${renderHeader('Gestione Utenti')}
             <main>
+                <div class="card" style="margin-bottom:2rem;">
+                    <h3 class="card-title">Crea Nuovo Utente</h3>
+                    <div id="admin-create-user-message" class="message-box"></div>
+                    <form id="admin-create-user-form" class="space-y-4">
+                        <div class="form-group">
+                            <label for="admin-email" class="form-label">Email</label>
+                            <input id="admin-email" type="email" required class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-password" class="form-label">Password Temporanea</label>
+                            <input id="admin-password" type="password" required class="form-input">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group"><label for="admin-nome" class="form-label">Nome</label><input id="admin-nome" type="text" required class="form-input"></div>
+                            <div class="form-group"><label for="admin-cognome" class="form-label">Cognome</label><input id="admin-cognome" type="text" required class="form-input"></div>
+                        </div>
+                        <div class="form-group"><label for="admin-tipo-utente" class="form-label">Tipo di Utente</label>
+                            <select id="admin-tipo-utente" required class="form-select">
+                                <option value="">Seleziona...</option>
+                                <option value="condomino">Condomino</option>
+                                <option value="amministratore">Amministratore</option>
+                                <option value="custode">Custode</option>
+                                <option value="consigliere">Consigliere</option>
+                                <option value="fornitore">Fornitore</option>
+                                <option value="supervisore">Supervisore</option>
+                                <option value="adm">Admin (ADM)</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group"><label for="admin-appartamento" class="form-label">Appartamento</label><input id="admin-appartamento" type="text" class="form-input"></div>
+                            <div class="form-group"><label for="admin-millesimi" class="form-label">Millesimi</label><input id="admin-millesimi" type="number" step="0.01" class="form-input"></div>
+                        </div>
+                        <div class="form-group"><label for="admin-telefono" class="form-label">Telefono</label><input id="admin-telefono" type="tel" class="form-input"></div>
+                        <div class="flex justify-end pt-2">
+                           <button type="submit" class="btn btn-primary">Crea Utente</button>
+                        </div>
+                    </form>
+                </div>
+
+                <h2 class="section-title">Elenco Utenti Esistenti</h2>
                 <div id="user-list-container" class="list-container">
                     <p>Caricamento utenti...</p>
                 </div>
@@ -801,7 +949,15 @@
                 case 'infoUtili': content = renderInfoUtili(); break;
                 case 'userManagement': 
                     if (userType === 'supervisore') content = renderUserManagement(); 
-                    else navigateTo('dashboard'); // fallback
+                    else navigateTo('dashboard');
+                    break;
+                case 'gestioneGruppi':
+                    if (userType === 'supervisore') content = renderGestioneGruppi();
+                    else navigateTo('dashboard');
+                    break;
+                case 'importazione':
+                    if (userType === 'supervisore') content = renderImportazione();
+                    else navigateTo('dashboard');
                     break;
                 default: content = renderLoginPage();
             }
@@ -813,7 +969,9 @@
                 case 'sondaggi': if (userType !== 'custode') { loadPolls(); setupPollHandlers(); } break;
                 case 'segnalazioni': loadReports(); setupReportHandlers(); break;
                 case 'profilo': setupProfileHandlers(); break;
-                case 'userManagement': if (userType === 'supervisore') { loadUsers(); } break;
+                case 'userManagement': if (userType === 'supervisore') { loadUsers(); setupAdminUserCreationHandler(); } break;
+                case 'gestioneGruppi': if (userType === 'supervisore') { loadPartialCondos(); setupUserManagementHandlers(); } break;
+                case 'importazione': if (userType === 'supervisore') { setupImportazioneHandlers(); } break;
             }
 
             if (currentPage !== 'login') {
@@ -838,6 +996,276 @@
         const setupPollHandlers=()=>{const e=document.getElementById("create-poll-form");if(!e)return;const t=document.getElementById("poll-options-list"),o=document.getElementById("add-poll-option");function n(e=""){const o=document.createElement("div");o.className="flex items-center gap-2",o.innerHTML=`<input type="text" class="form-input" style="flex:1" required placeholder="Testo opzione" value="${e}"><button type="button" class="btn-remove-option" style="background:var(--surface-color-light); border:none; color:var(--primary-text); width:36px; height:36px; border-radius:50%; cursor:pointer;">−</button>`,o.querySelector(".btn-remove-option").onclick=()=>{t.removeChild(o),t.childElementCount<2&&n()},t.appendChild(o)}0===t.childElementCount&&(n(),n()),o.onclick=e=>{e.preventDefault(),n()},e.addEventListener("submit",async o=>{o.preventDefault();const n=document.getElementById("poll-title").value,t=document.getElementById("poll-description").value,d=document.getElementById("poll-deadline").value,i=document.getElementById("poll-deadline-time").value,l=e.querySelectorAll('#poll-options-list input[type="text"]'),r=Array.from(l).map(e=>e.value.trim()).filter(Boolean).map(e=>({text:e,votes:0}));if(r.length<2)return alert("Inserisci almeno due opzioni.");if(!d||!i)return alert("Inserisci una data e un'ora di scadenza.");const c=`${d}T${i}`,s=new Date(c);try{await addDoc(collection(db,"polls"),{title:n,description:t,options:r,deadline:s,createdBy:userProfile.nome+" "+userProfile.cognome,createdById:currentUser.uid,createdAt:serverTimestamp(),voters:[]}),await logActivity("poll_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:n}),e.reset()}catch(p){console.error("Errore:",p)}}),e.addEventListener("reset",()=>{setTimeout(()=>{t.innerHTML="",n(),n()},0)})};
         const setupReportHandlers = () => { const e=document.getElementById("create-report-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("report-title").value,n=document.getElementById("report-description").value,i=document.getElementById("report-category").value,d=document.getElementById("report-priority").value,r=document.getElementById("report-location").value;if(!o||!n||!i||!d||!r)return alert("Compila tutti i campi.");const c={title:o,description:n,category:i,priority:d,location:r,status:"aperta",createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()},l=document.getElementById("report-recipient");l&&l.value?c.recipientType=l.value:c.recipientType="management";try{await addDoc(collection(db,"reports"),c),await logActivity("report_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:o,priority:d}),e.reset()}catch(a){console.error("Errore:",a)}})};
         const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value,i=document.getElementById("profile-appartamento").value,l=parseFloat(document.getElementById("profile-millesimi").value)||0;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d,appartamento:i,millesimi:l}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
+
+        const setupImportazioneHandlers = async () => {
+            // Riferimenti agli elementi DOM
+            const savedDataView = document.getElementById('saved-data-view');
+            const uploadView = document.getElementById('upload-view');
+            const savedDataInfo = document.getElementById('saved-data-info');
+            const savedDataTableContainer = document.getElementById('saved-data-table-container');
+            const showUploadBtn = document.getElementById('show-upload-form-btn');
+
+            const fileInput = document.getElementById('excel-file-input');
+            const tableContainer = document.getElementById('excel-table-container');
+            const messageBox = document.getElementById('message-import');
+            const saveBtnContainer = document.getElementById('save-button-container');
+            const saveBtn = document.getElementById('save-imported-data-btn');
+
+            let jsonDataToSave = null;
+            let fileNameToSave = '';
+
+            // Funzione helper per generare una tabella HTML dai dati
+            const generateTableHTML = (data) => {
+                // Se i dati sono oggetti (da Firestore)
+                if (data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0])) {
+                    const headers = Object.keys(data[0]);
+                    let tableHTML = '<table class="data-table"><thead><tr>';
+                    headers.forEach(h => tableHTML += `<th>${h}</th>`);
+                    tableHTML += '</tr></thead><tbody>';
+                    data.forEach(row => {
+                        tableHTML += '<tr>';
+                        headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        tableHTML += '</tr>';
+                    });
+                    tableHTML += '</tbody></table>';
+                    return tableHTML;
+                }
+                // Se i dati sono array di array (dall'anteprima file)
+                if (data.length > 0 && Array.isArray(data[0])) {
+                     const headers = data[0];
+                    let tableHTML = '<table class="data-table"><thead><tr>';
+                    headers.forEach(header => tableHTML += `<th>${header}</th>`);
+                    tableHTML += '</tr></thead><tbody>';
+                    for (let i = 1; i < data.length; i++) {
+                        const row = data[i];
+                        tableHTML += '<tr>';
+                        headers.forEach((_, colIndex) => {
+                            const cellValue = row[colIndex] !== undefined ? row[colIndex] : '';
+                            tableHTML += `<td>${cellValue}</td>`;
+                        });
+                        tableHTML += '</tr>';
+                    }
+                    tableHTML += '</tbody></table>';
+                    return tableHTML;
+                }
+                return '<p>Nessun dato da visualizzare.</p>';
+            };
+
+            // Funzione per caricare i dati più recenti da Firestore
+            const loadLatestData = async () => {
+                const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const latestDoc = querySnapshot.docs[0].data();
+                    const dateFormatted = latestDoc.uploadedAt.toDate().toLocaleString("it-IT", { dateStyle: 'long', timeStyle: 'short' });
+                    
+                    savedDataInfo.innerHTML = `<strong>File:</strong> ${latestDoc.fileName}<br><strong>Ultimo caricamento:</strong> ${dateFormatted}`;
+                    savedDataTableContainer.innerHTML = generateTableHTML(latestDoc.tableData);
+                    
+                    savedDataView.classList.remove('hidden');
+                    uploadView.classList.add('hidden');
+                } else {
+                    savedDataView.classList.add('hidden');
+                    uploadView.classList.remove('hidden');
+                }
+            };
+            
+            // Logica per il pulsante "Carica Nuovo"
+            showUploadBtn.addEventListener('click', () => {
+                savedDataView.classList.add('hidden');
+                uploadView.classList.remove('hidden');
+            });
+
+            // Logica per il caricamento del file (ANTEPRIMA)
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                jsonDataToSave = null; fileNameToSave = '';
+                saveBtnContainer.classList.add('hidden'); messageBox.style.display = 'none';
+
+                if (!file) {
+                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
+                    return;
+                }
+                fileNameToSave = file.name;
+                tableContainer.innerHTML = '<p>Caricamento in corso...</p>';
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                        if (jsonData.length === 0) throw new Error("Il file Excel è vuoto.");
+                        
+                        jsonDataToSave = jsonData;
+                        tableContainer.innerHTML = generateTableHTML(jsonData);
+                        saveBtnContainer.classList.remove('hidden');
+                    } catch (err) {
+                         messageBox.className = 'message-box error';
+                         messageBox.textContent = `Errore lettura file: ${err.message}`;
+                         messageBox.style.display = 'block';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+            
+            // Logica per il salvataggio dei dati
+            saveBtn.addEventListener('click', async () => {
+                if (!jsonDataToSave || jsonDataToSave.length < 2) {
+                    alert('Nessun dato valido da salvare.'); return;
+                }
+                saveBtn.disabled = true; saveBtn.textContent = 'Salvataggio...';
+
+                const convertArrayOfArraysToObjects = (data) => {
+                    const headers = data[0].map(h => h.toString().trim());
+                    return data.slice(1).map(row => {
+                        const obj = {};
+                        headers.forEach((header, index) => {
+                            obj[header] = row[index] !== undefined ? row[index] : '';
+                        });
+                        return obj;
+                    });
+                };
+                const dataToSave = convertArrayOfArraysToObjects(jsonDataToSave);
+
+                try {
+                    await addDoc(collection(db, "importedData"), {
+                        fileName: fileNameToSave,
+                        tableData: dataToSave,
+                        uploadedBy: currentUser.uid,
+                        uploadedAt: serverTimestamp()
+                    });
+                    await logActivity("data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: fileNameToSave });
+                    
+                    // Resetta il form e ricarica la vista con i dati appena salvati
+                    fileInput.value = '';
+                    saveBtnContainer.classList.add('hidden');
+                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
+                    await loadLatestData();
+                    
+                } catch (error) {
+                    console.error("Errore salvataggio dati: ", error);
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = 'Si è verificato un errore durante il salvataggio.';
+                    messageBox.style.display = 'block';
+                } finally {
+                    saveBtn.disabled = false; saveBtn.textContent = 'Salva e Sostituisci Dati';
+                }
+            });
+
+            // Carica i dati all'avvio
+            await loadLatestData();
+        };
+
+        const setupUserManagementHandlers = () => {
+            const form = document.getElementById('create-partial-condo-form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nameInput = document.getElementById('partial-condo-name');
+                const name = nameInput.value.trim();
+                if (!name) return;
+
+                try {
+                    await addDoc(collection(db, 'partialCondos'), {
+                        name: name,
+                        createdBy: currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    await logActivity("partial_condo_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { name: name });
+                    nameInput.value = '';
+                } catch (error) {
+                    console.error("Errore nella creazione del condominio parziale:", error);
+                    alert("Si è verificato un errore.");
+                }
+            });
+        };
+
+        const setupAdminUserCreationHandler = () => {
+            const form = document.getElementById('admin-create-user-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('admin-email').value;
+                const password = document.getElementById('admin-password').value;
+                const profileData = {
+                    nome: document.getElementById('admin-nome').value,
+                    cognome: document.getElementById('admin-cognome').value,
+                    tipoUtente: document.getElementById('admin-tipo-utente').value,
+                    appartamento: document.getElementById('admin-appartamento').value,
+                    millesimi: document.getElementById('admin-millesimi').value,
+                    telefono: document.getElementById('admin-telefono').value
+                };
+
+                const messageBox = document.getElementById('admin-create-user-message');
+                messageBox.style.display = 'none';
+
+                try {
+                    if (!profileData.nome || !profileData.cognome || !profileData.tipoUtente) {
+                        throw new Error('Nome, Cognome e Tipo Utente sono obbligatori.');
+                    }
+                    // NOTA: Questa registrazione viene effettuata con le credenziali del supervisore.
+                    // Firebase non permette di creare utenti per conto di altri direttamente dal client in modo standard.
+                    // Questa implementazione creerà un nuovo utente nel sistema di autenticazione Firebase.
+                    // L'utente creato dovrà poi accedere con la password fornita.
+                    // Una soluzione più robusta (ma fuori scopo qui) userebbe le Cloud Functions.
+                    
+                    await register(email, password, profileData);
+
+                    messageBox.className = 'message-box success';
+                    messageBox.textContent = `Utente ${email} creato con successo!`;
+                    messageBox.style.display = 'block';
+                    form.reset();
+                } catch (error) {
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = `Errore: ${error.message}`;
+                    messageBox.style.display = 'block';
+                }
+            });
+        };
+        
+        const loadPartialCondos = () => {
+            const listEl = document.getElementById('partial-condos-list');
+            if (!listEl) return;
+
+            const q = query(collection(db, "partialCondos"), orderBy("name"));
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">Nessun gruppo creato.</p>`;
+                    return;
+                }
+                listEl.innerHTML = snapshot.docs.map(docSnap => {
+                    const condo = docSnap.data();
+                    return `
+                    <div class="list-item">
+                        <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 14h-2v2h2v-2m4-4h-2v2h2V10m0-4h-2v2h2V6M12 2L2 7v13h20V7L12 2z"/></svg></div>
+                        <div class="list-item-content">
+                            <div class="title">${condo.name}</div>
+                        </div>
+                        <div class="list-item-action">
+                            <button onclick="deletePartialCondo('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; padding: 0.4rem 0.8rem; font-size:0.8rem;">Elimina</button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            });
+        };
+
+        const deletePartialCondo = async (id) => {
+            if (!confirm('Sei sicuro di voler eliminare questo gruppo? L\'azione è irreversibile.')) {
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, 'partialCondos', id));
+                await logActivity("partial_condo_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedId: id });
+            } catch (error) {
+                console.error("Errore durante l'eliminazione:", error);
+                alert("Si è verificato un errore durante l'eliminazione.");
+            }
+        };
         const showProfileMessage=(e,t)=>{const o=document.getElementById("profile-message");o&&(o.className=`message-box ${e}`,o.textContent=t,o.style.display="block",setTimeout(()=>{o.style.display="none"},5e3))};
         
         const showCommunicationDetail = async (commId) => {
@@ -1037,7 +1465,7 @@
         window.updateReportStatus = updateReportStatus;
         window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
-        window.updateUserMillesimi = updateUserMillesimi;
+        window.deletePartialCondo = deletePartialCondo;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
