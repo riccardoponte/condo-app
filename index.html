@@ -550,7 +550,7 @@
         
         const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
         const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
-        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
+        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,gruppiParziali:o.gruppiParziali||[],createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
         const logout=async()=>{communicationsListener&&(communicationsListener(),communicationsListener=null),await signOut(auth),currentUser=null,userProfile=null,navigateTo("login")};
         const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
         const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
@@ -1003,172 +1003,251 @@
         };
 
         const setupLoginHandlers=()=>{
-    let isRegistering=!1;
-    const toggleAuthBtn=document.getElementById("toggle-auth"),
-        authTitle=document.getElementById("auth-title"),
-        authSubmitBtn=document.getElementById("auth-submit"),
-        registerFields=document.getElementById("register-fields"),
-        authForm=document.getElementById("auth-form"),
-        forgotPasswordBtn=document.getElementById("forgot-password");
+            let isRegistering=!1;
+            const toggleAuthBtn=document.getElementById("toggle-auth"),
+                authTitle=document.getElementById("auth-title"),
+                authSubmitBtn=document.getElementById("auth-submit"),
+                registerFields=document.getElementById("register-fields"),
+                authForm=document.getElementById("auth-form"),
+                forgotPasswordBtn=document.getElementById("forgot-password");
 
-    // Riferimenti diretti agli elementi del form di registrazione
-    const nominativoInput = document.getElementById('nominativo-select');
-    const checkboxContainer = document.getElementById('multi-property-checkbox-container');
-    const summaryEl = document.getElementById('selection-summary');
+            const nominativoInput = document.getElementById('nominativo-select');
+            const checkboxContainer = document.getElementById('multi-property-checkbox-container');
+            const summaryEl = document.getElementById('selection-summary');
 
-    let groupedProperties = {};
-    
-    const findHeader = (headers, keywords) => {
-        const lowerCaseKeywords = keywords.map(k => k.toLowerCase());
-        return headers.find(header => lowerCaseKeywords.includes(header.toLowerCase()));
-    };
+            let groupedProperties = {};
+            let partialCondosData = [];
 
-    const loadPropertyDataForRegistration = async () => {
-        try {
-            if (Object.keys(groupedProperties).length > 0) return;
-            const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
-            const querySnapshot = await getDocs(q);
-            if (querySnapshot.empty) return;
-            
-            const tableData = querySnapshot.docs[0].data().tableData || [];
-            if (tableData.length === 0) return;
-
-            const headers = Object.keys(tableData[0]);
-            const nominativoHeader = findHeader(headers, ['nominativo']);
-            const apartmentHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
-            const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
-
-            if (!nominativoHeader || !apartmentHeader || !millesimiHeader) {
-                console.error("Intestazioni non trovate! Assicurarsi che il file Excel contenga colonne per 'Nominativo', 'Interno' e 'Millesimi'.");
-                return;
-            }
-            
-            tableData.forEach(item => {
-                const nominativo = item[nominativoHeader];
-                if (!nominativo) return;
-                if (!groupedProperties[nominativo]) groupedProperties[nominativo] = [];
-                groupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
-            });
-            
-            const datalistEl = document.getElementById('nominativi-list');
-            datalistEl.innerHTML = Object.keys(groupedProperties).map(name => `<option value="${name}"></option>`).join('');
-            
-        } catch (error) { console.error("Errore nel caricamento dati per la registrazione:", error); }
-    };
-    
-    const updateSummary = () => {
-        const checkedBoxes = checkboxContainer.querySelectorAll('input[type="checkbox"]:checked');
-        
-        if (checkedBoxes.length === 0) {
-            summaryEl.innerHTML = '<span style="color:var(--warning);">Seleziona almeno una proprietà.</span>';
-            return;
-        }
-
-        let totalMillesimi = 0;
-        let summaryHtml = '<strong>Unità Selezionate:</strong><ul>';
-        checkedBoxes.forEach(box => {
-            const apartment = box.dataset.apartment;
-            const millesimi = parseFloat(box.dataset.millesimi) || 0;
-            summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${apartment} (${millesimi.toFixed(2)} ‰)</li>`;
-            totalMillesimi += millesimi;
-        });
-        summaryHtml += `</ul><hr style="border-color: var(--surface-color); margin: 0.5rem 0;"><strong style="display: flex; justify-content: space-between;"><span>Totale Millesimi:</span><span>${totalMillesimi.toFixed(2)} ‰</span></strong>`;
-        summaryEl.innerHTML = summaryHtml;
-    };
-
-    const handleNominativoSelection = (event) => {
-        const selectedName = event.target.value;
-        const properties = groupedProperties[selectedName];
-        
-        const checkboxes = document.getElementById('property-checkboxes');
-
-        checkboxes.innerHTML = '';
-        checkboxContainer.classList.add('hidden');
-        summaryEl.innerHTML = 'Seleziona un nominativo per continuare...';
-
-        if (!properties) return;
-
-        if (properties.length === 1) {
-            const prop = properties[0];
-            summaryEl.innerHTML = `<strong>Unità Selezionata:</strong><br>${prop.apartment} (${(parseFloat(prop.millesimi)||0).toFixed(2)} ‰)`;
-        } else {
-            properties.forEach((prop, index) => {
-                checkboxes.innerHTML += `
-                    <label for="prop-${index}" class="flex items-center gap-4" style="cursor:pointer;">
-                        <input type="checkbox" id="prop-${index}" data-apartment="${prop.apartment}" data-millesimi="${prop.millesimi}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">
-                        <span>${prop.apartment} - ${prop.millesimi} ‰</span>
-                    </label>`;
-            });
-            checkboxContainer.classList.remove('hidden');
-            updateSummary();
-        }
-    };
-
-    // Collega gli eventi direttamente agli elementi del form
-    nominativoInput?.addEventListener('input', handleNominativoSelection);
-    checkboxContainer?.addEventListener('change', (e) => {
-        if (e.target.type === 'checkbox') {
-            updateSummary();
-        }
-    });
-
-    toggleAuthBtn?.addEventListener("click",event=>{
-        event.preventDefault(); isRegistering=!isRegistering;
-        authTitle.textContent=isRegistering?"Registrati":"Accedi";
-        authSubmitBtn.textContent=isRegistering?"Registrati":"Accedi";
-        event.target.textContent=isRegistering?"Hai già un account? Accedi":"Non hai un account? Registrati";
-        registerFields.classList.toggle("hidden",!isRegistering);
-        forgotPasswordBtn.classList.toggle("hidden",isRegistering);
-        if(isRegistering) loadPropertyDataForRegistration();
-    });
-
-    authForm?.addEventListener("submit",async t=>{
-        t.preventDefault();
-        const o=document.getElementById("email").value, n=document.getElementById("password").value, d=document.getElementById("error-message"), r=document.getElementById("success-message");
-        d.style.display="none"; r.style.display="none";
-        try{
-            if(isRegistering){
-                const t=document.getElementById("confirm-password").value, i=document.getElementById("nome").value, s=document.getElementById("cognome").value, a=document.getElementById("tipo-utente").value, l=document.getElementById("telefono").value;
-                const selectedName = document.getElementById('nominativo-select').value;
-                const propertiesForUser = [];
-                
-                if (!groupedProperties[selectedName]) throw new Error("Seleziona un nominativo valido.");
-
-                if (groupedProperties[selectedName].length === 1) {
-                    const prop = groupedProperties[selectedName][0];
-                    propertiesForUser.push({ interno: prop.apartment, millesimi: parseFloat(prop.millesimi) || 0 });
-                } else {
-                    const checkedBoxes = document.querySelectorAll('#property-checkboxes input:checked');
-                    if (checkedBoxes.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
-                    checkedBoxes.forEach(box => {
-                        propertiesForUser.push({ interno: box.dataset.apartment, millesimi: parseFloat(box.dataset.millesimi) || 0 });
-                    });
+            const loadPartialCondosForRegistration = async () => {
+                try {
+                    if (partialCondosData.length > 0) return;
+                    const q = query(collection(db, "partialCondos"));
+                    const querySnapshot = await getDocs(q);
+                    partialCondosData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } catch (error) {
+                    console.error("Errore nel caricamento dei condomini parziali:", error);
+                    partialCondosData = [];
                 }
-                
-                if(n!==t)throw new Error("Le password non coincidono");
-                if(!i||!s||!a)throw new Error("Compila tutti i campi obbligatori.");
-                
-                await register(o,n,{nome:i,cognome:s,tipoUtente:a,telefono:l,proprieta:propertiesForUser});
-                r.textContent="Registrazione completata! Ora puoi accedere."; r.style.display="block"; authForm.reset();
-            }else{ await login(o,n); }
-        }catch(p){ d.textContent=p.message; d.style.display="block"; }
-    });
-    
-    forgotPasswordBtn?.addEventListener("click",async t=>{
-        t.preventDefault(); const e=document.getElementById("email").value, o=document.getElementById("error-message"), n=document.getElementById("success-message");
-        if(!e)return o.textContent="Inserisci la tua email per reimpostare la password",void(o.style.display="block");
-        try{ await resetPassword(e); n.textContent="Email di reset password inviata!"; n.style.display="block"; o.style.display="none";
-        }catch(d){ o.textContent=d.message; o.style.display="block"; }
-    });
+            };
 
-    document.querySelectorAll('.password-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const button = e.currentTarget; const targetId = button.dataset.target; const passwordInput = document.getElementById(targetId);
-            const isPassword = passwordInput.type === 'password'; passwordInput.type = isPassword ? 'text' : 'password';
-            button.innerHTML = isPassword ? eyeSlashIcon : eyeIcon;
-        });
-    });
-};
+            const mapPropertiesToGroups = (properties, groups) => {
+                const assignedGroups = new Set();
+                if (!properties || !groups || groups.length === 0) return [];
+
+                properties.forEach(prop => {
+                    if (!prop.interno) return;
+                    const prefix = prop.interno.charAt(0).toUpperCase();
+                    const numberMatch = prop.interno.match(/\d+/);
+
+                    groups.forEach(group => {
+                        if (prefix === 'E' && group.name.toLowerCase() === 'box') {
+                            assignedGroups.add(group.name);
+                            return;
+                        }
+                        if (numberMatch) {
+                            const numberStr = numberMatch[0];
+                            const groupWords = group.name.toUpperCase().split(' ');
+                            if (group.name.includes(numberStr) && groupWords.some(word => word.startsWith(prefix))) {
+                                assignedGroups.add(group.name);
+                            }
+                        }
+                    });
+                });
+
+                return Array.from(assignedGroups);
+            };
+            
+            const findHeader = (headers, keywords) => {
+                const lowerCaseKeywords = keywords.map(k => k.toLowerCase());
+                return headers.find(header => lowerCaseKeywords.includes(header.toLowerCase()));
+            };
+
+            const loadPropertyDataForRegistration = async () => {
+                try {
+                    if (Object.keys(groupedProperties).length > 0) return;
+                    const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) return;
+                    
+                    const tableData = querySnapshot.docs[0].data().tableData || [];
+                    if (tableData.length === 0) return;
+
+                    const headers = Object.keys(tableData[0]);
+                    const nominativoHeader = findHeader(headers, ['nominativo']);
+                    const apartmentHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
+                    const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
+
+                    if (!nominativoHeader || !apartmentHeader || !millesimiHeader) {
+                        console.error("Intestazioni non trovate! Assicurarsi che il file Excel contenga colonne per 'Nominativo', 'Interno' e 'Millesimi'.");
+                        return;
+                    }
+                    
+                    tableData.forEach(item => {
+                        const nominativo = item[nominativoHeader];
+                        if (!nominativo) return;
+                        if (!groupedProperties[nominativo]) groupedProperties[nominativo] = [];
+                        groupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
+                    });
+                    
+                    const datalistEl = document.getElementById('nominativi-list');
+                    datalistEl.innerHTML = Object.keys(groupedProperties).map(name => `<option value="${name}"></option>`).join('');
+                    
+                } catch (error) { console.error("Errore nel caricamento dati per la registrazione:", error); }
+            };
+            
+            const updateSummary = () => {
+                const checkedBoxes = checkboxContainer.querySelectorAll('input[type="checkbox"]:checked');
+                
+                if (checkedBoxes.length === 0) {
+                    summaryEl.innerHTML = '<span style="color:var(--warning);">Seleziona almeno una proprietà.</span>';
+                    return;
+                }
+
+                let totalMillesimi = 0;
+                let summaryHtml = '<strong>Unità Selezionate:</strong><ul>';
+                checkedBoxes.forEach(box => {
+                    const apartment = box.dataset.apartment;
+                    const millesimi = parseFloat(box.dataset.millesimi) || 0;
+                    summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${apartment} (${millesimi.toFixed(2)} ‰)</li>`;
+                    totalMillesimi += millesimi;
+                });
+                summaryHtml += `</ul><hr style="border-color: var(--surface-color); margin: 0.5rem 0;"><strong style="display: flex; justify-content: space-between;"><span>Totale Millesimi:</span><span>${totalMillesimi.toFixed(2)} ‰</span></strong>`;
+                summaryEl.innerHTML = summaryHtml;
+            };
+
+            const handleNominativoSelection = (event) => {
+                const selectedName = event.target.value;
+                const properties = groupedProperties[selectedName];
+                
+                const checkboxes = document.getElementById('property-checkboxes');
+
+                checkboxes.innerHTML = '';
+                checkboxContainer.classList.add('hidden');
+                summaryEl.innerHTML = 'Seleziona un nominativo per continuare...';
+
+                if (!properties) return;
+
+                const createGroupSelectHTML = (property, selectId = '') => {
+                    const autoAssignedGroup = mapPropertiesToGroups([property], partialCondosData)[0] || "";
+                    let optionsHTML = `<option value="">Nessun Gruppo</option>`;
+                    partialCondosData.forEach(group => {
+                        const isSelected = autoAssignedGroup === group.name ? 'selected' : '';
+                        optionsHTML += `<option value="${group.name}" ${isSelected}>${group.name}</option>`;
+                    });
+                    return `<div style="margin-top: 0.5rem;">
+                                <label class="form-label" style="font-size:0.8rem;">Gruppo Assegnato (modificabile)</label>
+                                <select ${selectId ? `id="${selectId}"` : ''} class="form-select group-select">${optionsHTML}</select>
+                            </div>`;
+                };
+
+                if (properties.length === 1) {
+                    const prop = properties[0];
+                    const groupSelectHTML = createGroupSelectHTML({ interno: prop.apartment }, 'single-property-group-select');
+                    summaryEl.innerHTML = `<strong>Unità Selezionata:</strong><br>${prop.apartment} (${(parseFloat(prop.millesimi)||0).toFixed(2)} ‰)${groupSelectHTML}`;
+                } else {
+                    properties.forEach((prop, index) => {
+                        const groupSelectHTML = createGroupSelectHTML({ interno: prop.apartment });
+                        checkboxes.innerHTML += `
+                            <div class="property-item-container" style="padding-bottom: 1rem; border-bottom: 1px solid var(--bg-color);">
+                                <label for="prop-${index}" class="flex items-center gap-4" style="cursor:pointer;">
+                                    <input type="checkbox" id="prop-${index}" data-property-index="${index}" data-apartment="${prop.apartment}" data-millesimi="${prop.millesimi}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">
+                                    <span>${prop.apartment} - ${prop.millesimi} ‰</span>
+                                </label>
+                                ${groupSelectHTML}
+                            </div>`;
+                    });
+                    checkboxContainer.classList.remove('hidden');
+                    updateSummary();
+                }
+            };
+
+            nominativoInput?.addEventListener('input', handleNominativoSelection);
+            checkboxContainer?.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    updateSummary();
+                }
+            });
+
+            toggleAuthBtn?.addEventListener("click",event=>{
+                event.preventDefault(); isRegistering=!isRegistering;
+                authTitle.textContent=isRegistering?"Registrati":"Accedi";
+                authSubmitBtn.textContent=isRegistering?"Registrati":"Accedi";
+                event.target.textContent=isRegistering?"Hai già un account? Accedi":"Non hai un account? Registrati";
+                registerFields.classList.toggle("hidden",!isRegistering);
+                forgotPasswordBtn.classList.toggle("hidden",isRegistering);
+                if(isRegistering) {
+                    loadPropertyDataForRegistration();
+                    loadPartialCondosForRegistration();
+                }
+            });
+
+            authForm?.addEventListener("submit",async t=>{
+                t.preventDefault();
+                const o=document.getElementById("email").value, n=document.getElementById("password").value, d=document.getElementById("error-message"), r=document.getElementById("success-message");
+                d.style.display="none"; r.style.display="none";
+                try{
+                    if(isRegistering){
+                        const t=document.getElementById("confirm-password").value, i=document.getElementById("nome").value, s=document.getElementById("cognome").value, a=document.getElementById("tipo-utente").value, l=document.getElementById("telefono").value;
+                        const selectedName = document.getElementById('nominativo-select').value;
+                        const propertiesForUser = [];
+                        const finalAssignedGroups = new Set();
+                        
+                        if (!groupedProperties[selectedName]) throw new Error("Seleziona un nominativo valido.");
+
+                        if (groupedProperties[selectedName].length === 1) {
+                            const prop = groupedProperties[selectedName][0];
+                            propertiesForUser.push({ interno: prop.apartment, millesimi: parseFloat(prop.millesimi) || 0 });
+                            const groupSelect = document.getElementById('single-property-group-select');
+                            if (groupSelect && groupSelect.value) {
+                                finalAssignedGroups.add(groupSelect.value);
+                            }
+                        } else {
+                            const checkedBoxes = document.querySelectorAll('#property-checkboxes input:checked');
+                            if (checkedBoxes.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
+                            
+                            checkedBoxes.forEach(box => {
+                                propertiesForUser.push({ interno: box.dataset.apartment, millesimi: parseFloat(box.dataset.millesimi) || 0 });
+                                const container = box.closest('.property-item-container');
+                                const groupSelect = container.querySelector('.group-select');
+                                if (groupSelect && groupSelect.value) {
+                                    finalAssignedGroups.add(groupSelect.value);
+                                }
+                            });
+                        }
+                        
+                        // NUOVO: Controlla se le unità immobiliari sono già registrate
+                        for (const prop of propertiesForUser) {
+                            const q = query(collection(db, "users"), where("proprieta", "array-contains", prop));
+                            const querySnapshot = await getDocs(q);
+                            if (!querySnapshot.empty) {
+                                throw new Error(`L'unità immobiliare "${prop.interno}" è già stata registrata.`);
+                            }
+                        }
+
+                        if(n!==t)throw new Error("Le password non coincidono");
+                        if(!i||!s||!a)throw new Error("Compila tutti i campi obbligatori.");
+                        
+                        await register(o,n,{nome:i,cognome:s,tipoUtente:a,telefono:l,proprieta:propertiesForUser, gruppiParziali: Array.from(finalAssignedGroups)});
+                        r.textContent="Registrazione completata! Ora puoi accedere."; r.style.display="block"; authForm.reset();
+                    }else{ await login(o,n); }
+                }catch(p){ d.textContent=p.message; d.style.display="block"; }
+            });
+            
+            forgotPasswordBtn?.addEventListener("click",async t=>{
+                t.preventDefault(); const e=document.getElementById("email").value, o=document.getElementById("error-message"), n=document.getElementById("success-message");
+                if(!e)return o.textContent="Inserisci la tua email per reimpostare la password",void(o.style.display="block");
+                try{ await resetPassword(e); n.textContent="Email di reset password inviata!"; n.style.display="block"; o.style.display="none";
+                }catch(d){ o.textContent=d.message; o.style.display="block"; }
+            });
+
+            document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const button = e.currentTarget; const targetId = button.dataset.target; const passwordInput = document.getElementById(targetId);
+                    const isPassword = passwordInput.type === 'password'; passwordInput.type = isPassword ? 'text' : 'password';
+                    button.innerHTML = isPassword ? eyeSlashIcon : eyeIcon;
+                });
+            });
+        };
 
         const setupBachecaHandlers=()=>{const e=document.getElementById("create-communication-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("comm-title"),n=document.getElementById("comm-content"),d=document.getElementById("publish-comm-btn"),i=o.value.trim(),r=n.value.trim();if(!i||!r)return alert("Compila titolo e messaggio.");d.disabled=!0,d.textContent="...";try{await addDoc(collection(db,"communications"),{title:i,content:r,createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()}),await logActivity("communication_posted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:i}),e.reset()}catch(c){console.error("Errore:",c),alert("Si è verificato un errore.")}finally{d.disabled=!1,d.textContent="Pubblica"}})};
         const setupPollHandlers=()=>{const e=document.getElementById("create-poll-form");if(!e)return;const t=document.getElementById("poll-options-list"),o=document.getElementById("add-poll-option");function n(e=""){const o=document.createElement("div");o.className="flex items-center gap-2",o.innerHTML=`<input type="text" class="form-input" style="flex:1" required placeholder="Testo opzione" value="${e}"><button type="button" class="btn-remove-option" style="background:var(--surface-color-light); border:none; color:var(--primary-text); width:36px; height:36px; border-radius:50%; cursor:pointer;">−</button>`,o.querySelector(".btn-remove-option").onclick=()=>{t.removeChild(o),t.childElementCount<2&&n()},t.appendChild(o)}0===t.childElementCount&&(n(),n()),o.onclick=e=>{e.preventDefault(),n()},e.addEventListener("submit",async o=>{o.preventDefault();const n=document.getElementById("poll-title").value,t=document.getElementById("poll-description").value,d=document.getElementById("poll-deadline").value,i=document.getElementById("poll-deadline-time").value,l=e.querySelectorAll('#poll-options-list input[type="text"]'),r=Array.from(l).map(e=>e.value.trim()).filter(Boolean).map(e=>({text:e,votes:0}));if(r.length<2)return alert("Inserisci almeno due opzioni.");if(!d||!i)return alert("Inserisci una data e un'ora di scadenza.");const c=`${d}T${i}`,s=new Date(c);try{await addDoc(collection(db,"polls"),{title:n,description:t,options:r,deadline:s,createdBy:userProfile.nome+" "+userProfile.cognome,createdById:currentUser.uid,createdAt:serverTimestamp(),voters:[]}),await logActivity("poll_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:n}),e.reset()}catch(p){console.error("Errore:",p)}}),e.addEventListener("reset",()=>{setTimeout(()=>{t.innerHTML="",n(),n()},0)})};
