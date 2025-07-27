@@ -169,19 +169,19 @@
             position: relative;
         }
         .password-toggle-btn {
-            position: absolute;
-            right: 0.2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--secondary-text);
-            padding: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    position: absolute;
+    right: 0.2rem;
+    top: 50%;
+    transform: translateY(calc(-50% + 0.75rem)); /* CORREZIONE APPLICATA QUI */
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--secondary-text);
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
         .password-toggle-btn svg {
             width: 22px;
             height: 22px;
@@ -640,7 +640,7 @@
                     <button type="submit" id="auth-submit" class="btn btn-primary w-full">Accedi</button>
                 </form>
 
-                <div class="flex w-full justify-between mt-4" style="max-width:400px;">
+                <div class="flex w-full mt-4" style="max-width:400px; justify-content: space-between;">
                     <button type="button" id="toggle-auth" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Non hai un account? Registrati</button>
                     <button type="button" id="forgot-password" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Password dimenticata?</button>
                 </div>
