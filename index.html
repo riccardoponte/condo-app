@@ -641,7 +641,7 @@
                         <p style="font-size: 0.8rem; color: var(--secondary-text); text-align: center; margin-top: -0.5rem; margin-bottom: 1rem;">La registrazione è consentita solo ai condomini. Per altri ruoli, contattare il supervisore.</p>
                         <div class="form-group">
                             <label for="nominativo-select" class="form-label">Nominativo proprietario</label>
-                            <input id="nominativo-select" name="nominativo-select" list="nominativi-list" type="text" placeholder="Cerca e seleziona il titolare..." class="form-input" autocomplete="off">
+                            <input id="nominativo-select" name="nominativo-select" list="nominativi-list" type="text" placeholder="cerca e seleziona il proprietario..." class="form-input" autocomplete="off">
                             <datalist id="nominativi-list"></datalist>
                         </div>
 
@@ -664,12 +664,18 @@
                     </div>
                     
                     <button type="submit" id="auth-submit" class="btn btn-primary w-full">Accedi</button>
+
+                    <div id="error-message" class="message-box error w-full" style="max-width:400px; margin-top: 1rem;"></div>
+                    <div id="success-message" class="message-box success w-full" style="max-width:400px; margin-top: 1rem;"></div>
                 </form>
 
                 <div class="flex w-full mt-4" style="max-width:400px; justify-content: space-between;">
                     <button type="button" id="toggle-auth" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Non hai un account? Registrati</button>
                     <button type="button" id="forgot-password" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Password dimenticata?</button>
                 </div>
+
+                <div id="error-message" class="message-box error w-full" style="max-width:400px; margin-top: 1rem;"></div>
+                <div id="success-message" class="message-box success w-full" style="max-width:400px; margin-top: 1rem;"></div>
             </div>`;
 
         const renderBottomNavigation = () => {
@@ -1325,6 +1331,31 @@
                         });
 
                         if (propertiesForUser.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
+
+                        // --- INIZIO VALIDAZIONE PROPRIETÀ DUPLICATA ---
+                        const internosToRegister = propertiesForUser.map(p => p.interno);
+                        if (internosToRegister.length > 0) {
+                            const usersSnapshot = await getDocs(collection(db, "users"));
+                            let alreadyRegisteredProperty = null;
+
+                            // Itera su tutti gli utenti esistenti per verificare le loro proprietà
+                            for (const userDoc of usersSnapshot.docs) {
+                                const user = userDoc.data();
+                                if (user.proprieta && user.proprieta.length > 0) {
+                                    // Cerca una corrispondenza tra le proprietà dell'utente esistente e quelle che si stanno registrando
+                                    const found = user.proprieta.find(p => internosToRegister.includes(p.interno));
+                                    if (found) {
+                                        alreadyRegisteredProperty = found.interno;
+                                        break; // Interrompe il ciclo appena trova una corrispondenza
+                                    }
+                                }
+                            }
+
+                            if (alreadyRegisteredProperty) {
+                                throw new Error(`L'unità immobiliare "${alreadyRegisteredProperty}" è già registrata. Contattare l'amministratore.`);
+                            }
+                        }
+                        // --- FINE VALIDAZIONE PROPRIETÀ DUPLICATA ---
                         
                         await register(o, n, { nome: i, cognome: s, tipoUtente: a, telefono: l, proprieta: propertiesForUser });
                         r.textContent = "Registrazione completata! Ora puoi accedere."; r.style.display = "block"; authForm.reset();
