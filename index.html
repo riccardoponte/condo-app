@@ -641,8 +641,10 @@
                         <p style="font-size: 0.8rem; color: var(--secondary-text); text-align: center; margin-top: -0.5rem; margin-bottom: 1rem;">La registrazione è consentita solo ai condomini. Per altri ruoli, contattare il supervisore.</p>
                         <div class="form-group">
                             <label for="nominativo-select" class="form-label">Nominativo proprietario</label>
-                            <input id="nominativo-select" name="nominativo-select" list="nominativi-list" type="text" placeholder="cerca e seleziona il proprietario..." class="form-input" autocomplete="off">
-                            <datalist id="nominativi-list"></datalist>
+                            <select id="nominativo-select" name="nominativo-select" class="form-select" required>
+                                <option value="" disabled selected>Cerca e seleziona il proprietario...</option>
+                                <!-- Le opzioni verranno popolate dinamicamente via JS -->
+                            </select>
                         </div>
 
                         <!-- --- MODIFICA INIZIO: Contenitore per la selezione delle proprietà e dei gruppi --- -->
@@ -1214,8 +1216,9 @@
                         groupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
                     });
                     
-                    const datalistEl = document.getElementById('nominativi-list');
-                    datalistEl.innerHTML = Object.keys(groupedProperties).map(name => `<option value="${name}"></option>`).join('');
+                    const nominativoSelectEl = document.getElementById('nominativo-select');
+                    const optionsHtml = Object.keys(groupedProperties).sort().map(name => `<option value="${name}">${name}</option>`).join('');
+                    nominativoSelectEl.innerHTML = `<option value="" disabled selected>Cerca e seleziona il proprietario...</option>${optionsHtml}`;
                     
                 } catch (error) { console.error("Errore nel caricamento dati per la registrazione:", error); }
             };
@@ -1290,7 +1293,7 @@
                 updateSummary();
             };
 
-            nominativoInput?.addEventListener('input', handleNominativoSelection);
+            nominativoInput?.addEventListener('change', handleNominativoSelection);
 
             toggleAuthBtn?.addEventListener("click", event => {
                 event.preventDefault();
