@@ -509,6 +509,39 @@
         .data-table tr:last-child td {
             border-bottom: none;
         }
+
+        /* --- Stili per Custom Searchable Dropdown --- */
+        .custom-dropdown-container {
+            position: relative;
+        }
+        .custom-dropdown-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background-color: var(--surface-color-light);
+            border: 1px solid var(--surface-color);
+            border-radius: var(--radius-sm);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1100; /* Sopra altri elementi del form */
+        }
+        .custom-dropdown-list::-webkit-scrollbar { display: none; }
+        .custom-dropdown-list { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .custom-dropdown-item {
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+            color: var(--primary-text);
+            transition: background-color 0.2s ease;
+        }
+        .custom-dropdown-item:hover, .custom-dropdown-item.highlighted {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+        .custom-dropdown-item:not(:last-child) {
+            border-bottom: 1px solid var(--surface-color);
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -548,6 +581,10 @@
         let currentPage = 'login';
         let communicationsListener = null;
 
+        // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
+        let groupedProperties = {};
+        let partialCondosList = [];
+
         const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
         const eyeSlashIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-4 .68l1.64 1.64C9.74 7.13 10.82 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L21.73 23 20.46 21.73 4.54 5.81 3.27 4.54 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`;
 
@@ -576,7 +613,16 @@
         const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
         const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
         const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
-        const logout=async()=>{communicationsListener&&(communicationsListener(),communicationsListener=null),await signOut(auth),currentUser=null,userProfile=null,navigateTo("login")};
+        const logout=async()=>{
+            communicationsListener&&(communicationsListener(),communicationsListener=null);
+            await signOut(auth);
+            currentUser=null;
+            userProfile=null;
+            // Reset esplicito dello stato di registrazione
+            groupedProperties = {};
+            partialCondosList = [];
+            navigateTo("login");
+        };
         const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
         const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
         
@@ -639,12 +685,13 @@
                         </div>
                         <input id="tipo-utente" name="tipo-utente" type="hidden" value="condomino">
                         <p style="font-size: 0.8rem; color: var(--secondary-text); text-align: center; margin-top: -0.5rem; margin-bottom: 1rem;">La registrazione è consentita solo ai condomini. Per altri ruoli, contattare il supervisore.</p>
-                        <div class="form-group">
-                            <label for="nominativo-select" class="form-label">Nominativo proprietario</label>
-                            <select id="nominativo-select" name="nominativo-select" class="form-select" required>
-                                <option value="" disabled selected>Cerca e seleziona il proprietario...</option>
+                        
+                        <div class="form-group custom-dropdown-container">
+                            <label for="nominativo-search" class="form-label">Nominativo proprietario</label>
+                            <input id="nominativo-search" name="nominativo-search" type="text" placeholder="Digita per cercare e selezionare..." class="form-input" autocomplete="off">
+                            <div id="nominativo-options" class="custom-dropdown-list hidden">
                                 <!-- Le opzioni verranno popolate dinamicamente via JS -->
-                            </select>
+                            </div>
                         </div>
 
                         <!-- --- MODIFICA INIZIO: Contenitore per la selezione delle proprietà e dei gruppi --- -->
@@ -1132,9 +1179,12 @@
             }
         };
 
-        // --- MODIFICA INIZIO: Logica di registrazione utente aggiornata ---
+                // --- MODIFICA INIZIO: Logica di registrazione utente aggiornata ---
         const setupLoginHandlers = () => {
             let isRegistering = false;
+            let localGroupedProperties = {}; // Stato locale alla funzione, resettato ogni volta
+            let localPartialCondosList = []; // Stato locale alla funzione, resettato ogni volta
+
             const toggleAuthBtn = document.getElementById("toggle-auth");
             const authTitle = document.getElementById("auth-title");
             const authSubmitBtn = document.getElementById("auth-submit");
@@ -1142,13 +1192,11 @@
             const authForm = document.getElementById("auth-form");
             const forgotPasswordBtn = document.getElementById("forgot-password");
 
-            const nominativoInput = document.getElementById('nominativo-select');
+            const searchInput = document.getElementById('nominativo-search');
+            const optionsContainer = document.getElementById('nominativo-options');
             const propertySelectionWrapper = document.getElementById('property-selection-wrapper');
             const propertyItemsContainer = document.getElementById('property-items-container');
             const summaryEl = document.getElementById('selection-summary');
-
-            let groupedProperties = {};
-            let partialCondosList = [];
 
             const findHeader = (headers, keywords) => {
                 const lowerCaseKeywords = keywords.map(k => k.toLowerCase());
@@ -1156,42 +1204,38 @@
             };
 
             const loadPartialCondosForRegistration = async () => {
-                if (partialCondosList.length > 0) return;
+                if (localPartialCondosList.length > 0) return;
                 try {
                     const q = query(collection(db, "partialCondos"), orderBy("name"));
                     const querySnapshot = await getDocs(q);
-                    partialCondosList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localPartialCondosList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 } catch (error) {
                     console.error("Errore nel caricamento dei condomini parziali:", error);
-                    partialCondosList = [];
+                    localPartialCondosList = [];
                 }
             };
 
             const getAutomaticGroup = (interno) => {
-                if (!interno || partialCondosList.length === 0) return '';
+                if (!interno || localPartialCondosList.length === 0) return '';
                 const lowerInterno = interno.toLowerCase();
-
                 if (/\be\b|\be-/.test(lowerInterno)) {
-                    const boxCondo = partialCondosList.find(c => c.name.toLowerCase() === 'box');
+                    const boxCondo = localPartialCondosList.find(c => c.name.toLowerCase() === 'box');
                     if (boxCondo) return boxCondo.name;
                 }
                 if (lowerInterno.includes('b11')) {
-                    const b11Condo = partialCondosList.find(c => c.name.toLowerCase().includes('bellini 11'));
+                    const b11Condo = localPartialCondosList.find(c => c.name.toLowerCase().includes('bellini 11'));
                     if (b11Condo) return b11Condo.name;
                 }
-
-                const sortedCondos = [...partialCondosList].sort((a, b) => b.name.length - a.name.length);
+                const sortedCondos = [...localPartialCondosList].sort((a, b) => b.name.length - a.name.length);
                 for (const condo of sortedCondos) {
-                    if (lowerInterno.includes(condo.name.toLowerCase())) {
-                        return condo.name;
-                    }
+                    if (lowerInterno.includes(condo.name.toLowerCase())) return condo.name;
                 }
                 return '';
             };
 
             const loadPropertyDataForRegistration = async () => {
+                if (Object.keys(localGroupedProperties).length > 0) return;
                 try {
-                    if (Object.keys(groupedProperties).length > 0) return;
                     const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
                     const querySnapshot = await getDocs(q);
                     if (querySnapshot.empty) return;
@@ -1205,59 +1249,42 @@
                     const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
 
                     if (!nominativoHeader || !apartmentHeader || !millesimiHeader) {
-                        console.error("Intestazioni non trovate! Assicurarsi che il file Excel contenga colonne per 'Nominativo', 'Interno' e 'Millesimi'.");
-                        return;
+                        console.error("Intestazioni non trovate!"); return;
                     }
                     
+                    localGroupedProperties = {}; // Assicura che lo stato sia pulito
                     tableData.forEach(item => {
                         const nominativo = item[nominativoHeader];
                         if (!nominativo) return;
-                        if (!groupedProperties[nominativo]) groupedProperties[nominativo] = [];
-                        groupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
+                        if (!localGroupedProperties[nominativo]) localGroupedProperties[nominativo] = [];
+                        localGroupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
                     });
-                    
-                    const nominativoSelectEl = document.getElementById('nominativo-select');
-                    const optionsHtml = Object.keys(groupedProperties).sort().map(name => `<option value="${name}">${name}</option>`).join('');
-                    nominativoSelectEl.innerHTML = `<option value="" disabled selected>Cerca e seleziona il proprietario...</option>${optionsHtml}`;
-                    
                 } catch (error) { console.error("Errore nel caricamento dati per la registrazione:", error); }
             };
-            
-            const updateSummary = () => {
-                const propertyItems = propertyItemsContainer.querySelectorAll('.property-selection-item');
-                const selectedProperties = [];
 
-                propertyItems.forEach(item => {
-                    const checkbox = item.querySelector('input[type="checkbox"]');
-                    if (checkbox && !checkbox.checked) return;
+            const renderDropdownOptions = (filter = '') => {
+                if (!optionsContainer) return;
+                const lowerFilter = filter.toLowerCase();
+                const filteredNames = Object.keys(localGroupedProperties)
+                    .filter(name => name.toLowerCase().includes(lowerFilter))
+                    .sort();
 
-                    const groupSelect = item.querySelector('.group-select');
-                    selectedProperties.push({
-                        apartment: item.dataset.apartment,
-                        millesimi: parseFloat(item.dataset.millesimi) || 0,
-                        group: groupSelect.value
-                    });
-                });
-
-                if (selectedProperties.length === 0) {
-                    summaryEl.innerHTML = '<span style="color:var(--warning);">Seleziona almeno una proprietà.</span>';
-                    return;
+                if (filteredNames.length === 0) {
+                    optionsContainer.innerHTML = `<div class="custom-dropdown-item" style="cursor:default;">Nessun risultato</div>`;
+                } else {
+                    optionsContainer.innerHTML = filteredNames.map(name => 
+                        `<div class="custom-dropdown-item" data-value="${name}">${name}</div>`
+                    ).join('');
                 }
-
-                let totalMillesimi = 0;
-                let summaryHtml = '<strong>Unità Selezionate:</strong><ul>';
-                selectedProperties.forEach(prop => {
-                    summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${prop.apartment} (${prop.millesimi.toFixed(2)} ‰) - <strong>Gruppo:</strong> ${prop.group || 'N/A'}</li>`;
-                    totalMillesimi += prop.millesimi;
-                });
-                summaryHtml += `</ul><hr style="border-color: var(--surface-color); margin: 0.5rem 0;"><strong style="display: flex; justify-content: space-between;"><span>Totale Millesimi:</span><span>${totalMillesimi.toFixed(2)} ‰</span></strong>`;
-                summaryEl.innerHTML = summaryHtml;
+                optionsContainer.classList.remove('hidden');
             };
 
-            const handleNominativoSelection = async (event) => {
-                const selectedName = event.target.value;
-                const properties = groupedProperties[selectedName];
-                
+            const selectNominativo = async (name) => {
+                if (!searchInput || !optionsContainer) return;
+                searchInput.value = name;
+                optionsContainer.classList.add('hidden');
+
+                const properties = localGroupedProperties[name];
                 propertyItemsContainer.innerHTML = '';
                 propertySelectionWrapper.classList.add('hidden');
                 summaryEl.innerHTML = 'Seleziona un nominativo per continuare...';
@@ -1265,26 +1292,22 @@
                 if (!properties) return;
 
                 await loadPartialCondosForRegistration();
-                const groupOptionsHtml = `<option value="">Nessun Gruppo</option>` + partialCondosList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                const groupOptionsHtml = `<option value="">Nessun Gruppo</option>` + localPartialCondosList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
                 properties.forEach((prop, index) => {
                     const autoGroup = getAutomaticGroup(prop.apartment);
                     const isMultiProperty = properties.length > 1;
-                    
                     const item = document.createElement('div');
                     item.className = 'property-selection-item';
                     item.dataset.apartment = prop.apartment;
                     item.dataset.millesimi = prop.millesimi;
-
-                    const labelHtml = `
+                    item.innerHTML = `
                         <label for="prop-${index}">
                             ${isMultiProperty ? `<input type="checkbox" id="prop-${index}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">` : ''}
                             <span>${prop.apartment} - ${prop.millesimi} ‰</span>
                         </label>
+                        <select class="form-select group-select">${groupOptionsHtml.replace(`value="${autoGroup}"`, `value="${autoGroup}" selected`)}</select>
                     `;
-                    const groupSelectorHtml = `<select class="form-select group-select">${groupOptionsHtml.replace(`value="${autoGroup}"`, `value="${autoGroup}" selected`)}</select>`;
-                    
-                    item.innerHTML = labelHtml + groupSelectorHtml;
                     propertyItemsContainer.appendChild(item);
                 });
 
@@ -1293,9 +1316,50 @@
                 updateSummary();
             };
 
-            nominativoInput?.addEventListener('change', handleNominativoSelection);
+            const updateSummary = () => {
+                const selectedProperties = [];
+                propertyItemsContainer.querySelectorAll('.property-selection-item').forEach(item => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox && !checkbox.checked) return;
+                    const groupSelect = item.querySelector('.group-select');
+                    selectedProperties.push({
+                        interno: item.dataset.apartment,
+                        millesimi: parseFloat(item.dataset.millesimi) || 0,
+                        gruppo: groupSelect.value
+                    });
+                });
 
-            toggleAuthBtn?.addEventListener("click", event => {
+                if (selectedProperties.length === 0) {
+                    summaryEl.innerHTML = '<span style="color:var(--warning);">Seleziona almeno una proprietà.</span>';
+                    return;
+                }
+
+                let totalMillesimi = selectedProperties.reduce((sum, prop) => sum + prop.millesimi, 0);
+                let summaryHtml = '<strong>Unità Selezionate:</strong><ul>';
+                selectedProperties.forEach(prop => {
+                    summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${prop.interno} (${prop.millesimi.toFixed(2)} ‰) - <strong>Gruppo:</strong> ${prop.gruppo || 'N/A'}</li>`;
+                });
+                summaryHtml += `</ul><hr style="border-color: var(--surface-color); margin: 0.5rem 0;"><strong style="display: flex; justify-content: space-between;"><span>Totale Millesimi:</span><span>${totalMillesimi.toFixed(2)} ‰</span></strong>`;
+                summaryEl.innerHTML = summaryHtml;
+            };
+
+            // --- Event Listeners ---
+            searchInput?.addEventListener('input', () => renderDropdownOptions(searchInput.value));
+            searchInput?.addEventListener('focus', () => renderDropdownOptions(searchInput.value));
+
+            optionsContainer?.addEventListener('click', (e) => {
+                if (e.target.classList.contains('custom-dropdown-item') && e.target.dataset.value) {
+                    selectNominativo(e.target.dataset.value);
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.custom-dropdown-container')) {
+                    optionsContainer?.classList.add('hidden');
+                }
+            });
+
+            toggleAuthBtn?.addEventListener("click", async (event) => {
                 event.preventDefault();
                 isRegistering = !isRegistering;
                 authTitle.textContent = isRegistering ? "Registrati" : "Accedi";
@@ -1304,7 +1368,7 @@
                 registerFields.classList.toggle("hidden", !isRegistering);
                 forgotPasswordBtn.classList.toggle("hidden", isRegistering);
                 if (isRegistering) {
-                    loadPropertyDataForRegistration();
+                    await loadPropertyDataForRegistration();
                 }
             });
 
@@ -1315,66 +1379,44 @@
                 try {
                     if (isRegistering) {
                         const t = document.getElementById("confirm-password").value, i = document.getElementById("nome").value, s = document.getElementById("cognome").value, a = document.getElementById("tipo-utente").value, l = document.getElementById("telefono").value;
-                        
                         if (n !== t) throw new Error("Le password non coincidono");
                         if (!i || !s || !a) throw new Error("Compila tutti i campi obbligatori.");
 
                         const propertiesForUser = [];
-                        const propertyItems = propertyItemsContainer.querySelectorAll('.property-selection-item');
-                        propertyItems.forEach(item => {
+                        propertyItemsContainer.querySelectorAll('.property-selection-item').forEach(item => {
                             const checkbox = item.querySelector('input[type="checkbox"]');
                             if (checkbox && !checkbox.checked) return;
-
-                            const groupSelect = item.querySelector('.group-select');
                             propertiesForUser.push({
                                 interno: item.dataset.apartment,
                                 millesimi: parseFloat(item.dataset.millesimi) || 0,
-                                gruppo: groupSelect.value || ''
+                                gruppo: item.querySelector('.group-select').value || ''
                             });
                         });
 
                         if (propertiesForUser.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
 
-                        // --- INIZIO VALIDAZIONE PROPRIETÀ DUPLICATA ---
                         const internosToRegister = propertiesForUser.map(p => p.interno);
-                        if (internosToRegister.length > 0) {
-                            const usersSnapshot = await getDocs(collection(db, "users"));
-                            let alreadyRegisteredProperty = null;
-
-                            // Itera su tutti gli utenti esistenti per verificare le loro proprietà
-                            for (const userDoc of usersSnapshot.docs) {
-                                const user = userDoc.data();
-                                if (user.proprieta && user.proprieta.length > 0) {
-                                    // Cerca una corrispondenza tra le proprietà dell'utente esistente e quelle che si stanno registrando
-                                    const found = user.proprieta.find(p => internosToRegister.includes(p.interno));
-                                    if (found) {
-                                        alreadyRegisteredProperty = found.interno;
-                                        break; // Interrompe il ciclo appena trova una corrispondenza
-                                    }
-                                }
-                            }
-
-                            if (alreadyRegisteredProperty) {
-                                throw new Error(`L'unità immobiliare "${alreadyRegisteredProperty}" è già registrata. Contattare l'amministratore.`);
+                        const usersSnapshot = await getDocs(collection(db, "users"));
+                        for (const userDoc of usersSnapshot.docs) {
+                            const user = userDoc.data();
+                            if (user.proprieta?.some(p => internosToRegister.includes(p.interno))) {
+                                throw new Error(`Una delle unità immobiliari selezionate è già registrata.`);
                             }
                         }
-                        // --- FINE VALIDAZIONE PROPRIETÀ DUPLICATA ---
                         
                         await register(o, n, { nome: i, cognome: s, tipoUtente: a, telefono: l, proprieta: propertiesForUser });
                         r.textContent = "Registrazione completata! Ora puoi accedere."; r.style.display = "block"; authForm.reset();
                         propertyItemsContainer.innerHTML = '';
                         propertySelectionWrapper.classList.add('hidden');
                         summaryEl.innerHTML = 'Seleziona un nominativo per continuare...';
-
                     } else { await login(o, n); }
                 } catch (p) { d.textContent = p.message; d.style.display = "block"; }
             });
             
             forgotPasswordBtn?.addEventListener("click", async t => {
                 t.preventDefault(); const e = document.getElementById("email").value, o = document.getElementById("error-message"), n = document.getElementById("success-message");
-                if (!e) return o.textContent = "Inserisci la tua email per reimpostare la password", void (o.style.display = "block");
-                try { await resetPassword(e); n.textContent = "Email di reset password inviata!"; n.style.display = "block"; o.style.display = "none";
-                } catch (d) { o.textContent = d.message; o.style.display = "block"; }
+                if (!e) { o.textContent = "Inserisci la tua email per reimpostare la password"; o.style.display = "block"; return; }
+                try { await resetPassword(e); n.textContent = "Email di reset password inviata!"; n.style.display = "block"; o.style.display = "none"; } catch (d) { o.textContent = d.message; o.style.display = "block"; }
             });
 
             document.querySelectorAll('.password-toggle-btn').forEach(btn => {
