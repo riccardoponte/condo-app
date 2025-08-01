@@ -719,7 +719,7 @@
                 </form>
 
                 <div class="flex w-full mt-4" style="max-width:400px; justify-content: space-between;">
-                    <button type="button" id="toggle-auth" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Non hai un account? Registrati</button>
+                    <button type="button" id="toggle-auth" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Registrati</button>
                     <button type="button" id="forgot-password" style="background:none; border:none; color:var(--secondary-text); cursor:pointer;">Password dimenticata?</button>
                 </div>
 
@@ -780,26 +780,31 @@
             return `
             ${renderHeader('Home')}
             <main>
-                <h2 class="section-title">Accesso Rapido</h2>
+                                <h2 class="section-title">Accesso Rapido</h2>
                 <div class="dashboard-grid">
                     <div onclick="navigateTo('bacheca')" class="dashboard-item">
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
                         <p>Bacheca</p>
                     </div>
-                    <div onclick="navigateTo('sondaggi')" class="dashboard-item">
-                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
-                        <p>Sondaggi</p>
-                    </div>
                     <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
                         <p>Segnalazioni</p>
                     </div>
+                    <div onclick="navigateTo('sondaggi')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
+                        <p>Sondaggi</p>
+                    </div>
                     <div onclick="navigateTo('infoUtili')" class="dashboard-item">
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
-                        <p>Info Utili</p>
+                        <p>Numeri utili</p>
+                    </div>
+                    <div onclick="navigateTo('reportPage')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2m6-8H4v2h16V9m-4 4H4v2h12v-2M22 4H2v16h20V4z"/></svg></div>
+                        <p>Report</p>
                     </div>
                     ${extraItems}
                 </div>
+                
                 <div style="margin-top: 2rem;">
                   <button onclick="logout()" class="btn btn-secondary w-full">Esci</button>
                 </div>
@@ -899,24 +904,251 @@
             ${renderBottomNavigation()}
         `;
         
-        const renderInfoUtili = () => `
-            ${renderHeader('Info Utili')}
-            <main class="list-container">
-                <div class="card">
-                    <h3 class="card-title">Orari Servizio di Custodia</h3>
-                    <div class="list-item" style="cursor:default;"><div class="list-item-content"><div class="title">Lunedì - Venerdì</div><div class="subtitle">08:00 - 17:00</div></div></div>
-                    <div class="list-item" style="cursor:default;"><div class="list-item-content"><div class="title">Sabato</div><div class="subtitle">08:00 - 12:00</div></div></div>
-                    <div class="list-item" style="cursor:default;"><div class="list-item-content"><div class="title">Domenica</div><div class="subtitle">Chiuso</div></div></div>
+        const renderInfoUtili = () => {
+            const canManage = ['amministratore', 'supervisore'].includes(userProfile?.tipoUtente);
+            const addFormHtml = canManage ? `
+                <form id="add-useful-number-form" class="space-y-4" style="margin-bottom: 2rem;">
+                    <div><label for="nu-title" class="form-label">Intervento richiesto</label><input type="text" id="nu-title" required class="form-input" placeholder="Es. Idraulico, Elettricista..."></div>
+                    <div><label for="nu-company" class="form-label">Impresa (Opzionale)</label><input type="text" id="nu-company" class="form-input" placeholder="Nome dell'azienda"></div>
+                    <div><label for="nu-number" class="form-label">1 num. Telefonico</label><input type="text" id="nu-number" required class="form-input" placeholder="Numero di telefono principale"></div>
+                    <div class="flex justify-end"><button type="submit" class="btn btn-primary">Aggiungi Contatto</button></div>
+                </form>
+            ` : '';
+
+            return `
+            ${renderHeader('Numeri utili')}
+            <main>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Inserimento manuale</h3>
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 1.5rem;">Aggiungi o visualizza i contatti di emergenza inseriti manualmente. La modifica è riservata ai ruoli autorizzati.</p>
+                    ${addFormHtml}
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Intervento richiesto</th>
+                                    <th>Impresa</th>
+                                    <th>1 num.Telefonico</th>
+                                    <th style="text-align:right;">Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="useful-numbers-table-body">
+                                <tr><td colspan="4" style="text-align:center; color:var(--secondary-text);">Caricamento contatti...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
                 <div class="card">
-                    <h3 class="card-title">Numeri di Emergenza</h3>
-                    <div class="list-item" style="cursor:default;"><div class="list-item-content"><div class="title">Numero Unico Emergenze</div><div class="subtitle">112</div></div></div>
-                    <div class="list-item" style="cursor:default;"><div class="list-item-content"><div class="title">Amministratore (Reperibilità)</div><div class="subtitle">333 1234567</div></div></div>
-                    <div class="list-item" style="cursor:default;"><div class="list-item-content"><div class="title">Manutentore Ascensore</div><div class="subtitle">800 123 456</div></div></div>
+                    <h3 class="card-title">Form Importazione dati</h3>
+                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 1.5rem;">
+                        Visualizza i contatti importati da un file Excel. Per aggiornare questa lista, i Supervisori e gli ADM possono utilizzare la pagina di importazione dati.
+                    </p>
+                    ${ (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) ? `<button onclick="navigateTo('importazione')" class="btn btn-secondary">Vai a Importazione Dati</button>` : '<p style="color:var(--secondary-text);"><i>Funzionalità riservata ai supervisori.</i></p>' }
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+            `;
+        };
+
+        const renderReportPage = () => `
+            ${renderHeader('Report')}
+            <main>
+                <div class="dashboard-grid">
+                    <div onclick="navigateTo('elencoCondomini')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7v13h20V7L12 2z"/></svg></div>
+                        <p>Elenco Condomini</p>
+                    </div>
+                    <div onclick="navigateTo('bacheca')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
+                        <p>Bacheca</p>
+                    </div>
+                    <div onclick="navigateTo('sondaggi')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
+                        <p>Sondaggi</p>
+                    </div>
+                    <div onclick="navigateTo('infoUtili')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
+                        <p>Numeri utili</p>
+                    </div>
                 </div>
             </main>
             ${renderBottomNavigation()}
         `;
+
+        const renderElencoCondomini = () => `
+            ${renderHeader('Elenco Condomini')}
+            <main id="elenco-condomini-container">
+                <div class="card"><p>Caricamento elenco in corso...</p></div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const loadElencoCondomini = async () => {
+            const container = document.getElementById('elenco-condomini-container');
+            if (!container) return;
+
+            try {
+                // --- 1. Recupero di tutti i dati necessari in parallelo ---
+                const usersQuery = query(collection(db, "users"), orderBy("cognome"));
+                const importedDataQuery = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
+                const partialCondosQuery = query(collection(db, "partialCondos"), orderBy("name"));
+
+                const [usersSnapshot, importedDataSnapshot, partialCondosSnapshot] = await Promise.all([
+                    getDocs(usersQuery),
+                    getDocs(importedDataQuery),
+                    getDocs(partialCondosQuery)
+                ]);
+
+                if (importedDataSnapshot.empty) {
+                    container.innerHTML = `<div class="card"><p class="message-box error" style="display:block;">Dati delle proprietà non trovati. Eseguire prima l'importazione.</p></div>`;
+                    return;
+                }
+
+                // --- 2. Preparazione dei dati ---
+                const allProperties = importedDataSnapshot.docs[0].data().tableData;
+                const partialCondosList = partialCondosSnapshot.docs.map(doc => doc.data());
+                
+                const findHeader = (headers, keywords) => headers.find(h => keywords.map(k => k.toLowerCase()).includes(h.toLowerCase()));
+                const headers = Object.keys(allProperties[0] || {});
+                const nominativoHeader = findHeader(headers, ['nominativo', 'proprietario']);
+                const apartmentHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
+                const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
+
+                // Funzione helper per determinare il gruppo di una proprietà
+                const getGroupForProperty = (interno) => {
+                    if (!interno) return 'Senza Gruppo';
+                    const lowerInterno = interno.toString().toLowerCase();
+                    const sortedCondos = [...partialCondosList].sort((a, b) => b.name.length - a.name.length);
+                    for (const condo of sortedCondos) {
+                        if (lowerInterno.includes(condo.name.toLowerCase())) return condo.name;
+                    }
+                    return 'Senza Gruppo';
+                };
+
+                // --- 3. Raggruppamento dei dati ---
+                const groupedData = {};
+
+                // Popola con tutti i gruppi esistenti per assicurarsi che appaiano tutti
+                partialCondosList.forEach(condo => {
+                    groupedData[condo.name] = { users: [], totalMillesimi: 0, totalProperties: 0 };
+                });
+                if (!groupedData['Senza Gruppo']) {
+                    groupedData['Senza Gruppo'] = { users: [], totalMillesimi: 0, totalProperties: 0 };
+                }
+
+                // Aggiungi utenti registrati ai gruppi
+                usersSnapshot.docs.forEach(doc => {
+                    const user = doc.data();
+                    user.proprieta?.forEach(prop => {
+                        const groupName = prop.gruppo || 'Senza Gruppo';
+                        if (!groupedData[groupName]) {
+                            groupedData[groupName] = { users: [], totalMillesimi: 0, totalProperties: 0 };
+                        }
+                        groupedData[groupName].users.push({
+                            idUI: prop.interno,
+                            proprietario: `${user.nome} ${user.cognome}`,
+                            millesimi: parseFloat(prop.millesimi) || 0
+                        });
+                    });
+                });
+
+                // Calcola i totali per scala/gruppo dai dati importati
+                allProperties.forEach(prop => {
+                    const groupName = getGroupForProperty(prop[apartmentHeader]);
+                     if (groupedData[groupName]) {
+                        groupedData[groupName].totalMillesimi += parseFloat(prop[millesimiHeader]) || 0;
+                        groupedData[groupName].totalProperties += 1;
+                    }
+                });
+
+                // --- 4. Generazione dell'HTML ---
+                let html = `<h2 class="section-title">ELENCO CONDOMINI CON ACCOUNT</h2>`;
+                let grandTotalAccounts = 0;
+                let grandTotalAccountMillesimi = 0;
+                let grandTotalProperties = 0;
+                let grandTotalAllMillesimi = 0;
+
+                for (const groupName in groupedData) {
+                    const group = groupedData[groupName];
+                    if (group.users.length === 0 && group.totalProperties === 0) continue; // Salta gruppi vuoti
+
+                    let accountSubtotalMillesimi = group.users.reduce((sum, u) => sum + u.millesimi, 0);
+                    
+                    grandTotalAccounts += group.users.length;
+                    grandTotalAccountMillesimi += accountSubtotalMillesimi;
+                    grandTotalProperties += group.totalProperties;
+                    grandTotalAllMillesimi += group.totalMillesimi;
+
+                    html += `
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <h3 class="card-title" style="text-transform: capitalize;">${groupName.toLowerCase()}</h3>
+                            <div class="data-table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Id U.I.</th>
+                                            <th>Proprietario</th>
+                                            <th style="text-align:right;">N.Teste</th>
+                                            <th style="text-align:right;">Millesimi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${group.users.map(u => `
+                                            <tr>
+                                                <td>${u.idUI}</td>
+                                                <td>${u.proprietario}</td>
+                                                <td style="text-align:right;">1</td>
+                                                <td style="text-align:right;">${u.millesimi.toFixed(2).replace('.', ',')}</td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                            <td colspan="2">Totale account</td>
+                                            <td style="text-align:right;">${group.users.length}</td>
+                                            <td style="text-align:right;">${accountSubtotalMillesimi.toFixed(2).replace('.', ',')}</td>
+                                        </tr>
+                                        <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                            <td colspan="2">Totale scala ${groupName}</td>
+                                            <td style="text-align:right;">${group.totalProperties}</td>
+                                            <td style="text-align:right;">${group.totalMillesimi.toFixed(2).replace('.', ',')}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Tabella riepilogo finale
+                html += `
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <h3 class="card-title">Complessivo</h3>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <tbody>
+                                    <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                        <td colspan="2">Totale account</td>
+                                        <td style="text-align:right;">${grandTotalAccounts}</td>
+                                        <td style="text-align:right;">${grandTotalAccountMillesimi.toFixed(2).replace('.', ',')}</td>
+                                    </tr>
+                                    <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                        <td colspan="2">Totale scala</td>
+                                        <td style="text-align:right;">${grandTotalProperties}</td>
+                                        <td style="text-align:right;">${grandTotalAllMillesimi.toFixed(2).replace('.', ',')}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error("Errore nel caricamento dell'elenco condomini:", error);
+                container.innerHTML = `<div class="card"><p class="message-box error" style="display:block;">Si è verificato un errore: ${error.message}</p></div>`;
+            }
+        };
 
                 const renderImportazione = () => `
             ${renderHeader('Importazione Dati')}
@@ -1154,6 +1386,12 @@
                     if (['supervisore', 'adm'].includes(userType)) content = renderImportazione();
                     else navigateTo('dashboard');
                     break;
+                case 'reportPage':
+                    content = renderReportPage();
+                    break;
+                case 'elencoCondomini':
+                    content = renderElencoCondomini();
+                    break;
                 case 'impostazioniSondaggi':
                     if (['supervisore', 'adm'].includes(userType)) content = renderImpostazioniSondaggi();
                     else navigateTo('dashboard');
@@ -1163,11 +1401,13 @@
 
             app.innerHTML = content;
 
-            switch (currentPage) {
+switch (currentPage) {
+                case 'elencoCondomini': loadElencoCondomini(); break;
                 case 'bacheca': loadCommunications(); setupBachecaHandlers(); break;
                 case 'sondaggi': if (userType !== 'custode') { loadPolls(); setupPollHandlers(); } break;
                 case 'segnalazioni': loadReports(); setupReportHandlers(); break;
                 case 'profilo': setupProfileHandlers(); break;
+                case 'infoUtili': loadUsefulNumbers(); setupInfoUtiliHandlers(); break;
                 case 'userManagement': if (['supervisore', 'adm'].includes(userType)) { loadUsers(); setupAdminUserCreationHandler(); } break;
                 case 'gestioneGruppi': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
                 case 'importazione': if (['supervisore', 'adm'].includes(userType)) { setupImportazioneHandlers(); } break;
@@ -1364,7 +1604,7 @@
                 isRegistering = !isRegistering;
                 authTitle.textContent = isRegistering ? "Registrati" : "Accedi";
                 authSubmitBtn.textContent = isRegistering ? "Registrati" : "Accedi";
-                event.target.textContent = isRegistering ? "Hai già un account? Accedi" : "Non hai un account? Registrati";
+                event.target.textContent = isRegistering ? "Accedi" : "Registrati";
                 registerFields.classList.toggle("hidden", !isRegistering);
                 forgotPasswordBtn.classList.toggle("hidden", isRegistering);
                 if (isRegistering) {
@@ -1433,6 +1673,38 @@
         const setupPollHandlers=()=>{const e=document.getElementById("create-poll-form");if(!e)return;const t=document.getElementById("poll-options-list"),o=document.getElementById("add-poll-option");function n(e=""){const o=document.createElement("div");o.className="flex items-center gap-2",o.innerHTML=`<input type="text" class="form-input" style="flex:1" required placeholder="Testo opzione" value="${e}"><button type="button" class="btn-remove-option" style="background:var(--surface-color-light); border:none; color:var(--primary-text); width:36px; height:36px; border-radius:50%; cursor:pointer;">−</button>`,o.querySelector(".btn-remove-option").onclick=()=>{t.removeChild(o),t.childElementCount<2&&n()},t.appendChild(o)}0===t.childElementCount&&(n(),n()),o.onclick=e=>{e.preventDefault(),n()},e.addEventListener("submit",async o=>{o.preventDefault();const n=document.getElementById("poll-title").value,t=document.getElementById("poll-description").value,d=document.getElementById("poll-deadline").value,i=document.getElementById("poll-deadline-time").value,l=e.querySelectorAll('#poll-options-list input[type="text"]'),r=Array.from(l).map(e=>e.value.trim()).filter(Boolean).map(e=>({text:e,votes:0}));if(r.length<2)return alert("Inserisci almeno due opzioni.");if(!d||!i)return alert("Inserisci una data e un'ora di scadenza.");const c=`${d}T${i}`,s=new Date(c);try{await addDoc(collection(db,"polls"),{title:n,description:t,options:r,deadline:s,createdBy:userProfile.nome+" "+userProfile.cognome,createdById:currentUser.uid,createdAt:serverTimestamp(),voters:[]}),await logActivity("poll_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:n}),e.reset()}catch(p){console.error("Errore:",p)}}),e.addEventListener("reset",()=>{setTimeout(()=>{t.innerHTML="",n(),n()},0)})};
         const setupReportHandlers = () => { const e=document.getElementById("create-report-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("report-title").value,n=document.getElementById("report-description").value,i=document.getElementById("report-category").value,d=document.getElementById("report-priority").value,r=document.getElementById("report-location").value;if(!o||!n||!i||!d||!r)return alert("Compila tutti i campi.");const c={title:o,description:n,category:i,priority:d,location:r,status:"aperta",createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()},l=document.getElementById("report-recipient");l&&l.value?c.recipientType=l.value:c.recipientType="management";try{await addDoc(collection(db,"reports"),c),await logActivity("report_created",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:o,priority:d}),e.reset()}catch(a){console.error("Errore:",a)}})};
         const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
+
+        const setupInfoUtiliHandlers = () => {
+            const form = document.getElementById('add-useful-number-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('nu-title').value.trim();
+                const company = document.getElementById('nu-company').value.trim();
+                const number = document.getElementById('nu-number').value.trim();
+
+                if (!title || !number) {
+                    alert('I campi "Intervento richiesto" e "Numero Telefonico" sono obbligatori.');
+                    return;
+                }
+
+                try {
+                    await addDoc(collection(db, 'usefulNumbers'), {
+                        title: title,
+                        company: company,
+                        number: number,
+                        createdBy: currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    await logActivity("useful_number_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title });
+                    form.reset();
+                } catch (error) {
+                    console.error("Errore nell'aggiunta del numero utile:", error);
+                    alert("Si è verificato un errore.");
+                }
+            });
+        };
 
         const setupImportazioneHandlers = async () => {
             // Riferimenti agli elementi DOM
@@ -1704,6 +1976,19 @@
                 alert("Si è verificato un errore durante l'eliminazione.");
             }
         };
+
+        const deleteUsefulNumber = async (id) => {
+            if (!confirm('Sei sicuro di voler eliminare questo numero?')) {
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, 'usefulNumbers', id));
+                await logActivity("useful_number_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedId: id });
+            } catch (error) {
+                console.error("Errore durante l'eliminazione del numero:", error);
+                alert("Si è verificato un errore durante l'eliminazione.");
+            }
+        };
         const showProfileMessage=(e,t)=>{const o=document.getElementById("profile-message");o&&(o.className=`message-box ${e}`,o.textContent=t,o.style.display="block",setTimeout(()=>{o.style.display="none"},5e3))};
         
         const showCommunicationDetail = async (commId) => {
@@ -1903,6 +2188,36 @@
             }
         };
 
+        const loadUsefulNumbers = () => {
+            const tableBody = document.getElementById('useful-numbers-table-body');
+            if (!tableBody) return;
+
+            const canManage = ['amministratore', 'supervisore'].includes(userProfile?.tipoUtente);
+            const q = query(collection(db, "usefulNumbers"), orderBy("createdAt", "desc"));
+
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary-text);">Nessun contatto inserito manualmente.</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = snapshot.docs.map(docSnap => {
+                    const contact = docSnap.data();
+                    const deleteButtonHtml = canManage ? `
+                        <button onclick="deleteUsefulNumber('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; padding: 0.4rem 0.8rem; font-size:0.8rem;">Elimina</button>
+                    ` : 'N/A';
+
+                    return `
+                    <tr>
+                        <td>${contact.title}</td>
+                        <td>${contact.company || '–'}</td>
+                        <td>${contact.number}</td>
+                        <td style="text-align:right;">${deleteButtonHtml}</td>
+                    </tr>
+                    `;
+                }).join('');
+            });
+        };
+
         const voteOnPoll=async(e,t)=>{try{const settingsRef=doc(db,"settings","pollAuthorization"),settingsSnap=await getDoc(settingsRef),pollSetting=settingsSnap.exists()?settingsSnap.data().setting:"option2";if(!isUserAllowedToVote(userProfile.tipoUtente,pollSetting))return alert("Non sei autorizzato a votare in questo sondaggio.");const o=doc(db,"polls",e),n=await getDoc(o);if(!n.exists())return;const i=n.data();if(i.deadline.toDate()<new Date)return alert("Sondaggio scaduto.");if(i.voters?.some(e=>e.uid===currentUser.uid))return alert("Hai già votato!");const d=[...i.options];d[t].votes=(d[t].votes||0)+1;const a=i.options[t].text;const userMillesimi=userProfile?.millesimiTotali||0;const r=[...i.voters||[],{uid:currentUser.uid,name:`${userProfile.nome} ${userProfile.cognome}`,vote:a,millesimi:userMillesimi}];await updateDoc(o,{options:d,voters:r}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:i.title,option:a})}catch(l){console.error("Errore nel voto:",l)}};
 
         const updateReportStatus=async(e,t)=>{try{await updateDoc(doc(db,"reports",e),{status:t,updatedAt:serverTimestamp()}),await logActivity("report_updated",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{reportId:e,newStatus:t})}catch(o){console.error("Errore nell'aggiornamento:",o)}};
@@ -1916,6 +2231,7 @@
         window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
         window.deletePartialCondo = deletePartialCondo;
+        window.deleteUsefulNumber = deleteUsefulNumber;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
