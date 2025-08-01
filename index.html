@@ -904,8 +904,53 @@
             ${renderBottomNavigation()}
         `;
         
-        const renderInfoUtili = () => {
-            const canManage = ['amministratore', 'supervisore'].includes(userProfile?.tipoUtente);
+        const renderInfoUtili = () => `
+            ${renderHeader('Numeri Utili')}
+            <main>
+                <div class="dashboard-grid">
+                    <div onclick="navigateTo('numeriUtiliImportati')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg></div>
+                        <p>Importazione automatica</p>
+                    </div>
+                    <div onclick="navigateTo('numeriUtiliManuali')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.13,5.12L18.88,8.87M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"/></svg></div>
+                        <p>Inserimento manuale</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderNumeriUtiliImportati = () => {
+            const canManage = ['amministratore', 'supervisore', 'adm'].includes(userProfile?.tipoUtente);
+            const importSectionHtml = canManage ? `
+                <div class="flex gap-4 mt-4">
+                    <button id="trigger-phone-import-btn" class="btn btn-primary flex-grow">Importa Nuovo File</button>
+                    <button onclick="navigateTo('importazione')" class="btn btn-secondary">Gestione Avanzata</button>
+                </div>
+                <input type="file" id="info-utili-phone-import-input" class="hidden" accept=".xlsx, .xls">
+                <div id="info-utili-import-message" class="message-box mt-4"></div>
+            ` : '';
+
+            return `
+            ${renderHeader('Contatti Importati')}
+            <main>
+                <div class="card">
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 1.5rem;">
+                        Elenco dei contatti importati tramite file Excel. Il file più recente sostituisce i precedenti.
+                    </p>
+                    <div id="imported-numbers-table-container" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Caricamento contatti importati...</p>
+                    </div>
+                    ${importSectionHtml}
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+            `;
+        };
+
+        const renderNumeriUtiliManuali = () => {
+            const canManage = ['amministratore', 'supervisore', 'adm'].includes(userProfile?.tipoUtente);
             const addFormHtml = canManage ? `
                 <form id="add-useful-number-form" class="space-y-4" style="margin-bottom: 2rem;">
                     <div><label for="nu-title" class="form-label">Intervento richiesto</label><input type="text" id="nu-title" required class="form-input" placeholder="Es. Idraulico, Elettricista..."></div>
@@ -916,10 +961,9 @@
             ` : '';
 
             return `
-            ${renderHeader('Numeri utili')}
+            ${renderHeader('Contatti Manuali')}
             <main>
-                <div class="card" style="margin-bottom: 2rem;">
-                    <h3 class="card-title">Inserimento manuale</h3>
+                <div class="card">
                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 1.5rem;">Aggiungi o visualizza i contatti di emergenza inseriti manualmente. La modifica è riservata ai ruoli autorizzati.</p>
                     ${addFormHtml}
                     <div class="data-table-container">
@@ -937,14 +981,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title">Form Importazione dati</h3>
-                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 1.5rem;">
-                        Visualizza i contatti importati da un file Excel. Per aggiornare questa lista, i Supervisori e gli ADM possono utilizzare la pagina di importazione dati.
-                    </p>
-                    ${ (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) ? `<button onclick="navigateTo('importazione')" class="btn btn-secondary">Vai a Importazione Dati</button>` : '<p style="color:var(--secondary-text);"><i>Funzionalità riservata ai supervisori.</i></p>' }
                 </div>
             </main>
             ${renderBottomNavigation()}
@@ -1153,41 +1189,46 @@
                 const renderImportazione = () => `
             ${renderHeader('Importazione Dati')}
             <main>
-                <!-- Vista per i dati già salvati -->
-                <div id="saved-data-view" class="hidden">
-                    <div class="card">
-                         <div class="flex items-center justify-between">
-                            <h3 class="card-title" style="margin-bottom: 0;">Dati Attualmente Salvati</h3>
-                            <button id="show-upload-form-btn" class="btn btn-secondary">Carica Nuovo</button>
-                        </div>
-                        <div id="saved-data-info" class="mt-4" style="color: var(--secondary-text); font-size: 0.9rem;"></div>
+                <!-- SEZIONE 1: IMPORTAZIONE MILLESIMI / ANAGRAFICA -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Importa Anagrafica e Millesimi</h3>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Carica il file Excel contenente i dati anagrafici dei proprietari, le unità immobiliari e i relativi millesimi. Questo file è <strong>fondamentale</strong> per la registrazione degli utenti e per i report.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Carica Nuovo File Anagrafica (.xlsx, .xls)</label>
+                        <input type="file" id="excel-file-input-millesimi" class="form-input" accept=".xlsx, .xls">
                     </div>
-                    <div class="card mt-4">
-                        <div id="saved-data-table-container" class="data-table-container">
-                            <p>Caricamento dati...</p>
+                    <div id="message-import-millesimi" class="message-box"></div>
+                    <div id="save-button-container-millesimi" class="hidden mt-4">
+                        <button id="save-imported-data-btn-millesimi" class="btn btn-primary w-full">Salva Dati Anagrafica</button>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
+                        <div id="excel-table-container-millesimi" class="data-table-container">
+                            <p style="color:var(--secondary-text);">Nessun file selezionato o caricato.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Vista per il caricamento di un nuovo file -->
-                <div id="upload-view" class="hidden">
-                     <div class="card">
-                        <h3 class="card-title">Carica Nuovo File Excel</h3>
-                        <p class="form-label" style="margin-bottom: 1rem; color: var(--secondary-text);">
-                            Seleziona un file in formato .xlsx o .xls. Il nuovo file sostituirà i dati esistenti.
-                        </p>
-                        <div class="form-group">
-                            <input type="file" id="excel-file-input" class="form-input" accept=".xlsx, .xls">
-                        </div>
-                        <div id="message-import" class="message-box"></div>
-                        <div id="save-button-container" class="hidden mt-4">
-                            <button id="save-imported-data-btn" class="btn btn-primary w-full">Salva e Sostituisci Dati</button>
-                        </div>
+                <!-- SEZIONE 2: IMPORTAZIONE NUMERI DI TELEFONO -->
+                <div class="card">
+                    <h3 class="card-title">Importa Numeri di Telefono Utili</h3>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Carica un file Excel separato per i numeri di telefono utili (es. fornitori, emergenze). Questi dati verranno visualizzati nella pagina "Numeri Utili".
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Carica Nuovo File Numeri (.xlsx, .xls)</label>
+                        <input type="file" id="excel-file-input-phones" class="form-input" accept=".xlsx, .xls">
                     </div>
-                    <div class="card mt-4">
-                        <h3 class="card-title">Anteprima Dati</h3>
-                        <div id="excel-table-container" class="data-table-container">
-                            <p style="color:var(--secondary-text);">Nessun file selezionato.</p>
+                    <div id="message-import-phones" class="message-box"></div>
+                    <div id="save-button-container-phones" class="hidden mt-4">
+                        <button id="save-imported-data-btn-phones" class="btn btn-primary w-full">Salva Numeri Utili</button>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
+                        <div id="excel-table-container-phones" class="data-table-container">
+                            <p style="color:var(--secondary-text);">Nessun file selezionato o caricato.</p>
                         </div>
                     </div>
                 </div>
@@ -1374,6 +1415,8 @@
                 case 'segnalazioni': content = renderSegnalazioni(); break;
                 case 'profilo': content = renderProfilo(); break;
                 case 'infoUtili': content = renderInfoUtili(); break;
+                case 'numeriUtiliImportati': content = renderNumeriUtiliImportati(); break;
+                case 'numeriUtiliManuali': content = renderNumeriUtiliManuali(); break;
                 case 'userManagement': 
                     if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement(); 
                     else navigateTo('dashboard');
@@ -1407,7 +1450,12 @@ switch (currentPage) {
                 case 'sondaggi': if (userType !== 'custode') { loadPolls(); setupPollHandlers(); } break;
                 case 'segnalazioni': loadReports(); setupReportHandlers(); break;
                 case 'profilo': setupProfileHandlers(); break;
-                case 'infoUtili': loadUsefulNumbers(); setupInfoUtiliHandlers(); break;
+                case 'infoUtili': /* No handlers needed for the menu page */ break;
+                case 'numeriUtiliImportati':
+                case 'numeriUtiliManuali':
+                    loadUsefulNumbers(); 
+                    setupInfoUtiliHandlers(); 
+                    break;
                 case 'userManagement': if (['supervisore', 'adm'].includes(userType)) { loadUsers(); setupAdminUserCreationHandler(); } break;
                 case 'gestioneGruppi': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
                 case 'importazione': if (['supervisore', 'adm'].includes(userType)) { setupImportazioneHandlers(); } break;
@@ -1675,58 +1723,103 @@ switch (currentPage) {
         const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
 
         const setupInfoUtiliHandlers = () => {
-            const form = document.getElementById('add-useful-number-form');
-            if (!form) return;
+            // Logica per l'inserimento manuale (si attiva solo nella pagina dei contatti manuali)
+            const manualForm = document.getElementById('add-useful-number-form');
+            if (manualForm) {
+                manualForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const title = document.getElementById('nu-title').value.trim();
+                    const company = document.getElementById('nu-company').value.trim();
+                    const number = document.getElementById('nu-number').value.trim();
+                    if (!title || !number) {
+                        alert('I campi "Intervento richiesto" e "Numero Telefonico" sono obbligatori.');
+                        return;
+                    }
+                    try {
+                        await addDoc(collection(db, 'usefulNumbers'), { title, company, number, createdBy: currentUser.uid, createdAt: serverTimestamp() });
+                        await logActivity("useful_number_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title });
+                        manualForm.reset();
+                    } catch (error) {
+                        console.error("Errore nell'aggiunta del numero utile:", error);
+                        alert("Si è verificato un errore.");
+                    }
+                });
+            }
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const title = document.getElementById('nu-title').value.trim();
-                const company = document.getElementById('nu-company').value.trim();
-                const number = document.getElementById('nu-number').value.trim();
+            // Logica per l'importazione da file (si attiva solo nella pagina dei contatti importati)
+            const triggerBtn = document.getElementById('trigger-phone-import-btn');
+            const fileInput = document.getElementById('info-utili-phone-import-input');
+            const messageBox = document.getElementById('info-utili-import-message');
+            if (triggerBtn && fileInput && messageBox) {
+                triggerBtn.addEventListener('click', () => fileInput.click());
 
-                if (!title || !number) {
-                    alert('I campi "Intervento richiesto" e "Numero Telefonico" sono obbligatori.');
-                    return;
-                }
+                fileInput.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
 
-                try {
-                    await addDoc(collection(db, 'usefulNumbers'), {
-                        title: title,
-                        company: company,
-                        number: number,
-                        createdBy: currentUser.uid,
-                        createdAt: serverTimestamp()
-                    });
-                    await logActivity("useful_number_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title });
-                    form.reset();
-                } catch (error) {
-                    console.error("Errore nell'aggiunta del numero utile:", error);
-                    alert("Si è verificato un errore.");
-                }
-            });
+                    messageBox.className = 'message-box';
+                    messageBox.textContent = 'Lettura del file in corso...';
+                    messageBox.style.display = 'block';
+                    triggerBtn.disabled = true;
+                    triggerBtn.textContent = 'Caricamento...';
+
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                            if (jsonData.length === 0) throw new Error("Il file Excel è vuoto o non valido.");
+
+                            messageBox.textContent = 'Salvataggio dei dati...';
+                            await addDoc(collection(db, "importedPhoneNumbers"), {
+                                fileName: file.name,
+                                tableData: jsonData,
+                                uploadedBy: currentUser.uid,
+                                uploadedAt: serverTimestamp()
+                            });
+                            await logActivity("phone_data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: file.name, source: 'infoUtiliPage' });
+
+                            messageBox.className = 'message-box success';
+                            messageBox.textContent = 'Importazione completata con successo!';
+                            setTimeout(() => { messageBox.style.display = 'none'; }, 4000);
+
+                        } catch (err) {
+                            messageBox.className = 'message-box error';
+                            messageBox.textContent = `Errore: ${err.message}`;
+                        } finally {
+                            fileInput.value = ''; // Resetta l'input per permettere di ricaricare lo stesso file
+                            triggerBtn.disabled = false;
+                            triggerBtn.textContent = 'Importa Nuovo File';
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
         };
 
         const setupImportazioneHandlers = async () => {
-            // Riferimenti agli elementi DOM
-            const savedDataView = document.getElementById('saved-data-view');
-            const uploadView = document.getElementById('upload-view');
-            const savedDataInfo = document.getElementById('saved-data-info');
-            const savedDataTableContainer = document.getElementById('saved-data-table-container');
-            const showUploadBtn = document.getElementById('show-upload-form-btn');
-
-            const fileInput = document.getElementById('excel-file-input');
-            const tableContainer = document.getElementById('excel-table-container');
-            const messageBox = document.getElementById('message-import');
-            const saveBtnContainer = document.getElementById('save-button-container');
-            const saveBtn = document.getElementById('save-imported-data-btn');
-
-            let jsonDataToSave = null;
-            let fileNameToSave = '';
-
-            // Funzione helper per generare una tabella HTML dai dati
+            // --- FUNZIONI HELPER COMUNI ---
             const generateTableHTML = (data) => {
-                // Se i dati sono oggetti (da Firestore)
-                if (data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0])) {
+                if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
+                
+                // Dati da anteprima file (array di array)
+                if (Array.isArray(data[0])) {
+                    const headers = data[0];
+                    let tableHTML = '<table class="data-table"><thead><tr>';
+                    headers.forEach(header => tableHTML += `<th>${header}</th>`);
+                    tableHTML += '</tr></thead><tbody>';
+                    for (let i = 1; i < data.length; i++) {
+                        tableHTML += '<tr>';
+                        headers.forEach((_, colIndex) => tableHTML += `<td>${data[i][colIndex] !== undefined ? data[i][colIndex] : ''}</td>`);
+                        tableHTML += '</tr>';
+                    }
+                    return tableHTML + '</tbody></table>';
+                }
+                // Dati da Firestore (array di oggetti)
+                if (typeof data[0] === 'object') {
                     const headers = Object.keys(data[0]);
                     let tableHTML = '<table class="data-table"><thead><tr>';
                     headers.forEach(h => tableHTML += `<th>${h}</th>`);
@@ -1736,137 +1829,164 @@ switch (currentPage) {
                         headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
                         tableHTML += '</tr>';
                     });
-                    tableHTML += '</tbody></table>';
-                    return tableHTML;
+                    return tableHTML + '</tbody></table>';
                 }
-                // Se i dati sono array di array (dall'anteprima file)
-                if (data.length > 0 && Array.isArray(data[0])) {
-                     const headers = data[0];
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(header => tableHTML += `<th>${header}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
-                    for (let i = 1; i < data.length; i++) {
-                        const row = data[i];
-                        tableHTML += '<tr>';
-                        headers.forEach((_, colIndex) => {
-                            const cellValue = row[colIndex] !== undefined ? row[colIndex] : '';
-                            tableHTML += `<td>${cellValue}</td>`;
-                        });
-                        tableHTML += '</tr>';
-                    }
-                    tableHTML += '</tbody></table>';
-                    return tableHTML;
-                }
-                return '<p>Nessun dato da visualizzare.</p>';
+                return '<p style="color:var(--secondary-text);">Formato dati non riconosciuto.</p>';
             };
 
-            // Funzione per caricare i dati più recenti da Firestore
-            const loadLatestData = async () => {
+            const convertArrayOfArraysToObjects = (data) => {
+                const headers = data[0].map(h => h.toString().trim());
+                return data.slice(1).map(row => {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = row[index] !== undefined ? row[index] : '';
+                    });
+                    return obj;
+                });
+            };
+
+            // --- LOGICA PER IMPORTAZIONE MILLESIMI ---
+            const fileInputMillesimi = document.getElementById('excel-file-input-millesimi');
+            const tableContainerMillesimi = document.getElementById('excel-table-container-millesimi');
+            const messageBoxMillesimi = document.getElementById('message-import-millesimi');
+            const saveBtnContainerMillesimi = document.getElementById('save-button-container-millesimi');
+            const saveBtnMillesimi = document.getElementById('save-imported-data-btn-millesimi');
+            let millesimiDataToSave = null;
+            let millesimiFileName = '';
+
+            const loadLatestMillesimiData = async () => {
                 const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    const latestDoc = querySnapshot.docs[0].data();
-                    const dateFormatted = latestDoc.uploadedAt.toDate().toLocaleString("it-IT", { dateStyle: 'long', timeStyle: 'short' });
-                    
-                    savedDataInfo.innerHTML = `<strong>File:</strong> ${latestDoc.fileName}<br><strong>Ultimo caricamento:</strong> ${dateFormatted}`;
-                    savedDataTableContainer.innerHTML = generateTableHTML(latestDoc.tableData);
-                    
-                    savedDataView.classList.remove('hidden');
-                    uploadView.classList.add('hidden');
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data().tableData;
+                    tableContainerMillesimi.innerHTML = generateTableHTML(data);
                 } else {
-                    savedDataView.classList.add('hidden');
-                    uploadView.classList.remove('hidden');
+                    tableContainerMillesimi.innerHTML = '<p style="color:var(--secondary-text);">Nessun dato anagrafico ancora importato.</p>';
                 }
             };
-            
-            // Logica per il pulsante "Carica Nuovo"
-            showUploadBtn.addEventListener('click', () => {
-                savedDataView.classList.add('hidden');
-                uploadView.classList.remove('hidden');
-            });
 
-            // Logica per il caricamento del file (ANTEPRIMA)
-            fileInput.addEventListener('change', (event) => {
+            fileInputMillesimi.addEventListener('change', (event) => {
                 const file = event.target.files[0];
-                jsonDataToSave = null; fileNameToSave = '';
-                saveBtnContainer.classList.add('hidden'); messageBox.style.display = 'none';
-
-                if (!file) {
-                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
-                    return;
-                }
-                fileNameToSave = file.name;
-                tableContainer.innerHTML = '<p>Caricamento in corso...</p>';
-
+                millesimiDataToSave = null; millesimiFileName = '';
+                saveBtnContainerMillesimi.classList.add('hidden'); messageBoxMillesimi.style.display = 'none';
+                if (!file) { loadLatestMillesimiData(); return; }
+                
+                millesimiFileName = file.name;
+                tableContainerMillesimi.innerHTML = '<p>Caricamento anteprima...</p>';
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                        if (jsonData.length === 0) throw new Error("Il file Excel è vuoto.");
-                        
-                        jsonDataToSave = jsonData;
-                        tableContainer.innerHTML = generateTableHTML(jsonData);
-                        saveBtnContainer.classList.remove('hidden');
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        millesimiDataToSave = jsonData;
+                        tableContainerMillesimi.innerHTML = generateTableHTML(jsonData);
+                        saveBtnContainerMillesimi.classList.remove('hidden');
                     } catch (err) {
-                         messageBox.className = 'message-box error';
-                         messageBox.textContent = `Errore lettura file: ${err.message}`;
-                         messageBox.style.display = 'block';
+                        messageBoxMillesimi.className = 'message-box error';
+                        messageBoxMillesimi.textContent = `Errore: ${err.message}`;
+                        messageBoxMillesimi.style.display = 'block';
                     }
                 };
                 reader.readAsArrayBuffer(file);
             });
-            
-            // Logica per il salvataggio dei dati
-            saveBtn.addEventListener('click', async () => {
-                if (!jsonDataToSave || jsonDataToSave.length < 2) {
-                    alert('Nessun dato valido da salvare.'); return;
-                }
-                saveBtn.disabled = true; saveBtn.textContent = 'Salvataggio...';
 
-                const convertArrayOfArraysToObjects = (data) => {
-                    const headers = data[0].map(h => h.toString().trim());
-                    return data.slice(1).map(row => {
-                        const obj = {};
-                        headers.forEach((header, index) => {
-                            obj[header] = row[index] !== undefined ? row[index] : '';
-                        });
-                        return obj;
-                    });
-                };
-                const dataToSave = convertArrayOfArraysToObjects(jsonDataToSave);
-
+            saveBtnMillesimi.addEventListener('click', async () => {
+                if (!millesimiDataToSave || millesimiDataToSave.length < 2) return;
+                saveBtnMillesimi.disabled = true; saveBtnMillesimi.textContent = 'Salvataggio...';
                 try {
                     await addDoc(collection(db, "importedData"), {
-                        fileName: fileNameToSave,
-                        tableData: dataToSave,
+                        fileName: millesimiFileName,
+                        tableData: convertArrayOfArraysToObjects(millesimiDataToSave),
                         uploadedBy: currentUser.uid,
                         uploadedAt: serverTimestamp()
                     });
-                    await logActivity("data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: fileNameToSave });
-                    
-                    // Resetta il form e ricarica la vista con i dati appena salvati
-                    fileInput.value = '';
-                    saveBtnContainer.classList.add('hidden');
-                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
-                    await loadLatestData();
-                    
+                    await logActivity("data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: millesimiFileName });
+                    fileInputMillesimi.value = '';
+                    saveBtnContainerMillesimi.classList.add('hidden');
+                    await loadLatestMillesimiData();
                 } catch (error) {
-                    console.error("Errore salvataggio dati: ", error);
-                    messageBox.className = 'message-box error';
-                    messageBox.textContent = 'Si è verificato un errore durante il salvataggio.';
-                    messageBox.style.display = 'block';
+                    messageBoxMillesimi.className = 'message-box error';
+                    messageBoxMillesimi.textContent = 'Errore durante il salvataggio.';
+                    messageBoxMillesimi.style.display = 'block';
                 } finally {
-                    saveBtn.disabled = false; saveBtn.textContent = 'Salva e Sostituisci Dati';
+                    saveBtnMillesimi.disabled = false; saveBtnMillesimi.textContent = 'Salva Dati Anagrafica';
                 }
             });
 
-            // Carica i dati all'avvio
-            await loadLatestData();
+            // --- LOGICA PER IMPORTAZIONE NUMERI UTILI ---
+            const fileInputPhones = document.getElementById('excel-file-input-phones');
+            const tableContainerPhones = document.getElementById('excel-table-container-phones');
+            const messageBoxPhones = document.getElementById('message-import-phones');
+            const saveBtnContainerPhones = document.getElementById('save-button-container-phones');
+            const saveBtnPhones = document.getElementById('save-imported-data-btn-phones');
+            let phoneDataToSave = null;
+            let phoneFileName = '';
+
+            const loadLatestPhoneData = async () => {
+                const q = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data().tableData;
+                    tableContainerPhones.innerHTML = generateTableHTML(data);
+                } else {
+                    tableContainerPhones.innerHTML = '<p style="color:var(--secondary-text);">Nessun numero utile ancora importato.</p>';
+                }
+            };
+
+            fileInputPhones.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                phoneDataToSave = null; phoneFileName = '';
+                saveBtnContainerPhones.classList.add('hidden'); messageBoxPhones.style.display = 'none';
+                if (!file) { loadLatestPhoneData(); return; }
+
+                phoneFileName = file.name;
+                tableContainerPhones.innerHTML = '<p>Caricamento anteprima...</p>';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        phoneDataToSave = jsonData;
+                        tableContainerPhones.innerHTML = generateTableHTML(jsonData);
+                        saveBtnContainerPhones.classList.remove('hidden');
+                    } catch (err) {
+                        messageBoxPhones.className = 'message-box error';
+                        messageBoxPhones.textContent = `Errore: ${err.message}`;
+                        messageBoxPhones.style.display = 'block';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            saveBtnPhones.addEventListener('click', async () => {
+                if (!phoneDataToSave || phoneDataToSave.length < 2) return;
+                saveBtnPhones.disabled = true; saveBtnPhones.textContent = 'Salvataggio...';
+                try {
+                    await addDoc(collection(db, "importedPhoneNumbers"), {
+                        fileName: phoneFileName,
+                        tableData: convertArrayOfArraysToObjects(phoneDataToSave),
+                        uploadedBy: currentUser.uid,
+                        uploadedAt: serverTimestamp()
+                    });
+                    await logActivity("phone_data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: phoneFileName });
+                    fileInputPhones.value = '';
+                    saveBtnContainerPhones.classList.add('hidden');
+                    await loadLatestPhoneData();
+                } catch (error) {
+                    messageBoxPhones.className = 'message-box error';
+                    messageBoxPhones.textContent = 'Errore durante il salvataggio.';
+                    messageBoxPhones.style.display = 'block';
+                } finally {
+                    saveBtnPhones.disabled = false; saveBtnPhones.textContent = 'Salva Numeri Utili';
+                }
+            });
+
+            // Carica i dati iniziali per entrambe le sezioni
+            await Promise.all([loadLatestMillesimiData(), loadLatestPhoneData()]);
         };
 
         const setupUserManagementHandlers = () => {
@@ -2189,33 +2309,52 @@ switch (currentPage) {
         };
 
         const loadUsefulNumbers = () => {
-            const tableBody = document.getElementById('useful-numbers-table-body');
-            if (!tableBody) return;
+            const manualTableBody = document.getElementById('useful-numbers-table-body');
+            const importedTableContainer = document.getElementById('imported-numbers-table-container');
+            const canManage = ['amministratore', 'supervisore', 'adm'].includes(userProfile?.tipoUtente);
 
-            const canManage = ['amministratore', 'supervisore'].includes(userProfile?.tipoUtente);
-            const q = query(collection(db, "usefulNumbers"), orderBy("createdAt", "desc"));
+            // Carica numeri inseriti manualmente
+            if (manualTableBody) {
+                const qManual = query(collection(db, "usefulNumbers"), orderBy("createdAt", "desc"));
+                onSnapshot(qManual, (snapshot) => {
+                    if (snapshot.empty) {
+                        manualTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary-text);">Nessun contatto inserito.</td></tr>`;
+                        return;
+                    }
+                    manualTableBody.innerHTML = snapshot.docs.map(docSnap => {
+                        const contact = docSnap.data();
+                        const deleteButtonHtml = canManage ? `<button onclick="deleteUsefulNumber('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; padding: 0.4rem 0.8rem; font-size:0.8rem;">Elimina</button>` : 'N/A';
+                        return `<tr><td>${contact.title}</td><td>${contact.company || '–'}</td><td>${contact.number}</td><td style="text-align:right;">${deleteButtonHtml}</td></tr>`;
+                    }).join('');
+                });
+            }
 
-            onSnapshot(q, (snapshot) => {
-                if (snapshot.empty) {
-                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary-text);">Nessun contatto inserito manualmente.</td></tr>`;
-                    return;
-                }
-                tableBody.innerHTML = snapshot.docs.map(docSnap => {
-                    const contact = docSnap.data();
-                    const deleteButtonHtml = canManage ? `
-                        <button onclick="deleteUsefulNumber('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; padding: 0.4rem 0.8rem; font-size:0.8rem;">Elimina</button>
-                    ` : 'N/A';
-
-                    return `
-                    <tr>
-                        <td>${contact.title}</td>
-                        <td>${contact.company || '–'}</td>
-                        <td>${contact.number}</td>
-                        <td style="text-align:right;">${deleteButtonHtml}</td>
-                    </tr>
-                    `;
-                }).join('');
-            });
+            // Carica numeri importati da file
+            if (importedTableContainer) {
+                const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
+                onSnapshot(qImported, (snapshot) => {
+                    if (snapshot.empty) {
+                        importedTableContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun contatto importato trovato.</p>`;
+                        return;
+                    }
+                    const data = snapshot.docs[0].data().tableData;
+                    if (!data || data.length === 0) {
+                         importedTableContainer.innerHTML = `<p style="color:var(--secondary-text);">Il file importato è vuoto.</p>`;
+                         return;
+                    }
+                    const headers = Object.keys(data[0]);
+                    let tableHTML = '<table class="data-table"><thead><tr>';
+                    headers.forEach(h => tableHTML += `<th>${h}</th>`);
+                    tableHTML += '</tr></thead><tbody>';
+                    data.forEach(row => {
+                        tableHTML += '<tr>';
+                        headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        tableHTML += '</tr>';
+                    });
+                    tableHTML += '</tbody></table>';
+                    importedTableContainer.innerHTML = tableHTML;
+                });
+            }
         };
 
         const voteOnPoll=async(e,t)=>{try{const settingsRef=doc(db,"settings","pollAuthorization"),settingsSnap=await getDoc(settingsRef),pollSetting=settingsSnap.exists()?settingsSnap.data().setting:"option2";if(!isUserAllowedToVote(userProfile.tipoUtente,pollSetting))return alert("Non sei autorizzato a votare in questo sondaggio.");const o=doc(db,"polls",e),n=await getDoc(o);if(!n.exists())return;const i=n.data();if(i.deadline.toDate()<new Date)return alert("Sondaggio scaduto.");if(i.voters?.some(e=>e.uid===currentUser.uid))return alert("Hai già votato!");const d=[...i.options];d[t].votes=(d[t].votes||0)+1;const a=i.options[t].text;const userMillesimi=userProfile?.millesimiTotali||0;const r=[...i.voters||[],{uid:currentUser.uid,name:`${userProfile.nome} ${userProfile.cognome}`,vote:a,millesimi:userMillesimi}];await updateDoc(o,{options:d,voters:r}),await logActivity("poll_voted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{pollTitle:i.title,option:a})}catch(l){console.error("Errore nel voto:",l)}};
