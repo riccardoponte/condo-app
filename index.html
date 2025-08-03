@@ -1801,37 +1801,116 @@ switch (currentPage) {
         };
 
         const setupImportazioneHandlers = async () => {
+            let partialCondosList = [];
+
+            const loadPartialCondosForImport = async () => {
+                try {
+                    const q = query(collection(db, "partialCondos"), orderBy("name"));
+                    const querySnapshot = await getDocs(q);
+                    partialCondosList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } catch (error) {
+                    console.error("Errore nel caricamento dei gruppi per l'importazione:", error);
+                    partialCondosList = [];
+                }
+            };
+
+            const getAutomaticGroupForImport = (interno) => {
+                if (!interno || partialCondosList.length === 0) return '';
+                const lowerInterno = interno.toString().toLowerCase().trim();
+
+                // --- Regola 1: Box (la più distinta, ha la priorità) ---
+                if (/\be\b|\be-/.test(lowerInterno)) {
+                    const boxCondo = partialCondosList.find(c => c.name.toLowerCase() === 'box');
+                    if (boxCondo) return boxCondo.name;
+                }
+
+                // --- Regola 2: Pattern "Lettera + Numero" per Mascagni e Bellini ---
+                // Cerca una 'm' o 'b' seguita da una o più cifre. Es: "M15", "b13", "ES M13"
+                const patternMatch = lowerInterno.match(/([mb])(\d+)/);
+                if (patternMatch) {
+                    const letter = patternMatch[1]; // 'm' o 'b'
+                    const number = patternMatch[2]; // es. "13", "15"
+                    
+                    const buildingName = letter === 'm' ? 'Mascagni' : 'Bellini';
+                    const targetGroupName = `Scala ${buildingName} ${number}`;
+
+                    // Cerca una corrispondenza esatta del nome del gruppo costruito
+                    const foundCondo = partialCondosList.find(c => c.name.toLowerCase() === targetGroupName.toLowerCase());
+                    if (foundCondo) {
+                        return foundCondo.name;
+                    }
+                }
+
+                // --- Regola 3: Fallback generico per altre corrispondenze (es. "Giardino") ---
+                // Utile per gruppi che non seguono il pattern Lettera+Numero
+                const sortedCondos = [...partialCondosList].sort((a, b) => b.name.length - a.name.length);
+                for (const condo of sortedCondos) {
+                    // Per sicurezza, evitiamo di ricontrollare i gruppi già gestiti dai pattern
+                    if (condo.name.toLowerCase().startsWith('scala mascagni') || 
+                        condo.name.toLowerCase().startsWith('scala bellini') ||
+                        condo.name.toLowerCase() === 'box') {
+                        continue;
+                    }
+                    
+                    if (lowerInterno.includes(condo.name.toLowerCase())) {
+                        return condo.name;
+                    }
+                }
+
+                return ''; // Nessun gruppo trovato
+            };
+
             // --- FUNZIONI HELPER COMUNI ---
-            const generateTableHTML = (data) => {
+            const generateTableHTML = (data, isPreview = false) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
-                
-                // Dati da anteprima file (array di array)
+
+                const groupOptionsHtml = `<option value="">Nessun Gruppo</option>` + partialCondosList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                let tableHTML = `<table class="data-table" id="millesimi-preview-table">`;
+
+                // Gestione dati da file (array di array)
                 if (Array.isArray(data[0])) {
                     const headers = data[0];
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(header => tableHTML += `<th>${header}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
+                    const lowerCaseHeaders = headers.map(h => h.toString().toLowerCase());
+                    const internoIndex = lowerCaseHeaders.findIndex(h => ['interno', 'appartamento', 'unita'].includes(h));
+                    const raggruppamentoIndex = lowerCaseHeaders.findIndex(h => h === 'raggruppamento');
+
+                    tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
                     for (let i = 1; i < data.length; i++) {
                         tableHTML += '<tr>';
-                        headers.forEach((_, colIndex) => tableHTML += `<td>${data[i][colIndex] !== undefined ? data[i][colIndex] : ''}</td>`);
+                        headers.forEach((header, colIndex) => {
+                            const cellValue = data[i][colIndex] !== undefined ? data[i][colIndex] : '';
+                            if (isPreview && colIndex === raggruppamentoIndex) {
+                                // Ora 'cellValue' contiene già il gruppo corretto, calcolato in precedenza
+                                const selectedGroupOptions = groupOptionsHtml.replace(`value="${cellValue}"`, `value="${cellValue}" selected`);
+                                tableHTML += `<td><select class="form-select" style="padding: 0.4rem 0.6rem; font-size: 0.9rem;">${selectedGroupOptions}</select></td>`;
+                            } else {
+                                tableHTML += `<td>${cellValue}</td>`;
+                            }
+                        });
                         tableHTML += '</tr>';
                     }
-                    return tableHTML + '</tbody></table>';
-                }
-                // Dati da Firestore (array di oggetti)
-                if (typeof data[0] === 'object') {
+                // Gestione dati da Firestore (array di oggetti)
+                } else if (typeof data[0] === 'object') {
                     const headers = Object.keys(data[0]);
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(h => tableHTML += `<th>${h}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
+                    tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
                     data.forEach(row => {
                         tableHTML += '<tr>';
-                        headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        headers.forEach(header => {
+                            const cellValue = row[header] !== undefined ? row[header] : '';
+                            if (isPreview && header.toLowerCase() === 'raggruppamento') {
+                                const selectedGroupOptions = groupOptionsHtml.replace(`value="${cellValue}"`, `value="${cellValue}" selected`);
+                                tableHTML += `<td><select class="form-select" style="padding: 0.4rem 0.6rem; font-size: 0.9rem;">${selectedGroupOptions}</select></td>`;
+                            } else {
+                                tableHTML += `<td>${cellValue}</td>`;
+                            }
+                        });
                         tableHTML += '</tr>';
                     });
-                    return tableHTML + '</tbody></table>';
+                } else {
+                    return '<p style="color:var(--secondary-text);">Formato dati non riconosciuto.</p>';
                 }
-                return '<p style="color:var(--secondary-text);">Formato dati non riconosciuto.</p>';
+
+                return tableHTML + '</tbody></table>';
             };
 
             const convertArrayOfArraysToObjects = (data) => {
@@ -1858,10 +1937,35 @@ switch (currentPage) {
                 const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
-                    const data = snapshot.docs[0].data().tableData;
-                    tableContainerMillesimi.innerHTML = generateTableHTML(data);
+                    const docData = snapshot.docs[0].data();
+                    const data = docData.tableData;
+
+                    // --- LOGICA DI RICALCOLO: Applica sempre i gruppi automatici ai dati caricati ---
+                    if (data.length > 0) {
+                        const headers = Object.keys(data[0]);
+                        const lowerCaseHeaders = headers.map(h => h.toLowerCase());
+                        const internoHeader = headers[lowerCaseHeaders.findIndex(h => ['interno', 'appartamento', 'unita'].includes(h))];
+                        const gruppoHeader = headers[lowerCaseHeaders.findIndex(h => h === 'raggruppamento')];
+
+                        if (internoHeader && gruppoHeader) {
+                            data.forEach(row => {
+                                const internoValue = row[internoHeader];
+                                const autoGroup = getAutomaticGroupForImport(internoValue);
+                                row[gruppoHeader] = autoGroup; // Sovrascrive il raggruppamento con quello ricalcolato
+                            });
+                        }
+                    }
+                    // --- FINE LOGICA DI RICALCOLO ---
+
+                    // Passiamo 'true' per renderizzare la tabella in modalità modificabile
+                    tableContainerMillesimi.innerHTML = generateTableHTML(data, true);
+                    // Mostriamo il pulsante di salvataggio anche per i dati esistenti
+                    saveBtnContainerMillesimi.classList.remove('hidden');
+                    // Impostiamo il nome del file per il logging, se disponibile
+                    millesimiFileName = docData.fileName || 'dati_esistenti.xlsx';
                 } else {
                     tableContainerMillesimi.innerHTML = '<p style="color:var(--secondary-text);">Nessun dato anagrafico ancora importato.</p>';
+                    saveBtnContainerMillesimi.classList.add('hidden');
                 }
             };
 
@@ -1879,9 +1983,33 @@ switch (currentPage) {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        if (jsonData.length < 2) throw new Error("Il file deve contenere almeno un'intestazione e una riga di dati.");
+
+                        // Aggiungi la colonna "raggruppamento" se non esiste
+                        let headers = jsonData[0];
+                        let lowerCaseHeaders = headers.map(h => h.toString().toLowerCase());
+                        if (!lowerCaseHeaders.includes('raggruppamento')) {
+                            headers.push('raggruppamento');
+                            lowerCaseHeaders.push('raggruppamento');
+                            for (let i = 1; i < jsonData.length; i++) {
+                                jsonData[i].push(''); // Aggiunge una cella vuota temporanea
+                            }
+                        }
+
+                        // Popola la colonna raggruppamento con i valori calcolati
+                        const internoIndex = lowerCaseHeaders.findIndex(h => ['interno', 'appartamento', 'unita'].includes(h));
+                        const raggruppamentoIndex = lowerCaseHeaders.findIndex(h => h === 'raggruppamento');
+
+                        if (internoIndex !== -1) {
+                            for (let i = 1; i < jsonData.length; i++) {
+                                const internoValue = jsonData[i][internoIndex];
+                                const autoGroup = getAutomaticGroupForImport(internoValue);
+                                jsonData[i][raggruppamentoIndex] = autoGroup; // Aggiorna il modello dati
+                            }
+                        }
+                        
                         millesimiDataToSave = jsonData;
-                        tableContainerMillesimi.innerHTML = generateTableHTML(jsonData);
+                        tableContainerMillesimi.innerHTML = generateTableHTML(jsonData, true); // Passa true per indicare che è un'anteprima
                         saveBtnContainerMillesimi.classList.remove('hidden');
                     } catch (err) {
                         messageBoxMillesimi.className = 'message-box error';
@@ -1893,22 +2021,51 @@ switch (currentPage) {
             });
 
             saveBtnMillesimi.addEventListener('click', async () => {
-                if (!millesimiDataToSave || millesimiDataToSave.length < 2) return;
+                const previewTable = document.getElementById('millesimi-preview-table');
+                if (!previewTable) return;
+
                 saveBtnMillesimi.disabled = true; saveBtnMillesimi.textContent = 'Salvataggio...';
+                
                 try {
+                    const headers = Array.from(previewTable.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                    const raggruppamentoIndex = headers.findIndex(h => h.toLowerCase() === 'raggruppamento');
+
+                    const tableData = Array.from(previewTable.querySelectorAll('tbody tr')).map(tr => {
+                        const rowObject = {};
+                        Array.from(tr.cells).forEach((td, index) => {
+                            const header = headers[index];
+                            if (index === raggruppamentoIndex) {
+                                const select = td.querySelector('select');
+                                rowObject[header] = select ? select.value : '';
+                            } else {
+                                rowObject[header] = td.textContent.trim();
+                            }
+                        });
+                        return rowObject;
+                    });
+
+                    if (tableData.length === 0) throw new Error("Nessun dato da salvare.");
+
                     await addDoc(collection(db, "importedData"), {
                         fileName: millesimiFileName,
-                        tableData: convertArrayOfArraysToObjects(millesimiDataToSave),
+                        tableData: tableData,
                         uploadedBy: currentUser.uid,
                         uploadedAt: serverTimestamp()
                     });
                     await logActivity("data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: millesimiFileName });
+                    
                     fileInputMillesimi.value = '';
                     saveBtnContainerMillesimi.classList.add('hidden');
+                    messageBoxMillesimi.className = 'message-box success';
+                    messageBoxMillesimi.textContent = 'Dati salvati con successo!';
+                    messageBoxMillesimi.style.display = 'block';
+                    setTimeout(() => { messageBoxMillesimi.style.display = 'none'; }, 3000);
+                    
                     await loadLatestMillesimiData();
+
                 } catch (error) {
                     messageBoxMillesimi.className = 'message-box error';
-                    messageBoxMillesimi.textContent = 'Errore durante il salvataggio.';
+                    messageBoxMillesimi.textContent = `Errore durante il salvataggio: ${error.message}`;
                     messageBoxMillesimi.style.display = 'block';
                 } finally {
                     saveBtnMillesimi.disabled = false; saveBtnMillesimi.textContent = 'Salva Dati Anagrafica';
@@ -1985,7 +2142,11 @@ switch (currentPage) {
                 }
             });
 
-            // Carica i dati iniziali per entrambe le sezioni
+            // Carica i dati iniziali in sequenza per evitare race condition
+            // 1. Carica prima i gruppi, perché sono necessari per il calcolo
+            await loadPartialCondosForImport();
+            
+            // 2. Ora carica i dati dei millesimi e dei telefoni (possono andare in parallelo)
             await Promise.all([loadLatestMillesimiData(), loadLatestPhoneData()]);
         };
 
