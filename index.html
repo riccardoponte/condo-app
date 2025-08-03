@@ -611,7 +611,35 @@
         });
         
         const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
-        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
+        const register = async (email, password, profileData) => {
+            // 1. Crea l'utente nel servizio di Autenticazione Firebase
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // 2. Calcola i millesimi totali dalle proprietà fornite
+            const totalMillesimi = (profileData.proprieta || []).reduce((sum, prop) => sum + (parseFloat(prop.millesimi) || 0), 0);
+
+            // 3. Prepara il documento utente per Firestore
+            const userDocument = {
+                nome: profileData.nome,
+                cognome: profileData.cognome,
+                email: email,
+                tipoUtente: profileData.tipoUtente,
+                proprieta: profileData.proprieta || [],
+                telefono: profileData.telefono || "",
+                millesimiTotali: totalMillesimi,
+                createdAt: new Date().toISOString()
+            };
+
+            // 4. Scrivi il documento nella collezione 'users' in Firestore
+            await setDoc(doc(db, "users", user.uid), userDocument);
+
+            // 5. Registra l'attività (logging)
+            await logActivity("user_registered", user.uid, `${profileData.nome} ${profileData.cognome}`, { userType: profileData.tipoUtente });
+
+            // 6. Restituisci le credenziali utente complete
+            return userCredential;
+        };
         const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
         const logout=async()=>{
             communicationsListener&&(communicationsListener(),communicationsListener=null);
@@ -626,18 +654,29 @@
         const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
         const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
         
-        const navigateTo=(e)=>{
+        const navigateTo = (page, replaceState = false) => {
+            if (currentPage === page && !replaceState) return; // Evita navigazioni duplicate
+
             const userType = userProfile?.tipoUtente;
-            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione'].includes(e)) {
-                 currentPage = e;
-                 renderCurrentPage();
-                 return;
+
+            // Logica di reindirizzamento per il custode
+            if (userType === "custode" && ["dashboard", "bacheca", "sondaggi"].includes(page)) {
+                navigateTo("segnalazioni", true); // Usa replaceState per non creare una voce di cronologia inutile
+                return;
             }
-            if(userType==="custode"&&["dashboard","bacheca","sondaggi"].includes(e)){
-                navigateTo("segnalazioni");
+
+            currentPage = page;
+            const url = `#${page}`;
+            const state = { page: page };
+
+            // Aggiorna la cronologia del browser
+            if (replaceState) {
+                history.replaceState(state, '', url);
             } else {
-                currentPage=e,renderCurrentPage();
+                history.pushState(state, '', url);
             }
+            
+            renderCurrentPage();
         };
         
         const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");
@@ -646,8 +685,23 @@
         const renderHeader = (title) => {
             const userInitial = userProfile?.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U';
             const userType = userProfile?.tipoUtente || '';
+
+            // Logica decisionale centralizzata per il pulsante "Indietro"
+            const homePages = ['dashboard', 'login'];
+            const isHomePage = homePages.includes(currentPage);
+            const isCustodianHome = userProfile?.tipoUtente === 'custode' && currentPage === 'segnalazioni';
+            
+            const showBackButton = !isHomePage && !isCustodianHome;
+
+            const backButtonHtml = showBackButton 
+                ? `<button onclick="window.history.back()" style="background:none; border:none; color:var(--primary-text); cursor:pointer; margin-right:0.5rem; padding:0.5rem;">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                   </button>` 
+                : '';
+
             return `
             <header class="page-header">
+                ${backButtonHtml}
                 <div class="user-avatar">${userInitial}</div>
                 <div>
                     <h1 class="page-title">${title}</h1>
@@ -1801,37 +1855,116 @@ switch (currentPage) {
         };
 
         const setupImportazioneHandlers = async () => {
+            let partialCondosList = [];
+
+            const loadPartialCondosForImport = async () => {
+                try {
+                    const q = query(collection(db, "partialCondos"), orderBy("name"));
+                    const querySnapshot = await getDocs(q);
+                    partialCondosList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } catch (error) {
+                    console.error("Errore nel caricamento dei gruppi per l'importazione:", error);
+                    partialCondosList = [];
+                }
+            };
+
+            const getAutomaticGroupForImport = (interno) => {
+                if (!interno || partialCondosList.length === 0) return '';
+                const lowerInterno = interno.toString().toLowerCase().trim();
+
+                // --- Regola 1: Box (la più distinta, ha la priorità) ---
+                if (/\be\b|\be-/.test(lowerInterno)) {
+                    const boxCondo = partialCondosList.find(c => c.name.toLowerCase() === 'box');
+                    if (boxCondo) return boxCondo.name;
+                }
+
+                // --- Regola 2: Pattern "Lettera + Numero" per Mascagni e Bellini ---
+                // Cerca una 'm' o 'b' seguita da una o più cifre. Es: "M15", "b13", "ES M13"
+                const patternMatch = lowerInterno.match(/([mb])(\d+)/);
+                if (patternMatch) {
+                    const letter = patternMatch[1]; // 'm' o 'b'
+                    const number = patternMatch[2]; // es. "13", "15"
+                    
+                    const buildingName = letter === 'm' ? 'Mascagni' : 'Bellini';
+                    const targetGroupName = `Scala ${buildingName} ${number}`;
+
+                    // Cerca una corrispondenza esatta del nome del gruppo costruito
+                    const foundCondo = partialCondosList.find(c => c.name.toLowerCase() === targetGroupName.toLowerCase());
+                    if (foundCondo) {
+                        return foundCondo.name;
+                    }
+                }
+
+                // --- Regola 3: Fallback generico per altre corrispondenze (es. "Giardino") ---
+                // Utile per gruppi che non seguono il pattern Lettera+Numero
+                const sortedCondos = [...partialCondosList].sort((a, b) => b.name.length - a.name.length);
+                for (const condo of sortedCondos) {
+                    // Per sicurezza, evitiamo di ricontrollare i gruppi già gestiti dai pattern
+                    if (condo.name.toLowerCase().startsWith('scala mascagni') || 
+                        condo.name.toLowerCase().startsWith('scala bellini') ||
+                        condo.name.toLowerCase() === 'box') {
+                        continue;
+                    }
+                    
+                    if (lowerInterno.includes(condo.name.toLowerCase())) {
+                        return condo.name;
+                    }
+                }
+
+                return ''; // Nessun gruppo trovato
+            };
+
             // --- FUNZIONI HELPER COMUNI ---
-            const generateTableHTML = (data) => {
+            const generateTableHTML = (data, isPreview = false) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
-                
-                // Dati da anteprima file (array di array)
+
+                const groupOptionsHtml = `<option value="">Nessun Gruppo</option>` + partialCondosList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                let tableHTML = `<table class="data-table" id="millesimi-preview-table">`;
+
+                // Gestione dati da file (array di array)
                 if (Array.isArray(data[0])) {
                     const headers = data[0];
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(header => tableHTML += `<th>${header}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
+                    const lowerCaseHeaders = headers.map(h => h.toString().toLowerCase());
+                    const internoIndex = lowerCaseHeaders.findIndex(h => ['interno', 'appartamento', 'unita'].includes(h));
+                    const raggruppamentoIndex = lowerCaseHeaders.findIndex(h => h === 'raggruppamento');
+
+                    tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
                     for (let i = 1; i < data.length; i++) {
                         tableHTML += '<tr>';
-                        headers.forEach((_, colIndex) => tableHTML += `<td>${data[i][colIndex] !== undefined ? data[i][colIndex] : ''}</td>`);
+                        headers.forEach((header, colIndex) => {
+                            const cellValue = data[i][colIndex] !== undefined ? data[i][colIndex] : '';
+                            if (isPreview && colIndex === raggruppamentoIndex) {
+                                // Ora 'cellValue' contiene già il gruppo corretto, calcolato in precedenza
+                                const selectedGroupOptions = groupOptionsHtml.replace(`value="${cellValue}"`, `value="${cellValue}" selected`);
+                                tableHTML += `<td><select class="form-select" style="padding: 0.4rem 0.6rem; font-size: 0.9rem;">${selectedGroupOptions}</select></td>`;
+                            } else {
+                                tableHTML += `<td>${cellValue}</td>`;
+                            }
+                        });
                         tableHTML += '</tr>';
                     }
-                    return tableHTML + '</tbody></table>';
-                }
-                // Dati da Firestore (array di oggetti)
-                if (typeof data[0] === 'object') {
+                // Gestione dati da Firestore (array di oggetti)
+                } else if (typeof data[0] === 'object') {
                     const headers = Object.keys(data[0]);
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(h => tableHTML += `<th>${h}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
+                    tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
                     data.forEach(row => {
                         tableHTML += '<tr>';
-                        headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        headers.forEach(header => {
+                            const cellValue = row[header] !== undefined ? row[header] : '';
+                            if (isPreview && header.toLowerCase() === 'raggruppamento') {
+                                const selectedGroupOptions = groupOptionsHtml.replace(`value="${cellValue}"`, `value="${cellValue}" selected`);
+                                tableHTML += `<td><select class="form-select" style="padding: 0.4rem 0.6rem; font-size: 0.9rem;">${selectedGroupOptions}</select></td>`;
+                            } else {
+                                tableHTML += `<td>${cellValue}</td>`;
+                            }
+                        });
                         tableHTML += '</tr>';
                     });
-                    return tableHTML + '</tbody></table>';
+                } else {
+                    return '<p style="color:var(--secondary-text);">Formato dati non riconosciuto.</p>';
                 }
-                return '<p style="color:var(--secondary-text);">Formato dati non riconosciuto.</p>';
+
+                return tableHTML + '</tbody></table>';
             };
 
             const convertArrayOfArraysToObjects = (data) => {
@@ -1858,10 +1991,17 @@ switch (currentPage) {
                 const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
-                    const data = snapshot.docs[0].data().tableData;
-                    tableContainerMillesimi.innerHTML = generateTableHTML(data);
+                    const docData = snapshot.docs[0].data();
+                    const data = docData.tableData;
+                    // Passiamo 'true' per renderizzare la tabella in modalità modificabile
+                    tableContainerMillesimi.innerHTML = generateTableHTML(data, true);
+                    // Mostriamo il pulsante di salvataggio anche per i dati esistenti
+                    saveBtnContainerMillesimi.classList.remove('hidden');
+                    // Impostiamo il nome del file per il logging, se disponibile
+                    millesimiFileName = docData.fileName || 'dati_esistenti.xlsx';
                 } else {
                     tableContainerMillesimi.innerHTML = '<p style="color:var(--secondary-text);">Nessun dato anagrafico ancora importato.</p>';
+                    saveBtnContainerMillesimi.classList.add('hidden');
                 }
             };
 
@@ -1879,9 +2019,33 @@ switch (currentPage) {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        if (jsonData.length < 2) throw new Error("Il file deve contenere almeno un'intestazione e una riga di dati.");
+
+                        // Aggiungi la colonna "raggruppamento" se non esiste
+                        let headers = jsonData[0];
+                        let lowerCaseHeaders = headers.map(h => h.toString().toLowerCase());
+                        if (!lowerCaseHeaders.includes('raggruppamento')) {
+                            headers.push('raggruppamento');
+                            lowerCaseHeaders.push('raggruppamento');
+                            for (let i = 1; i < jsonData.length; i++) {
+                                jsonData[i].push(''); // Aggiunge una cella vuota temporanea
+                            }
+                        }
+
+                        // Popola la colonna raggruppamento con i valori calcolati
+                        const internoIndex = lowerCaseHeaders.findIndex(h => ['interno', 'appartamento', 'unita'].includes(h));
+                        const raggruppamentoIndex = lowerCaseHeaders.findIndex(h => h === 'raggruppamento');
+
+                        if (internoIndex !== -1) {
+                            for (let i = 1; i < jsonData.length; i++) {
+                                const internoValue = jsonData[i][internoIndex];
+                                const autoGroup = getAutomaticGroupForImport(internoValue);
+                                jsonData[i][raggruppamentoIndex] = autoGroup; // Aggiorna il modello dati
+                            }
+                        }
+                        
                         millesimiDataToSave = jsonData;
-                        tableContainerMillesimi.innerHTML = generateTableHTML(jsonData);
+                        tableContainerMillesimi.innerHTML = generateTableHTML(jsonData, true); // Passa true per indicare che è un'anteprima
                         saveBtnContainerMillesimi.classList.remove('hidden');
                     } catch (err) {
                         messageBoxMillesimi.className = 'message-box error';
@@ -1985,8 +2149,8 @@ switch (currentPage) {
                 }
             });
 
-            // Carica i dati iniziali per entrambe le sezioni
-            await Promise.all([loadLatestMillesimiData(), loadLatestPhoneData()]);
+            // Carica i dati iniziali per tutte le sezioni
+            await Promise.all([loadLatestMillesimiData(), loadLatestPhoneData(), loadPartialCondosForImport()]);
         };
 
         const setupUserManagementHandlers = () => {
@@ -2363,6 +2527,18 @@ switch (currentPage) {
         const updateNotificationUI=e=>{const t=document.getElementById("bacheca-notification-badge");t?.classList.toggle("hidden",!e)};
         const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
         
+        // Gestisce la navigazione tramite i pulsanti Indietro/Avanti del browser
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.page) {
+                currentPage = event.state.page;
+                renderCurrentPage();
+            } else {
+                // Se lo stato è nullo, potrebbe essere la pagina iniziale
+                const initialPage = userProfile ? (userProfile.tipoUtente === 'custode' ? 'segnalazioni' : 'dashboard') : 'login';
+                navigateTo(initialPage, true);
+            }
+        });
+
         window.navigateTo = navigateTo;
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
@@ -2376,14 +2552,19 @@ switch (currentPage) {
             if (user) {
                 currentUser = user;
                 await loadUserProfile(user);
+                
+                const initialHash = window.location.hash.substring(1);
                 const userType = userProfile?.tipoUtente;
                 let landingPage = 'dashboard';
                 if (userType === 'custode') landingPage = 'segnalazioni';
-                navigateTo(currentPage === 'login' || !currentPage ? landingPage : currentPage);
+
+                // Naviga alla pagina nell'URL (se esiste) o alla pagina di default
+                navigateTo(initialHash || landingPage, true);
+
             } else {
                 if (communicationsListener) communicationsListener();
                 currentUser = null; userProfile = null;
-                navigateTo('login');
+                navigateTo('login', true);
             }
         });
     </script>
