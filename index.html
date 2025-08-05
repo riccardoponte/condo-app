@@ -631,14 +631,10 @@
         const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
         const logout=async()=>{
             communicationsListener&&(communicationsListener(),communicationsListener=null);
+            // Non è più necessario azzerare manualmente lo stato qui,
+            // perché onAuthStateChanged lo farà in modo affidabile.
+            // La chiamata a navigateTo('login') viene rimossa perché gestita da onAuthStateChanged.
             await signOut(auth);
-            currentUser=null;
-            userProfile=null;
-            navigationHistory = []; // Pulisce la cronologia di navigazione al logout
-            // Reset esplicito dello stato di registrazione
-            groupedProperties = {};
-            partialCondosList = [];
-            navigateTo("login");
         };
         const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
         const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
@@ -1821,7 +1817,25 @@ switch (currentPage) {
                         propertyItemsContainer.innerHTML = '';
                         propertySelectionWrapper.classList.add('hidden');
                         summaryEl.innerHTML = 'Seleziona un nominativo per continuare...';
-                    } else { await login(o, n); }
+                    } else {
+                        await login(o, n);
+                        // FIX: Non affidarsi più passivamente a onAuthStateChanged per la navigazione post-login.
+                        // Dopo un login andato a buon fine, prendiamo il controllo diretto del flusso.
+                        // 1. Aggiorniamo il nostro stato globale con l'utente corrente.
+                        currentUser = auth.currentUser;
+                        if (currentUser) {
+                            // 2. Carichiamo il suo profilo.
+                            await loadUserProfile(currentUser);
+                            // 3. Navighiamo alla pagina corretta.
+                            const userType = userProfile?.tipoUtente;
+                            let landingPage = 'dashboard';
+                            if (userType === 'custode') landingPage = 'segnalazioni';
+                            navigateTo(landingPage);
+                        } else {
+                            // Caso di sicurezza, anche se non dovrebbe mai accadere dopo un login riuscito.
+                            throw new Error("Login fallito, utente non trovato.");
+                        }
+                    }
                 } catch (p) { d.textContent = p.message; d.style.display = "block"; }
             });
             
@@ -2886,7 +2900,9 @@ switch (currentPage) {
                 navigateTo(currentPage === 'login' || !currentPage ? landingPage : currentPage);
             } else {
                 if (communicationsListener) communicationsListener();
-                currentUser = null; userProfile = null;
+                currentUser = null; 
+                userProfile = null;
+                navigationHistory = []; // Azzeriamo la cronologia qui, nel punto più sicuro.
                 navigateTo('login');
             }
         });
