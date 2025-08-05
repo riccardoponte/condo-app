@@ -759,24 +759,13 @@
             let extraItems = '';
                         if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 extraItems = `
-                    <div onclick="navigateTo('impostazioniSondaggi')" class="dashboard-item">
-                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,15H7V17H5V15M3,13H9V19H3V13Z" /></svg></div>
-                        <p>Gestione Sondaggi</p>
-                    </div>
-                    <div style="grid-column: 1 / -1; margin-top: 1rem;">
-                        <div class="card" style="padding: 1.25rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
-                                <svg fill="currentColor" viewBox="0 0 24 24" style="width: 28px; height: 28px; color: var(--primary-text);">
-                                    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-                                </svg>
-                                <h3 class="section-title" style="margin: 0;">Funzioni Supervisor</h3>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                                <button onclick="navigateTo('userManagement')" class="btn btn-secondary w-full" style="justify-content: flex-start; gap: 1rem; padding: 0.75rem 1rem; text-align: left;">Gestione Utenti</button>
-                                <button onclick="navigateTo('gestioneGruppi')" class="btn btn-secondary w-full" style="justify-content: flex-start; gap: 1rem; padding: 0.75rem 1rem; text-align: left;">Gestione Gruppi</button>
-                                <button onclick="navigateTo('importazione')" class="btn btn-secondary w-full" style="justify-content: flex-start; gap: 1rem; padding: 0.75rem 1rem; text-align: left;">Importa Dati</button>
-                            </div>
+                    <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                            </svg>
                         </div>
+                        <p>Funzioni Supervisor</p>
                     </div>
                 `;
             }
@@ -827,7 +816,7 @@
         const renderSondaggi = () => `
             ${renderHeader('Sondaggi')}
             <main>
-                ${(userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'supervisore') ? `<div class="card" style="margin-bottom:2rem;">
+                <div class="card" style="margin-bottom:2rem;">
                     <h3 class="card-title">Crea un Nuovo Sondaggio</h3>
                     <form id="create-poll-form" class="space-y-4">
                         <div><label class="form-label">Titolo</label><input type="text" id="poll-title" required class="form-input"></div>
@@ -839,7 +828,7 @@
                         </div>
                         <div class="flex justify-end gap-4 pt-4"><button type="reset" class="btn btn-secondary">Annulla</button><button type="submit" class="btn btn-primary">Crea</button></div>
                     </form>
-                </div>` : ''}
+                </div>
                 <div id="polls-container" class="list-container"></div>
             </main>
             ${renderBottomNavigation()}
@@ -1239,10 +1228,16 @@
             ${renderBottomNavigation()}
         `;
         
-        const renderGestioneGruppiMenu = () => `
-            ${renderHeader('Gestione Gruppi')}
+                const renderGestioneGruppiMenu = () => `
+            ${renderHeader('Funzioni Supervisor')}
             <main>
                 <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+                    <div onclick="navigateTo('userManagement')" class="dashboard-item">
+                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Gestione Utenti</p>
+                        </div>
+                    </div>
                     <div onclick="navigateTo('gestioneGruppi_lista')" class="dashboard-item">
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M10 4v4h4V4h-4m6 12v4h4v-4h-4m-6 0v4h4v-4h-4m6-6v4h4v-4h-4m-6 0v4h4v-4h-4m-6-6v4h4V4H4m6 6v4h4v-4h-4M4 16v4h4v-4H4m14-2h2v-4h-2v4m0 6h2v-4h-2v4m-12-2h2v-4H6v4m0 6h2v-4H6v4M2 2v20h20V2H2z"/></svg>
@@ -1251,14 +1246,20 @@
                     </div>
                     <div onclick="navigateTo('gestioneGruppi_regole')" class="dashboard-item">
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
-                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Regole</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('importazione')" class="dashboard-item">
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
-                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"/></svg>
-                            <p style="text-align: left; font-size: 1.1rem;">Vai a Importazione Dati</p>
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Importa Dati</p>
+                        </div>
+                    </div>
+                    <div onclick="navigateTo('impostazioniSondaggi')" class="dashboard-item">
+                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,15H7V17H5V15M3,13H9V19H3V13Z" /></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Gestione Sondaggi</p>
                         </div>
                     </div>
                 </div>
@@ -1381,7 +1382,7 @@
             ${renderHeader('Impostazione Sondaggi')}
             <main>
                 <div class="card">
-                    <h3 class="card-title">Chi può votare nei sondaggi?</h3>
+                    <h3 class="card-title">Chi può creare sondaggi</h3>
                     <div id="poll-settings-message" class="message-box"></div>
                     <form id="poll-settings-form" class="space-y-4">
                         <div class="form-group">
@@ -1416,7 +1417,7 @@
             if (!form) return;
 
             const messageBox = document.getElementById('poll-settings-message');
-            const settingsRef = doc(db, "settings", "pollAuthorization");
+            const settingsRef = doc(db, "settings", "pollCreationAuthorization");
 
             // Load current setting
             try {
@@ -2638,9 +2639,29 @@ switch (currentPage) {
             const container = document.getElementById("polls-container");
             if (!container) return;
 
+            // Logica per mostrare/nascondere il form di creazione sondaggio
+            const creationCard = document.getElementById('create-poll-form')?.closest('.card');
+            if (creationCard) {
+                creationCard.classList.add('hidden'); // Nascondi di default per evitare sfarfallio
+                const creationSettingsRef = doc(db, "settings", "pollCreationAuthorization");
+                getDoc(creationSettingsRef).then(settingsSnap => {
+                    // Se non impostato, default a 'option1' (solo ruoli admin)
+                    const creationSetting = settingsSnap.exists() ? settingsSnap.data().setting : 'option1'; 
+                    const allowedRoles = {
+                        option1: ['supervisore', 'amministratore', 'consigliere'],
+                        option2: ['supervisore', 'amministratore', 'consigliere', 'condomino'],
+                        option3: ['supervisore', 'consigliere']
+                    };
+                    const rolesForCreation = allowedRoles[creationSetting] || allowedRoles.option1;
+                    if (rolesForCreation.includes(userProfile.tipoUtente)) {
+                        creationCard.classList.remove('hidden');
+                    }
+                });
+            }
+
             const settingsRef = doc(db, "settings", "pollAuthorization");
             
-            // Fetch settings once, then listen for poll updates
+            // Fetch settings una volta, poi ascolta gli aggiornamenti dei sondaggi
             getDoc(settingsRef).then(settingsSnap => {
                 const pollSetting = settingsSnap.exists() ? settingsSnap.data().setting : 'option2';
                 const canUserVote = isUserAllowedToVote(userProfile.tipoUtente, pollSetting);
