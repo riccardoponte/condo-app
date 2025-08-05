@@ -63,6 +63,21 @@
             margin-bottom: 2rem;
             padding: 1rem 0;
         }
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--primary-text);
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-left: -0.5rem; /* Compensa il padding per un migliore allineamento visivo */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .back-btn:active {
+            background-color: rgba(255,255,255,0.1);
+        }
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -579,6 +594,7 @@
         let currentUser = null;
         let userProfile = null;
         let currentPage = 'login';
+        let navigationHistory = []; // Aggiunto per la cronologia di navigazione
         let communicationsListener = null;
 
         // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
@@ -618,6 +634,7 @@
             await signOut(auth);
             currentUser=null;
             userProfile=null;
+            navigationHistory = []; // Pulisce la cronologia di navigazione al logout
             // Reset esplicito dello stato di registrazione
             groupedProperties = {};
             partialCondosList = [];
@@ -626,18 +643,36 @@
         const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
         const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
         
-        const navigateTo=(e)=>{
+        const navigateBack = () => {
+            if (navigationHistory.length > 0) {
+                const previousPage = navigationHistory.pop();
+                // Il secondo parametro 'true' indica che è una navigazione "indietro"
+                navigateTo(previousPage, true);
+            }
+        };
+
+        const navigateTo = (newPage, isBackNavigation = false) => {
             const userType = userProfile?.tipoUtente;
-            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione'].includes(e)) {
-                 currentPage = e;
-                 renderCurrentPage();
-                 return;
+
+            // Gestione del reindirizzamento per il custode
+            if (userType === "custode" && ["dashboard", "bacheca", "sondaggi"].includes(newPage)) {
+                navigateTo("segnalazioni", isBackNavigation);
+                return;
             }
-            if(userType==="custode"&&["dashboard","bacheca","sondaggi"].includes(e)){
-                navigateTo("segnalazioni");
-            } else {
-                currentPage=e,renderCurrentPage();
+
+            // Se la pagina non cambia, non fare nulla per evitare di sporcare la cronologia
+            if (newPage === currentPage) {
+                return;
             }
+
+            // Aggiungi la pagina corrente alla cronologia solo se si sta navigando "in avanti"
+            if (!isBackNavigation) {
+                navigationHistory.push(currentPage);
+            }
+
+            // Imposta la nuova pagina e la renderizza
+            currentPage = newPage;
+            renderCurrentPage();
         };
         
         const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");
@@ -646,8 +681,17 @@
         const renderHeader = (title) => {
             const userInitial = userProfile?.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U';
             const userType = userProfile?.tipoUtente || '';
+            const backButtonHtml = navigationHistory.length > 0 ? `
+                <button onclick="navigateBack()" class="back-btn" aria-label="Torna indietro">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 28px; height: 28px;">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                    </svg>
+                </button>
+            ` : '';
+
             return `
             <header class="page-header">
+                ${backButtonHtml}
                 <div class="user-avatar">${userInitial}</div>
                 <div>
                     <h1 class="page-title">${title}</h1>
@@ -2819,6 +2863,7 @@ switch (currentPage) {
         const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
         
         window.navigateTo = navigateTo;
+        window.navigateBack = navigateBack; // Aggiunto per il pulsante indietro
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
         window.updateReportStatus = updateReportStatus;
