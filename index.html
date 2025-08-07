@@ -2004,6 +2004,61 @@ switch (currentPage) {
                 }
             };
 
+            // --- NUOVA FUNZIONE PER RAGGRUPPAMENTO AUTOMATICO (v2 - Corretta) ---
+            const applyAutomaticGrouping = (tableData, partialCondos) => {
+                if (!tableData || tableData.length === 0 || !partialCondos || partialCondos.length === 0) {
+                    return tableData;
+                }
+
+                const headers = Object.keys(tableData[0]);
+                const findHeader = (keywords) => headers.find(h => keywords.map(k => k.toLowerCase()).includes(h.toLowerCase()));
+
+                const apartmentHeader = findHeader(['interno', 'appartamento', 'unita']);
+                const groupHeader = findHeader(['raggruppamento']);
+
+                if (!apartmentHeader || !groupHeader) {
+                    console.warn("Intestazioni 'interno' o 'raggruppamento' non trovate. Salto il raggruppamento automatico.");
+                    return tableData;
+                }
+
+                const sortedCondos = [...partialCondos].sort((a, b) => b.name.length - a.name.length);
+
+                tableData.forEach(row => {
+                    // Assegna il gruppo solo se non è già stato impostato
+                    if (row[groupHeader]) {
+                        return; // Salta questa riga se ha già un gruppo
+                    }
+
+                    const interno = row[apartmentHeader] ? row[apartmentHeader].toString().toLowerCase() : '';
+                    if (!interno) return;
+
+                    let foundGroup = '';
+
+                    // Logica di assegnazione con priorità, simile alla registrazione
+                    if (/\be\b|\be-/.test(interno)) {
+                        const boxCondo = partialCondos.find(c => c.name.toLowerCase() === 'box');
+                        if (boxCondo) foundGroup = boxCondo.name;
+                    } 
+                    else if (interno.includes('b11')) {
+                        const b11Condo = partialCondos.find(c => c.name.toLowerCase().includes('bellini 11'));
+                        if (b11Condo) foundGroup = b11Condo.name;
+                    } 
+                    else {
+                        // Se nessuna regola specifica corrisponde, esegui la ricerca generale
+                        for (const condo of sortedCondos) {
+                            if (interno.includes(condo.name.toLowerCase())) {
+                                foundGroup = condo.name;
+                                break; // Trovato il gruppo più lungo corrispondente, esci dal ciclo
+                            }
+                        }
+                    }
+                    
+                    row[groupHeader] = foundGroup;
+                });
+
+                return tableData;
+            };
+
             // --- FUNZIONI HELPER COMUNI ---
             const generateTableHTML = (data, isPreview = false) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
@@ -2093,7 +2148,10 @@ switch (currentPage) {
 
                         let dataAsObjects = convertArrayOfArraysToObjects(jsonData);
                         
-                        // Applica le regole di classificazione ai dati appena caricati
+                        // Applica prima il raggruppamento automatico di base per riempire i campi vuoti
+                        dataAsObjects = applyAutomaticGrouping(dataAsObjects, partialCondosList);
+                        
+                        // Poi, applica le regole di classificazione del supervisore (che possono sovrascrivere i valori)
                         dataAsObjects = applyClassificationRules(dataAsObjects, activeRules);
                         
                         tableContainerMillesimi.innerHTML = generateTableHTML(dataAsObjects, true);
