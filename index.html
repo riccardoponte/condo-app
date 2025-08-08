@@ -1004,26 +1004,37 @@
 
         const renderElencoCondomini = () => `
             ${renderHeader('Elenco Condomini')}
-            <main id="elenco-condomini-container">
-                <div class="card"><p>Caricamento elenco in corso...</p></div>
+            <main>
+                <div class="filter-chips-container" style="margin-bottom: 1.5rem;">
+                    <div id="report-mode-confronto" class="chip active" onclick="loadElencoCondomini('confronto')">Confronto Dati</div>
+                    <div id="report-mode-complessiva" class="chip" onclick="loadElencoCondomini('complessiva')">Riepilogo Complessivo</div>
+                </div>
+                <div id="elenco-condomini-container">
+                    <div class="card"><p>Caricamento elenco in corso...</p></div>
+                </div>
             </main>
             ${renderBottomNavigation()}
         `;
 
-        const loadElencoCondomini = async () => {
+        const loadElencoCondomini = async (mode = 'confronto') => {
+            // --- 1. Aggiornamento UI per la selezione della modalità ---
+            const confrontoBtn = document.getElementById('report-mode-confronto');
+            const complessivaBtn = document.getElementById('report-mode-complessiva');
+            if (confrontoBtn && complessivaBtn) {
+                confrontoBtn.classList.toggle('active', mode === 'confronto');
+                complessivaBtn.classList.toggle('active', mode === 'complessiva');
+            }
+
             const container = document.getElementById('elenco-condomini-container');
             if (!container) return;
+            container.innerHTML = `<div class="card"><p>Caricamento dati in modalità '${mode}'...</p></div>`;
 
             try {
-                // --- 1. Recupero di tutti i dati necessari in parallelo ---
-                const usersQuery = query(collection(db, "users"), orderBy("cognome"));
-                const importedDataQuery = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
-                const partialCondosQuery = query(collection(db, "partialCondos"), orderBy("name"));
-
+                // --- 2. Recupero Dati ---
                 const [usersSnapshot, importedDataSnapshot, partialCondosSnapshot] = await Promise.all([
-                    getDocs(usersQuery),
-                    getDocs(importedDataQuery),
-                    getDocs(partialCondosQuery)
+                    getDocs(query(collection(db, "users"), orderBy("cognome"))),
+                    getDocs(query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1))),
+                    getDocs(query(collection(db, "partialCondos"), orderBy("name")))
                 ]);
 
                 if (importedDataSnapshot.empty) {
@@ -1031,45 +1042,33 @@
                     return;
                 }
 
-                // --- 2. Preparazione dei dati ---
+                // --- 3. Preparazione Dati ---
                 const allProperties = importedDataSnapshot.docs[0].data().tableData;
                 const partialCondosList = partialCondosSnapshot.docs.map(doc => doc.data());
-                
-                const findHeader = (headers, keywords) => headers.find(h => keywords.map(k => k.toLowerCase()).includes(h.toLowerCase()));
                 const headers = Object.keys(allProperties[0] || {});
-                const nominativoHeader = findHeader(headers, ['nominativo', 'proprietario']);
+                const findHeader = (h, k) => h.find(header => k.map(key => key.toLowerCase()).includes(header.toLowerCase()));
                 const apartmentHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
                 const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
+                const groupHeader = findHeader(headers, ['raggruppamento', 'gruppo']); // MODIFICA: Trova l'intestazione del gruppo
 
-                // Funzione helper per determinare il gruppo di una proprietà
-                const getGroupForProperty = (interno) => {
-                    if (!interno) return 'Senza Gruppo';
-                    const lowerInterno = interno.toString().toLowerCase();
-                    const sortedCondos = [...partialCondosList].sort((a, b) => b.name.length - a.name.length);
-                    for (const condo of sortedCondos) {
-                        if (lowerInterno.includes(condo.name.toLowerCase())) return condo.name;
-                    }
-                    return 'Senza Gruppo';
-                };
-
-                // --- 3. Raggruppamento dei dati ---
+                // --- 4. Logica di Raggruppamento ---
                 const groupedData = {};
-
-                // Popola con tutti i gruppi esistenti per assicurarsi che appaiano tutti
+                // Inizializza i gruppi basandosi sui gruppi esistenti (da partialCondos) per assicurarsi che appaiano anche se vuoti
                 partialCondosList.forEach(condo => {
-                    groupedData[condo.name] = { users: [], totalMillesimi: 0, totalProperties: 0 };
+                    groupedData[condo.name] = { users: [], totalMillesimiImport: 0, totalPropertiesImport: 0 };
                 });
                 if (!groupedData['Senza Gruppo']) {
-                    groupedData['Senza Gruppo'] = { users: [], totalMillesimi: 0, totalProperties: 0 };
+                    groupedData['Senza Gruppo'] = { users: [], totalMillesimiImport: 0, totalPropertiesImport: 0 };
                 }
 
-                // Aggiungi utenti registrati ai gruppi
+                // Raggruppa gli utenti registrati
                 usersSnapshot.docs.forEach(doc => {
                     const user = doc.data();
                     user.proprieta?.forEach(prop => {
                         const groupName = prop.gruppo || 'Senza Gruppo';
                         if (!groupedData[groupName]) {
-                            groupedData[groupName] = { users: [], totalMillesimi: 0, totalProperties: 0 };
+                            // Aggiunge un gruppo se non è stato pre-inizializzato (potrebbe accadere se un gruppo viene eliminato ma ancora assegnato a un utente)
+                            groupedData[groupName] = { users: [], totalMillesimiImport: 0, totalPropertiesImport: 0 };
                         }
                         groupedData[groupName].users.push({
                             idUI: prop.interno,
@@ -1079,64 +1078,112 @@
                     });
                 });
 
-                // Calcola i totali per scala/gruppo dai dati importati
+                // Raggruppa i dati importati basandosi sulla colonna 'Raggruppamento'
                 allProperties.forEach(prop => {
-                    const groupName = getGroupForProperty(prop[apartmentHeader]);
-                     if (groupedData[groupName]) {
-                        groupedData[groupName].totalMillesimi += parseFloat(prop[millesimiHeader]) || 0;
-                        groupedData[groupName].totalProperties += 1;
+                    // MODIFICA: Usa la colonna 'Raggruppamento' per determinare il gruppo.
+                    const groupName = (groupHeader && prop[groupHeader]) ? prop[groupHeader] : 'Senza Gruppo';
+                    
+                    if (!groupedData[groupName]) {
+                        // Aggiunge un gruppo se non esiste (es. un nuovo gruppo definito solo nel file Excel)
+                        groupedData[groupName] = { users: [], totalMillesimiImport: 0, totalPropertiesImport: 0 };
                     }
+                    groupedData[groupName].totalMillesimiImport += parseFloat(prop[millesimiHeader]) || 0;
+                    groupedData[groupName].totalPropertiesImport += 1;
                 });
 
-                // --- 4. Generazione dell'HTML ---
-                let html = `<h2 class="section-title">ELENCO CONDOMINI CON ACCOUNT</h2>`;
-                let grandTotalAccounts = 0;
-                let grandTotalAccountMillesimi = 0;
-                let grandTotalProperties = 0;
-                let grandTotalAllMillesimi = 0;
+                // --- 5. Generazione HTML in base alla modalità ---
+                let html = '';
+                const grandTotalAllMillesimi = Object.values(groupedData).reduce((sum, group) => sum + group.totalMillesimiImport, 0);
+                const grandTotalProperties = Object.values(groupedData).reduce((sum, group) => sum + group.totalPropertiesImport, 0);
 
-                for (const groupName in groupedData) {
-                    const group = groupedData[groupName];
-                    if (group.users.length === 0 && group.totalProperties === 0) continue; // Salta gruppi vuoti
+                if (mode === 'confronto') {
+                    html = `<h2 class="section-title">Confronto Dati Registrati vs. Importati</h2>`;
+                    let grandTotalAccounts = 0;
+                    let grandTotalAccountMillesimi = 0;
 
-                    let accountSubtotalMillesimi = group.users.reduce((sum, u) => sum + u.millesimi, 0);
+                    for (const groupName in groupedData) {
+                        const group = groupedData[groupName];
+                        if (group.users.length === 0 && group.totalPropertiesImport === 0) continue;
+
+                        const accountSubtotalMillesimi = group.users.reduce((sum, u) => sum + u.millesimi, 0);
+                        grandTotalAccounts += group.users.length;
+                        grandTotalAccountMillesimi += accountSubtotalMillesimi;
+
+                        html += `
+                            <div class="card" style="margin-bottom: 1.5rem;">
+                                <h3 class="card-title" style="text-transform: capitalize;">${groupName.toLowerCase()}</h3>
+                                <div class="data-table-container">
+                                    <table class="data-table">
+                                        <thead><tr><th>Id U.I.</th><th>Proprietario Registrato</th><th style="text-align:right;">Millesimi</th></tr></thead>
+                                        <tbody>
+                                            ${group.users.length > 0 ? group.users.map(u => `
+                                                <tr><td>${u.idUI}</td><td>${u.proprietario}</td><td style="text-align:right;">${u.millesimi.toFixed(2).replace('.', ',')}</td></tr>
+                                            `).join('') : `<tr><td colspan="3" style="color:var(--secondary-text); text-align:center;">Nessun account registrato per questo gruppo.</td></tr>`}
+                                            <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                                <td>Totale Account Registrati</td>
+                                                <td style="text-align:right;">${group.users.length}</td>
+                                                <td style="text-align:right;">${accountSubtotalMillesimi.toFixed(2).replace('.', ',')}</td>
+                                            </tr>
+                                            <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                                <td>Totale Unità da Import</td>
+                                                <td style="text-align:right;">${group.totalPropertiesImport}</td>
+                                                <td style="text-align:right;">${group.totalMillesimiImport.toFixed(2).replace('.', ',')}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }
                     
-                    grandTotalAccounts += group.users.length;
-                    grandTotalAccountMillesimi += accountSubtotalMillesimi;
-                    grandTotalProperties += group.totalProperties;
-                    grandTotalAllMillesimi += group.totalMillesimi;
-
                     html += `
                         <div class="card" style="margin-bottom: 1.5rem;">
-                            <h3 class="card-title" style="text-transform: capitalize;">${groupName.toLowerCase()}</h3>
+                            <h3 class="card-title">Riepilogo Complessivo Confronto</h3>
                             <div class="data-table-container">
                                 <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Id U.I.</th>
-                                            <th>Proprietario</th>
-                                            <th style="text-align:right;">N.Teste</th>
-                                            <th style="text-align:right;">Millesimi</th>
-                                        </tr>
-                                    </thead>
                                     <tbody>
-                                        ${group.users.map(u => `
-                                            <tr>
-                                                <td>${u.idUI}</td>
-                                                <td>${u.proprietario}</td>
-                                                <td style="text-align:right;">1</td>
-                                                <td style="text-align:right;">${u.millesimi.toFixed(2).replace('.', ',')}</td>
-                                            </tr>
-                                        `).join('')}
                                         <tr style="font-weight:bold; background-color: var(--surface-color-light);">
-                                            <td colspan="2">Totale account</td>
-                                            <td style="text-align:right;">${group.users.length}</td>
-                                            <td style="text-align:right;">${accountSubtotalMillesimi.toFixed(2).replace('.', ',')}</td>
+                                            <td>Totale Account Registrati</td>
+                                            <td style="text-align:right;">${grandTotalAccounts}</td>
+                                            <td style="text-align:right;">${grandTotalAccountMillesimi.toFixed(2).replace('.', ',')}</td>
                                         </tr>
                                         <tr style="font-weight:bold; background-color: var(--surface-color-light);">
-                                            <td colspan="2">Totale scala ${groupName}</td>
-                                            <td style="text-align:right;">${group.totalProperties}</td>
-                                            <td style="text-align:right;">${group.totalMillesimi.toFixed(2).replace('.', ',')}</td>
+                                            <td>Totale Unità da Import</td>
+                                            <td style="text-align:right;">${grandTotalProperties}</td>
+                                            <td style="text-align:right;">${grandTotalAllMillesimi.toFixed(2).replace('.', ',')}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+
+                } else { // mode === 'complessiva'
+                    html = `<h2 class="section-title">Riepilogo Complessivo Dati Importati</h2>
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="data-table-container">
+                                <table class="data-table">
+                                    <thead><tr><th>Gruppo / Scala</th><th style="text-align:right;">N. Unità (Teste)</th><th style="text-align:right;">Somma Millesimi</th></tr></thead>
+                                    <tbody>
+                    `;
+
+                    for (const groupName in groupedData) {
+                        const group = groupedData[groupName];
+                        if (group.totalPropertiesImport === 0) continue;
+                        html += `
+                            <tr>
+                                <td style="text-transform: capitalize;">${groupName.toLowerCase()}</td>
+                                <td style="text-align:right;">${group.totalPropertiesImport}</td>
+                                <td style="text-align:right;">${group.totalMillesimiImport.toFixed(2).replace('.', ',')}</td>
+                            </tr>
+                        `;
+                    }
+
+                    html += `
+                                        <tr style="font-weight:bold; background-color: var(--surface-color-light);">
+                                            <td>Totale Complessivo</td>
+                                            <td style="text-align:right;">${grandTotalProperties}</td>
+                                            <td style="text-align:right;">${grandTotalAllMillesimi.toFixed(2).replace('.', ',')}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1144,29 +1191,6 @@
                         </div>
                     `;
                 }
-                
-                // Tabella riepilogo finale
-                html += `
-                    <div class="card" style="margin-bottom: 1.5rem;">
-                        <h3 class="card-title">Complessivo</h3>
-                        <div class="data-table-container">
-                            <table class="data-table">
-                                <tbody>
-                                    <tr style="font-weight:bold; background-color: var(--surface-color-light);">
-                                        <td colspan="2">Totale account</td>
-                                        <td style="text-align:right;">${grandTotalAccounts}</td>
-                                        <td style="text-align:right;">${grandTotalAccountMillesimi.toFixed(2).replace('.', ',')}</td>
-                                    </tr>
-                                    <tr style="font-weight:bold; background-color: var(--surface-color-light);">
-                                        <td colspan="2">Totale scala</td>
-                                        <td style="text-align:right;">${grandTotalProperties}</td>
-                                        <td style="text-align:right;">${grandTotalAllMillesimi.toFixed(2).replace('.', ',')}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
 
                 container.innerHTML = html;
 
@@ -2728,6 +2752,7 @@
         window.deleteGroupRule = deleteGroupRule;
         window.toggleRuleStatus = toggleRuleStatus;
         window.toggleGroupListVisibility = toggleGroupListVisibility;
+        window.loadElencoCondomini = loadElencoCondomini;
 
         // --- FUNZIONE onAuthStateChanged CORRETTA E ROBUSTA ---
         onAuthStateChanged(auth, async (user) => {
