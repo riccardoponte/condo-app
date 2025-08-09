@@ -3804,7 +3804,7 @@
 
 
 
-                const loadCustodeSchedule = () => {
+                        const loadCustodeSchedule = () => {
             const scheduleContainer = document.getElementById('custode-schedule-container');
             if (!scheduleContainer) return;
 
@@ -3817,24 +3817,30 @@
 
                 const scheduleData = snapshot.docs[0].data();
                 if (scheduleData.tableData && scheduleData.tableData.length > 0) {
-                    let headers = Object.keys(scheduleData.tableData[0]);
+                    const originalHeaders = Object.keys(scheduleData.tableData[0]);
                     const canManage = userProfile?.tipoUtente === 'supervisore';
 
-                    // --- INIZIO MODIFICA: Inversione colonne ---
-                    const ruoloKey = headers.find(h => h.toLowerCase().includes('ruolo'));
-                    const sabatoKey = headers.find(h => h.toLowerCase().includes('sabato'));
-                    if (ruoloKey && sabatoKey) {
-                        const ruoloIndex = headers.indexOf(ruoloKey);
-                        const sabatoIndex = headers.indexOf(sabatoKey);
-                        [headers[ruoloIndex], headers[sabatoIndex]] = [headers[sabatoIndex], headers[ruoloIndex]];
-                    }
-                    // --- FINE MODIFICA ---
+                    // --- LOGICA DI ORDINAMENTO UNIFICATA E ROBUSTA ---
+                    const desiredOrderKeywords = ['nominativo', 'lun - ven', 'sabato', 'ruolo', 'telefono'];
+                    let headers = [];
+                    let remainingHeaders = [...originalHeaders];
+
+                    desiredOrderKeywords.forEach(keyword => {
+                        const foundHeader = remainingHeaders.find(h => h.toLowerCase().includes(keyword));
+                        if (foundHeader) {
+                            headers.push(foundHeader);
+                            remainingHeaders = remainingHeaders.filter(h => h !== foundHeader);
+                        }
+                    });
+                    
+                    headers = [...headers, ...remainingHeaders];
+                    // --- FINE LOGICA DI ORDINAMENTO ---
 
                     let tableHTML = `<table class="data-table"><thead><tr>`;
                     headers.forEach(header => {
                         tableHTML += `<th>${header.toUpperCase()}</th>`;
                     });
-                    if (canManage) {
+                    if (canManage) { // La colonna Azioni appare solo per il supervisore
                         tableHTML += `<th style="text-align:right;">AZIONI</th>`;
                     }
                     tableHTML += `</tr></thead><tbody>`;
@@ -3845,13 +3851,11 @@
                             tableHTML += `<td>${row[header] || '–'}</td>`;
                         });
 
-                        // --- INIZIO MODIFICA: Aggiunta pulsanti di azione ---
                         if (canManage) {
                             const editIcon = `<button onclick="editImportedScheduleEntry(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`;
                             const deleteIcon = `<button onclick="deleteImportedScheduleEntry(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
                             tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
                         }
-                        // --- FINE MODIFICA ---
                         tableHTML += `</tr>`;
                     });
 
@@ -3860,6 +3864,9 @@
                 } else {
                     scheduleContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>`;
                 }
+            }, (error) => {
+                console.error("Errore nel caricamento degli orari del custode:", error);
+                scheduleContainer.innerHTML = `<div class="message-box error" style="display:block;">Errore nel caricamento degli orari.</div>`;
             });
         };
 
