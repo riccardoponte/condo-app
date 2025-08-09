@@ -107,6 +107,49 @@
             margin-bottom: 1.5rem;
         }
 
+        /* Icon Buttons */
+        .btn-icon {
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background: var(--surface-color-light);
+            color: var(--primary-text);
+        }
+        .btn-icon:hover {
+            background: var(--accent-color);
+            transform: scale(1.05);
+        }
+        .btn-icon:active {
+            transform: scale(0.95);
+        }
+
+        /* Survey Search and Filter */
+        .flex {
+            display: flex;
+        }
+        .items-center {
+            align-items: center;
+        }
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        /* Badge styling */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+        }
+
         /* Bottoni */
         .btn {
             display: inline-flex;
@@ -880,6 +923,13 @@
                     <h3 class="card-title">Crea un Nuovo Sondaggio</h3>
                     <div id="poll-creation-message" class="message-box"></div>
                     <form id="create-poll-form" class="space-y-4">
+                        <div><label class="form-label">Tipo Sondaggio</label>
+                            <select id="poll-type" required class="form-select">
+                                <option value="">Seleziona tipo...</option>
+                                <option value="supervisor-consiglieri">Sondaggio tra Supervisor e Consiglieri</option>
+                                <option value="condomini">Sondaggio rivolto ai Condomini</option>
+                            </select>
+                        </div>
                         <div><label class="form-label">Titolo</label><input type="text" id="poll-title" required class="form-input"></div>
                         <div><label class="form-label">Descrizione (opzionale)</label><textarea id="poll-description" rows="3" class="form-textarea"></textarea></div>
                         <div><label class="form-label">Opzioni</label><div id="poll-options-list" class="space-y-4"></div><button type="button" id="add-poll-option" class="btn btn-secondary mt-4">Aggiungi opzione</button></div>
@@ -903,6 +953,18 @@
         const renderSondaggiElenco = () => `
             ${renderHeader('Elenco Sondaggi')}
             <main>
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="flex items-center gap-4">
+                        <div style="flex: 1;">
+                            <input type="text" id="poll-search" placeholder="Cerca sondaggi per parole chiave..." class="form-input">
+                        </div>
+                        <select id="poll-type-filter" class="form-select" style="width: auto;">
+                            <option value="">Tutti i tipi</option>
+                            <option value="supervisor-consiglieri">Supervisor e Consiglieri</option>
+                            <option value="condomini">Condomini</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="polls-container" class="list-container"></div>
             </main>
             ${renderBottomNavigation()}
@@ -994,8 +1056,8 @@
         `;
 
         const renderNumeriUtiliImportati = () => {
-            const canManage = ['amministratore', 'supervisore', 'adm'].includes(userProfile?.tipoUtente);
-            const importSectionHtml = canManage ? `
+            const canImport = userProfile?.tipoUtente === 'supervisore';
+            const importSectionHtml = canImport ? `
                 <div class="flex gap-4 mt-4">
                     <button id="trigger-phone-import-btn" class="btn btn-primary flex-grow">Importa Nuovo File</button>
                     <button onclick="navigateTo('importazione')" class="btn btn-secondary">Gestione Avanzata</button>
@@ -1022,13 +1084,13 @@
         };
 
         const renderNumeriUtiliManuali = () => {
-            const canManage = ['amministratore', 'supervisore', 'adm'].includes(userProfile?.tipoUtente);
+            const canManage = userProfile?.tipoUtente === 'supervisore';
             const addFormHtml = canManage ? `
                 <form id="add-useful-number-form" class="space-y-4" style="margin-bottom: 2rem;">
-                    <div><label for="nu-title" class="form-label">Intervento richiesto</label><input type="text" id="nu-title" required class="form-input" placeholder="Es. Idraulico, Elettricista..."></div>
-                    <div><label for="nu-company" class="form-label">Impresa (Opzionale)</label><input type="text" id="nu-company" class="form-input" placeholder="Nome dell'azienda"></div>
-                    <div><label for="nu-number" class="form-label">1 num. Telefonico</label><input type="text" id="nu-number" required class="form-input" placeholder="Numero di telefono principale"></div>
-                    <div><label for="nu-number-2" class="form-label">2 num. Telefonico (Opzionale)</label><input type="text" id="nu-number-2" class="form-input" placeholder="Numero di telefono secondario"></div>
+                    <div><label for="nu-title" class="form-label">INTERVENTO RICHIESTO</label><input type="text" id="nu-title" required class="form-input" placeholder="Es. Idraulico, Elettricista..."></div>
+                    <div><label for="nu-company" class="form-label">IMPRESA (Opzionale)</label><input type="text" id="nu-company" class="form-input" placeholder="Nome dell'azienda"></div>
+                    <div><label for="nu-number" class="form-label">1 NUM. TELEFONICO</label><input type="text" id="nu-number" required class="form-input" placeholder="Numero di telefono principale"></div>
+                    <div><label for="nu-number-2" class="form-label">2 NUM. TELEFONICO (Opzionale)</label><input type="text" id="nu-number-2" class="form-input" placeholder="Numero di telefono secondario"></div>
                     <div class="flex justify-end"><button type="submit" class="btn btn-primary">Aggiungi Contatto</button></div>
                 </form>
             ` : '';
@@ -1040,18 +1102,9 @@
                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 1.5rem;">Aggiungi o visualizza i contatti di emergenza inseriti manualmente. La modifica è riservata ai ruoli autorizzati.</p>
                     ${addFormHtml}
                     <div class="data-table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Intervento richiesto</th>
-                                    <th>Impresa</th>
-                                    <th>1 num.Telefonico</th>
-                                    <th>2 num.Telefonico</th>
-                                    <th style="text-align:right;">Azione</th>
-                                </tr>
-                            </thead>
+                        <table class="data-table" id="useful-numbers-table">
                             <tbody id="useful-numbers-table-body">
-                                <tr><td colspan="5" style="text-align:center; color:var(--secondary-text);">Caricamento contatti...</td></tr>
+                                <tr><td colspan="4" style="text-align:center; color:var(--secondary-text);">Caricamento contatti...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1562,7 +1615,7 @@
                     else navigateTo('dashboard');
                     break;
                 case 'importazione':
-                    if (['supervisore', 'adm'].includes(userType)) content = renderImportazione();
+                    if (userType === 'supervisore') content = renderImportazione();
                     else navigateTo('dashboard');
                     break;
                 case 'reportPage':
@@ -1601,7 +1654,7 @@
                 case 'gestioneGruppi': /* No handlers needed for the menu page */ break;
                 case 'gestioneGruppi_lista': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
                 case 'gestioneGruppi_regole': if (['supervisore', 'adm'].includes(userType)) { loadGroupRules(); setupGestioneGruppiHandlers(); } break;
-                case 'importazione': if (['supervisore', 'adm'].includes(userType)) { setupImportazioneHandlers(); } break;
+                case 'importazione': if (userType === 'supervisore') { setupImportazioneHandlers(); } break;
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
             }
 
@@ -1865,6 +1918,22 @@
             const optionsList = document.getElementById("poll-options-list");
             const addOptionBtn = document.getElementById("add-poll-option");
 
+            // Setup search and filter handlers for survey list
+            const searchInput = document.getElementById('poll-search');
+            const typeFilter = document.getElementById('poll-type-filter');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    loadPolls();
+                });
+            }
+            
+            if (typeFilter) {
+                typeFilter.addEventListener('change', () => {
+                    loadPolls();
+                });
+            }
+
             function addOptionInput(value = "") {
                 const div = document.createElement("div");
                 div.className = "flex items-center gap-2";
@@ -1891,6 +1960,7 @@
                 const messageBox = document.getElementById('poll-creation-message');
                 messageBox.style.display = 'none';
 
+                const pollType = document.getElementById("poll-type").value;
                 const title = document.getElementById("poll-title").value;
                 const description = document.getElementById("poll-description").value;
                 const deadlineDate = document.getElementById("poll-deadline").value;
@@ -1899,6 +1969,7 @@
                 const optionInputs = form.querySelectorAll('#poll-options-list input[type="text"]');
                 const options = Array.from(optionInputs).map(input => input.value.trim()).filter(Boolean).map(text => ({ text: text, votes: 0 }));
 
+                if (!pollType) return alert("Seleziona un tipo di sondaggio.");
                 if (options.length < 2) return alert("Inserisci almeno due opzioni.");
                 if (!deadlineDate || !deadlineTime) return alert("Inserisci una data e un'ora di scadenza.");
 
@@ -1913,6 +1984,7 @@
 
                     const pollData = {
                         pollNumber: newPollNumber,
+                        pollType: pollType,
                         title: title,
                         description: description,
                         options: options,
@@ -1958,12 +2030,19 @@
             if (manualForm) {
                 manualForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
+                    
+                    // Controllo accesso: solo supervisore può aggiungere contatti
+                    if (userProfile?.tipoUtente !== 'supervisore') {
+                        alert('Non hai i permessi per aggiungere contatti. Solo i supervisori possono eseguire questa operazione.');
+                        return;
+                    }
+                    
                     const title = document.getElementById('nu-title').value.trim();
                     const company = document.getElementById('nu-company').value.trim();
                     const number = document.getElementById('nu-number').value.trim();
                     const number2 = document.getElementById('nu-number-2').value.trim();
                     if (!title || !number) {
-                        alert('I campi "Intervento richiesto" e "1 num. Telefonico" sono obbligatori.');
+                        alert('I campi "INTERVENTO RICHIESTO" e "1 NUM. TELEFONICO" sono obbligatori.');
                         return;
                     }
                     try {
@@ -1986,6 +2065,14 @@
                 fileInput.addEventListener('change', (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
+                    
+                    // Controllo accesso: solo supervisore può importare file
+                    if (userProfile?.tipoUtente !== 'supervisore') {
+                        alert('Non hai i permessi per importare file. Solo i supervisori possono eseguire questa operazione.');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
                     messageBox.className = 'message-box';
                     messageBox.textContent = 'Lettura del file in corso...';
                     messageBox.style.display = 'block';
@@ -2601,6 +2688,12 @@
         };
 
         const deleteUsefulNumber = async (id) => {
+            // Controllo accesso: solo supervisore può eliminare contatti
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per eliminare contatti. Solo i supervisori possono eseguire questa operazione.');
+                return;
+            }
+            
             if (!confirm('Sei sicuro di voler eliminare questo numero?')) {
                 return;
             }
@@ -2611,6 +2704,337 @@
                 console.error("Errore durante l'eliminazione del numero:", error);
                 alert("Si è verificato un errore durante l'eliminazione.");
             }
+        };
+
+        const editUsefulNumber = async (id, currentData) => {
+            // Controllo accesso: solo supervisore può modificare contatti
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per modificare contatti. Solo i supervisori possono eseguire questa operazione.');
+                return;
+            }
+
+            const editFormHtml = `
+                <div class="space-y-4">
+                    <div><label class="form-label">INTERVENTO RICHIESTO</label><input type="text" id="edit-title" value="${currentData.title || ''}" required class="form-input"></div>
+                    <div><label class="form-label">IMPRESA (Opzionale)</label><input type="text" id="edit-company" value="${currentData.company || ''}" class="form-input"></div>
+                    <div><label class="form-label">1 NUM. TELEFONICO</label><input type="text" id="edit-number" value="${currentData.number || ''}" required class="form-input"></div>
+                    <div><label class="form-label">2 NUM. TELEFONICO (Opzionale)</label><input type="text" id="edit-number-2" value="${currentData.number2 || ''}" class="form-input"></div>
+                </div>
+            `;
+
+            showModal('Modifica Contatto', editFormHtml, [
+                { text: 'Annulla', class: 'btn-secondary', action: 'close' },
+                { text: 'Salva', class: 'btn-primary', action: async () => {
+                    const title = document.getElementById('edit-title').value.trim();
+                    const company = document.getElementById('edit-company').value.trim();
+                    const number = document.getElementById('edit-number').value.trim();
+                    const number2 = document.getElementById('edit-number-2').value.trim();
+
+                    if (!title || !number) {
+                        alert('I campi "INTERVENTO RICHIESTO" e "1 NUM. TELEFONICO" sono obbligatori.');
+                        return false;
+                    }
+
+                    try {
+                        await updateDoc(doc(db, 'usefulNumbers', id), {
+                            title, company, number, number2, updatedAt: serverTimestamp()
+                        });
+                        await logActivity("useful_number_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedId: id, title });
+                        closeModal();
+                        return true;
+                    } catch (error) {
+                        console.error("Errore durante l'aggiornamento del numero:", error);
+                        alert("Si è verificato un errore durante l'aggiornamento.");
+                        return false;
+                    }
+                }}
+            ]);
+        };
+
+        const deleteMultipleUsefulNumbers = async (ids) => {
+            // Controllo accesso: solo supervisore può eliminare contatti
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per eliminare contatti. Solo i supervisori possono eseguire questa operazione.');
+                return;
+            }
+
+            if (!confirm(`Sei sicuro di voler eliminare ${ids.length} contatti?`)) {
+                return;
+            }
+
+            try {
+                const deletePromises = ids.map(id => deleteDoc(doc(db, 'usefulNumbers', id)));
+                await Promise.all(deletePromises);
+                await logActivity("useful_numbers_bulk_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedCount: ids.length });
+                alert(`${ids.length} contatti eliminati con successo.`);
+            } catch (error) {
+                console.error("Errore durante l'eliminazione multipla:", error);
+                alert("Si è verificato un errore durante l'eliminazione multipla.");
+            }
+        };
+
+        // Funzioni helper per le operazioni bulk
+        const toggleAllContacts = (checkbox) => {
+            const contactCheckboxes = document.querySelectorAll('.contact-checkbox');
+            contactCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateBulkActions();
+        };
+
+        const updateBulkActions = () => {
+            const bulkActions = document.getElementById('bulk-actions');
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox:checked');
+            const selectAllCheckbox = document.getElementById('select-all-contacts');
+            
+            if (bulkActions) {
+                bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
+            }
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox').length;
+                selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox').length;
+            }
+        };
+
+        const deleteSelectedContacts = () => {
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox:checked');
+            const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            if (selectedIds.length === 0) {
+                alert('Nessun contatto selezionato.');
+                return;
+            }
+            
+            deleteMultipleUsefulNumbers(selectedIds);
+        };
+
+        // Funzioni helper per la rubrica
+        const toggleAllContactsRubrica = (checkbox) => {
+            const contactCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica');
+            contactCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateBulkActionsRubrica();
+        };
+
+        const updateBulkActionsRubrica = () => {
+            const bulkActions = document.getElementById('bulk-actions-rubrica');
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica:checked');
+            const selectAllCheckbox = document.getElementById('select-all-contacts-rubrica');
+            
+            if (bulkActions) {
+                bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
+            }
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox-rubrica').length;
+                selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox-rubrica').length;
+            }
+        };
+
+        const deleteSelectedContactsRubrica = () => {
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica:checked');
+            const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            if (selectedIds.length === 0) {
+                alert('Nessun contatto selezionato.');
+                return;
+            }
+            
+            deleteMultipleUsefulNumbers(selectedIds);
+        };
+
+        // Funzioni helper per i contatti importati
+        const toggleAllContactsImported = (checkbox) => {
+            const contactCheckboxes = document.querySelectorAll('.contact-checkbox-imported');
+            contactCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateBulkActionsImported();
+        };
+
+        const updateBulkActionsImported = () => {
+            const bulkActions = document.getElementById('bulk-actions-imported');
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-imported:checked');
+            const selectAllCheckbox = document.getElementById('select-all-contacts-imported');
+            
+            if (bulkActions) {
+                bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
+            }
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox-imported').length;
+                selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox-imported').length;
+            }
+        };
+
+        const deleteSelectedContactsImported = () => {
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-imported:checked');
+            const selectedIndices = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+            
+            if (selectedIndices.length === 0) {
+                alert('Nessun contatto selezionato.');
+                return;
+            }
+            
+            deleteMultipleImportedContacts(selectedIndices);
+        };
+
+        const editImportedContact = async (index, currentData) => {
+            // Controllo accesso: solo supervisore può modificare contatti
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per modificare contatti. Solo i supervisori possono eseguire questa operazione.');
+                return;
+            }
+
+            // Per i contatti importati, creiamo un form dinamico basato sui campi disponibili
+            const formFields = Object.keys(currentData).map(key => {
+                const value = currentData[key] || '';
+                const label = key;
+                return `<div><label class="form-label">${label}</label><input type="text" id="edit-imported-${key}" value="${value}" class="form-input"></div>`;
+            }).join('');
+
+            const editFormHtml = `
+                <div class="space-y-4">
+                    ${formFields}
+                </div>
+            `;
+
+            showModal('Modifica Contatto Importato', editFormHtml, [
+                { text: 'Annulla', class: 'btn-secondary', action: 'close' },
+                { text: 'Salva', class: 'btn-primary', action: async () => {
+                    try {
+                        // Per i contatti importati, dobbiamo aggiornare il documento Firestore
+                        // Questo richiede di ricaricare i dati e aggiornare l'array
+                        const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
+                        const snapshot = await getDocs(qImported);
+                        
+                        if (snapshot.empty) {
+                            alert("Impossibile trovare i dati importati.");
+                            return false;
+                        }
+                        
+                        const docRef = snapshot.docs[0].ref;
+                        const docData = snapshot.docs[0].data();
+                        const updatedData = [...docData.tableData];
+                        
+                        // Aggiorna i campi modificati
+                        Object.keys(currentData).forEach(key => {
+                            const inputElement = document.getElementById(`edit-imported-${key}`);
+                            if (inputElement) {
+                                updatedData[index][key] = inputElement.value.trim();
+                            }
+                        });
+                        
+                        await updateDoc(docRef, { tableData: updatedData });
+                        await logActivity("imported_contact_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedIndex: index });
+                        
+                        closeModal();
+                        return true;
+                    } catch (error) {
+                        console.error("Errore durante l'aggiornamento del contatto importato:", error);
+                        alert("Si è verificato un errore durante l'aggiornamento.");
+                        return false;
+                    }
+                }}
+            ]);
+        };
+
+        const deleteImportedContact = async (index) => {
+            // Controllo accesso: solo supervisore può eliminare contatti
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per eliminare contatti. Solo i supervisori possono eseguire questa operazione.');
+                return;
+            }
+
+            if (!confirm('Sei sicuro di voler eliminare questo contatto importato?')) {
+                return;
+            }
+
+            try {
+                const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(qImported);
+                
+                if (snapshot.empty) {
+                    alert("Impossibile trovare i dati importati.");
+                    return;
+                }
+                
+                const docRef = snapshot.docs[0].ref;
+                const docData = snapshot.docs[0].data();
+                const updatedData = docData.tableData.filter((_, i) => i !== index);
+                
+                await updateDoc(docRef, { tableData: updatedData });
+                await logActivity("imported_contact_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
+                
+                alert("Contatto eliminato con successo.");
+            } catch (error) {
+                console.error("Errore durante l'eliminazione del contatto importato:", error);
+                alert("Si è verificato un errore durante l'eliminazione.");
+            }
+        };
+
+        const deleteMultipleImportedContacts = async (indices) => {
+            // Controllo accesso: solo supervisore può eliminare contatti
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per eliminare contatti. Solo i supervisori possono eseguire questa operazione.');
+                return;
+            }
+
+            if (!confirm(`Sei sicuro di voler eliminare ${indices.length} contatti importati?`)) {
+                return;
+            }
+
+            try {
+                const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(qImported);
+                
+                if (snapshot.empty) {
+                    alert("Impossibile trovare i dati importati.");
+                    return;
+                }
+                
+                const docRef = snapshot.docs[0].ref;
+                const docData = snapshot.docs[0].data();
+                const updatedData = docData.tableData.filter((_, i) => !indices.includes(i));
+                
+                await updateDoc(docRef, { tableData: updatedData });
+                await logActivity("imported_contacts_bulk_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedCount: indices.length });
+                
+                alert(`${indices.length} contatti eliminati con successo.`);
+            } catch (error) {
+                console.error("Errore durante l'eliminazione multipla dei contatti importati:", error);
+                alert("Si è verificato un errore durante l'eliminazione multipla.");
+            }
+        };
+
+        // Funzioni helper per i contatti importati nella rubrica
+        const toggleAllContactsRubricaImported = (checkbox) => {
+            const contactCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica-imported');
+            contactCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateBulkActionsRubricaImported();
+        };
+
+        const updateBulkActionsRubricaImported = () => {
+            const bulkActions = document.getElementById('bulk-actions-rubrica-imported');
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica-imported:checked');
+            const selectAllCheckbox = document.getElementById('select-all-contacts-rubrica-imported');
+            
+            if (bulkActions) {
+                bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
+            }
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox-rubrica-imported').length;
+                selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox-rubrica-imported').length;
+            }
+        };
+
+        const deleteSelectedContactsRubricaImported = () => {
+            const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica-imported:checked');
+            const selectedIndices = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+            
+            if (selectedIndices.length === 0) {
+                alert('Nessun contatto selezionato.');
+                return;
+            }
+            
+            deleteMultipleImportedContacts(selectedIndices);
         };
 
         const renderNumeriUtiliRubrica = () => `
@@ -2653,16 +3077,58 @@
                          return;
                     }
                     const headers = Object.keys(data[0]);
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(h => tableHTML += `<th>${h}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
-                    data.forEach(row => {
+                    const { headers: orderedHeaders, data: orderedData } = reorderColumns(data, headers);
+                    
+                    const canManage = userProfile?.tipoUtente === 'supervisore';
+                    
+                    // Aggiungi header per checkbox e azioni se l'utente può gestire
+                    const headerRow = canManage ? 
+                        `<tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="select-all-contacts-rubrica-imported" onchange="toggleAllContactsRubricaImported(this)">
+                            </th>
+                            ${orderedHeaders.map(h => `<th>${h}</th>`).join('')}
+                            <th style="text-align:right;">AZIONI</th>
+                        </tr>` :
+                        `<tr>${orderedHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                    
+                    let tableHTML = '<table class="data-table"><thead>' + headerRow + '</thead><tbody>';
+                    
+                    orderedData.forEach((row, index) => {
                         tableHTML += '<tr>';
-                        headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        if (canManage) {
+                            tableHTML += `<td><input type="checkbox" class="contact-checkbox-rubrica-imported" value="${index}" onchange="updateBulkActionsRubricaImported()"></td>`;
+                        }
+                        orderedHeaders.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        
+                        if (canManage) {
+                            const editIcon = `<button onclick="editImportedContact(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </button>`;
+                            const deleteIcon = `<button onclick="deleteImportedContact(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>`;
+                            tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
+                        }
                         tableHTML += '</tr>';
                     });
                     tableHTML += '</tbody></table>';
+                    
                     importedContainer.innerHTML = tableHTML;
+                    
+                    // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
+                    if (canManage) {
+                        const bulkActionsHtml = `<div class="flex gap-2 mt-4" id="bulk-actions-rubrica-imported" style="display: none;">
+                            <button onclick="deleteSelectedContactsRubricaImported()" class="btn" style="background:var(--danger); color:white;">
+                                Elimina Selezionati
+                            </button>
+                        </div>`;
+                        importedContainer.insertAdjacentHTML('afterbegin', bulkActionsHtml);
+                    }
                 });
             }
 
@@ -2674,27 +3140,77 @@
                         manualContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun contatto inserito manualmente.</p>`;
                         return;
                     }
+                    
+                    const canManage = userProfile?.tipoUtente === 'supervisore';
+                    
+                    // Aggiungi header per checkbox e azioni se l'utente può gestire
+                    const headerRow = canManage ? 
+                        `<tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="select-all-contacts-rubrica" onchange="toggleAllContactsRubrica(this)">
+                            </th>
+                            <th>INTERVENTO RICHIESTO</th>
+                            <th>IMPRESA</th>
+                            <th>1 NUM. TELEFONICO</th>
+                            <th>2 NUM. TELEFONICO</th>
+                            <th style="text-align:right;">AZIONI</th>
+                        </tr>` :
+                        `<tr>
+                            <th>INTERVENTO RICHIESTO</th>
+                            <th>IMPRESA</th>
+                            <th>1 NUM. TELEFONICO</th>
+                            <th>2 NUM. TELEFONICO</th>
+                        </tr>`;
+                    
                     let tableHTML = `<table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Intervento richiesto</th>
-                                <th>Impresa</th>
-                                <th>1 num.Telefonico</th>
-                                <th>2 num.Telefonico</th>
-                            </tr>
-                        </thead>
+                        <thead>${headerRow}</thead>
                         <tbody>`;
+                    
                     tableHTML += snapshot.docs.map(docSnap => {
                         const contact = docSnap.data();
-                        return `<tr>
-                                    <td>${contact.title}</td>
-                                    <td>${contact.company || '–'}</td>
-                                    <td>${contact.number}</td>
-                                    <td>${contact.number2 || '–'}</td>
-                                </tr>`;
+                        if (canManage) {
+                            const editIcon = `<button onclick="editUsefulNumber('${docSnap.id}', ${JSON.stringify(contact).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </button>`;
+                            const deleteIcon = `<button onclick="deleteUsefulNumber('${docSnap.id}')" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>`;
+                            
+                            return `<tr>
+                                <td><input type="checkbox" class="contact-checkbox-rubrica" value="${docSnap.id}" onchange="updateBulkActionsRubrica()"></td>
+                                <td>${contact.title}</td>
+                                <td>${contact.company || '–'}</td>
+                                <td>${contact.number}</td>
+                                <td>${contact.number2 || '–'}</td>
+                                <td style="text-align:right;">${editIcon}${deleteIcon}</td>
+                            </tr>`;
+                        } else {
+                            return `<tr>
+                                <td>${contact.title}</td>
+                                <td>${contact.company || '–'}</td>
+                                <td>${contact.number}</td>
+                                <td>${contact.number2 || '–'}</td>
+                            </tr>`;
+                        }
                     }).join('');
+                    
                     tableHTML += '</tbody></table>';
+                    
                     manualContainer.innerHTML = tableHTML;
+                    
+                    // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
+                    if (canManage) {
+                        const bulkActionsHtml = `<div class="flex gap-2 mt-4" id="bulk-actions-rubrica" style="display: none;">
+                            <button onclick="deleteSelectedContactsRubrica()" class="btn" style="background:var(--danger); color:white;">
+                                Elimina Selezionati
+                            </button>
+                        </div>`;
+                        manualContainer.insertAdjacentHTML('afterbegin', bulkActionsHtml);
+                    }
                 });
             }
         };
@@ -2791,13 +3307,55 @@
         const loadPolls = () => {
             const container = document.getElementById("polls-container");
             if (!container) return;
+            
             const settingsRef = doc(db, "settings", "pollAuthorization");
             getDoc(settingsRef).then(settingsSnap => {
                 const pollSetting = settingsSnap.exists() ? settingsSnap.data().setting : 'option2';
                 const canUserVote = isUserAllowedToVote(userProfile.tipoUtente, pollSetting);
                 const q = query(collection(db, "polls"), orderBy("createdAt", "desc"));
                 onSnapshot(q, snapshot => {
-                    container.innerHTML = snapshot.empty ? `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun sondaggio disponibile.</p></div>` : snapshot.docs.map(docSnap => {
+                    if (snapshot.empty) {
+                        container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun sondaggio disponibile.</p></div>`;
+                        return;
+                    }
+                    
+                    // Get search and filter values
+                    const searchTerm = document.getElementById('poll-search')?.value?.toLowerCase() || '';
+                    const typeFilter = document.getElementById('poll-type-filter')?.value || '';
+                    
+                    // Filter polls based on search and type
+                    let filteredPolls = snapshot.docs.filter(docSnap => {
+                        const poll = docSnap.data();
+                        
+                        // Filter by type if specified
+                        if (typeFilter && poll.pollType !== typeFilter) {
+                            return false;
+                        }
+                        
+                        // Filter by search term
+                        if (searchTerm) {
+                            const searchableText = `${poll.title} ${poll.description || ''}`.toLowerCase();
+                            if (!searchableText.includes(searchTerm)) {
+                                return false;
+                            }
+                        }
+                        
+                        return true;
+                    });
+                    
+                    if (filteredPolls.length === 0) {
+                        container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun sondaggio trovato con i criteri di ricerca.</p></div>`;
+                        return;
+                    }
+                    
+                    // Sort by poll number for numbered display
+                    filteredPolls.sort((a, b) => {
+                        const pollA = a.data();
+                        const pollB = b.data();
+                        return (pollA.pollNumber || 0) - (pollB.pollNumber || 0);
+                    });
+                    
+                    container.innerHTML = filteredPolls.map((docSnap, index) => {
                         const poll = docSnap.data();
                         if (!poll.deadline) return "";
                         const deadline = poll.deadline.toDate();
@@ -2806,6 +3364,7 @@
                         const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
                         const showVoteUI = !isExpired && canUserVote;
                         
+                        const pollTypeLabel = poll.pollType === 'supervisor-consiglieri' ? 'Supervisor e Consiglieri' : 'Condomini';
                         const pollTitle = poll.pollNumber ? `Sondaggio N. ${poll.pollNumber}: ${poll.title}` : poll.title;
                         const buttonText = hasVoted ? 'Cambia Voto' : 'Invia Voto';
 
@@ -2814,6 +3373,7 @@
                         const closingDate = poll.deadline ? deadline.toLocaleString("it-IT", dateOptions) : 'N/D';
                         const dateInfoHtml = `
                         <div style="font-size: 0.8rem; color: var(--secondary-text); margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--surface-color-light);">
+                            <div><strong>Tipo:</strong> ${pollTypeLabel}</div>
                             <div><strong>Creato il:</strong> ${creationDate}</div>
                             <div><strong>Scade il:</strong> ${closingDate}</div>
                         </div>`;
@@ -2886,6 +3446,8 @@
                         }
                         const actionButtonsHtml = actionButtons.length > 0 ? `<div class="flex gap-4 mt-4">${actionButtons.join('')}</div>` : '';
 
+                        const typeBadge = `<span class="badge" style="background: var(--accent-color); color: white; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.5rem; display: inline-block;">${pollTypeLabel}</span>`;
+                        
                         return `
                         <div class="card" style="padding:1rem; margin-bottom:1rem;">
                             <div class="list-item" style="padding:0; margin-bottom:1rem; cursor:default;">
@@ -2895,6 +3457,8 @@
                                     <div class="subtitle">${isExpired ? "Sondaggio chiuso" : "Sondaggio attivo"} ${hasVoted ? "· Hai votato" : ""}</div>
                                 </div>
                             </div>
+                            ${typeBadge}
+                            ${poll.description ? `<p style="color: var(--secondary-text); margin-bottom: 1rem; font-style: italic;">${poll.description}</p>` : ''}
                             ${votingInstructionHtml}
                             ${optionsHtml}
                             ${dateInfoHtml}
@@ -3073,22 +3637,138 @@
             }
         };
 
+        // Funzione helper per riordinare le colonne secondo la sequenza richiesta
+        const reorderColumns = (data, headers) => {
+            const desiredOrder = ['INTERVENTO RICHIESTO', 'IMPRESA', '1 NUM. TELEFONICO', '2 NUM. TELEFONICO', 'AZIONE'];
+            
+            // Mappa per convertire i nomi delle colonne esistenti
+            const columnMapping = {
+                'Intervento richiesto': 'INTERVENTO RICHIESTO',
+                'Impresa': 'IMPRESA',
+                '1 num.Telefonico': '1 NUM. TELEFONICO',
+                '1 num. Telefonico': '1 NUM. TELEFONICO',
+                '2 num.Telefonico': '2 NUM. TELEFONICO',
+                '2 num. Telefonico': '2 NUM. TELEFONICO',
+                'Azione': 'AZIONE'
+            };
+            
+            // Trova le colonne corrispondenti nell'ordine desiderato
+            const orderedHeaders = [];
+            const orderedData = [];
+            
+            desiredOrder.forEach(desiredCol => {
+                const foundHeader = headers.find(h => {
+                    const normalizedH = h.trim();
+                    return normalizedH === desiredCol || columnMapping[normalizedH] === desiredCol;
+                });
+                if (foundHeader) {
+                    orderedHeaders.push(desiredCol);
+                    // Riorganizza i dati per questa colonna
+                    data.forEach((row, rowIndex) => {
+                        if (!orderedData[rowIndex]) orderedData[rowIndex] = {};
+                        orderedData[rowIndex][desiredCol] = row[foundHeader];
+                    });
+                }
+            });
+            
+            // Aggiungi le colonne rimanenti che non sono nell'ordine desiderato
+            headers.forEach(h => {
+                if (!orderedHeaders.includes(h) && !Object.values(columnMapping).includes(h)) {
+                    orderedHeaders.push(h);
+                    data.forEach((row, rowIndex) => {
+                        if (!orderedData[rowIndex]) orderedData[rowIndex] = {};
+                        orderedData[rowIndex][h] = row[h];
+                    });
+                }
+            });
+            
+            return { headers: orderedHeaders, data: orderedData };
+        };
+
         const loadUsefulNumbers = () => {
             const manualTableBody = document.getElementById('useful-numbers-table-body');
             const importedTableContainer = document.getElementById('imported-numbers-table-container');
-            const canManage = ['amministratore', 'supervisore', 'adm'].includes(userProfile?.tipoUtente);
+            const canManage = userProfile?.tipoUtente === 'supervisore';
+            
             if (manualTableBody) {
                 const qManual = query(collection(db, "usefulNumbers"), orderBy("createdAt", "desc"));
                 onSnapshot(qManual, (snapshot) => {
                     if (snapshot.empty) {
-                        manualTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--secondary-text);">Nessun contatto inserito.</td></tr>`;
+                        manualTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--secondary-text);">Nessun contatto inserito.</td></tr>`;
                         return;
                     }
-                    manualTableBody.innerHTML = snapshot.docs.map(docSnap => {
+                    
+                    // Aggiungi header per checkbox e azioni se l'utente può gestire
+                    const headerRow = canManage ? 
+                        `<tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="select-all-contacts" onchange="toggleAllContacts(this)">
+                            </th>
+                            <th>INTERVENTO RICHIESTO</th>
+                            <th>IMPRESA</th>
+                            <th>1 NUM. TELEFONICO</th>
+                            <th>2 NUM. TELEFONICO</th>
+                            <th style="text-align:right;">AZIONI</th>
+                        </tr>` :
+                        `<tr>
+                            <th>INTERVENTO RICHIESTO</th>
+                            <th>IMPRESA</th>
+                            <th>1 NUM. TELEFONICO</th>
+                            <th>2 NUM. TELEFONICO</th>
+                        </tr>`;
+                    
+                    const tableHeader = `<thead>${headerRow}</thead>`;
+                    
+                    // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
+                    const bulkActionsHtml = canManage ? 
+                        `<div class="flex gap-2 mt-4" id="bulk-actions" style="display: none;">
+                            <button onclick="deleteSelectedContacts()" class="btn" style="background:var(--danger); color:white;">
+                                Elimina Selezionati
+                            </button>
+                        </div>` : '';
+                    
+                    // Inserisci le azioni bulk prima della tabella
+                    const tableContainer = manualTableBody.closest('.data-table-container');
+                    if (tableContainer && canManage) {
+                        const existingBulkActions = tableContainer.querySelector('#bulk-actions');
+                        if (!existingBulkActions) {
+                            tableContainer.insertAdjacentHTML('afterbegin', bulkActionsHtml);
+                        }
+                    }
+                    
+                    const rowsHtml = snapshot.docs.map(docSnap => {
                         const contact = docSnap.data();
-                        const deleteButtonHtml = canManage ? `<button onclick="deleteUsefulNumber('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; padding: 0.4rem 0.8rem; font-size:0.8rem;">Elimina</button>` : 'N/A';
-                        return `<tr><td>${contact.title}</td><td>${contact.company || '–'}</td><td>${contact.number}</td><td>${contact.number2 || '–'}</td><td style="text-align:right;">${deleteButtonHtml}</td></tr>`;
+                        if (canManage) {
+                            const editIcon = `<button onclick="editUsefulNumber('${docSnap.id}', ${JSON.stringify(contact).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </button>`;
+                            const deleteIcon = `<button onclick="deleteUsefulNumber('${docSnap.id}')" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>`;
+                            
+                            return `<tr>
+                                <td><input type="checkbox" class="contact-checkbox" value="${docSnap.id}" onchange="updateBulkActions()"></td>
+                                <td>${contact.title}</td>
+                                <td>${contact.company || '–'}</td>
+                                <td>${contact.number}</td>
+                                <td>${contact.number2 || '–'}</td>
+                                <td style="text-align:right;">${editIcon}${deleteIcon}</td>
+                            </tr>`;
+                        } else {
+                            return `<tr>
+                                <td>${contact.title}</td>
+                                <td>${contact.company || '–'}</td>
+                                <td>${contact.number}</td>
+                                <td>${contact.number2 || '–'}</td>
+                            </tr>`;
+                        }
                     }).join('');
+                    
+                    manualTableBody.innerHTML = tableHeader + `<tbody>${rowsHtml}</tbody>`;
                 });
             }
             if (importedTableContainer) {
@@ -3104,16 +3784,56 @@
                          return;
                     }
                     const headers = Object.keys(data[0]);
-                    let tableHTML = '<table class="data-table"><thead><tr>';
-                    headers.forEach(h => tableHTML += `<th>${h}</th>`);
-                    tableHTML += '</tr></thead><tbody>';
-                    data.forEach(row => {
+                    const { headers: orderedHeaders, data: orderedData } = reorderColumns(data, headers);
+                    
+                    // Aggiungi header per checkbox e azioni se l'utente può gestire
+                    const headerRow = canManage ? 
+                        `<tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="select-all-contacts-imported" onchange="toggleAllContactsImported(this)">
+                            </th>
+                            ${orderedHeaders.map(h => `<th>${h}</th>`).join('')}
+                            <th style="text-align:right;">AZIONI</th>
+                        </tr>` :
+                        `<tr>${orderedHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                    
+                    let tableHTML = '<table class="data-table"><thead>' + headerRow + '</thead><tbody>';
+                    
+                    orderedData.forEach((row, index) => {
                         tableHTML += '<tr>';
-                        headers.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        if (canManage) {
+                            tableHTML += `<td><input type="checkbox" class="contact-checkbox-imported" value="${index}" onchange="updateBulkActionsImported()"></td>`;
+                        }
+                        orderedHeaders.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
+                        
+                        if (canManage) {
+                            const editIcon = `<button onclick="editImportedContact(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </button>`;
+                            const deleteIcon = `<button onclick="deleteImportedContact(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>`;
+                            tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
+                        }
                         tableHTML += '</tr>';
                     });
                     tableHTML += '</tbody></table>';
+                    
                     importedTableContainer.innerHTML = tableHTML;
+                    
+                    // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
+                    if (canManage) {
+                        const bulkActionsHtml = `<div class="flex gap-2 mt-4" id="bulk-actions-imported" style="display: none;">
+                            <button onclick="deleteSelectedContactsImported()" class="btn" style="background:var(--danger); color:white;">
+                                Elimina Selezionati
+                            </button>
+                        </div>`;
+                        importedTableContainer.insertAdjacentHTML('afterbegin', bulkActionsHtml);
+                    }
                 });
             }
         };
@@ -3205,6 +3925,23 @@
         window.showPollVoters = showPollVoters;
         window.deletePartialCondo = deletePartialCondo;
         window.deleteUsefulNumber = deleteUsefulNumber;
+        window.editUsefulNumber = editUsefulNumber;
+        window.deleteMultipleUsefulNumbers = deleteMultipleUsefulNumbers;
+        window.toggleAllContacts = toggleAllContacts;
+        window.updateBulkActions = updateBulkActions;
+        window.deleteSelectedContacts = deleteSelectedContacts;
+        window.toggleAllContactsRubrica = toggleAllContactsRubrica;
+        window.updateBulkActionsRubrica = updateBulkActionsRubrica;
+        window.deleteSelectedContactsRubrica = deleteSelectedContactsRubrica;
+        window.toggleAllContactsImported = toggleAllContactsImported;
+        window.updateBulkActionsImported = updateBulkActionsImported;
+        window.deleteSelectedContactsImported = deleteSelectedContactsImported;
+        window.editImportedContact = editImportedContact;
+        window.deleteImportedContact = deleteImportedContact;
+        window.deleteMultipleImportedContacts = deleteMultipleImportedContacts;
+        window.toggleAllContactsRubricaImported = toggleAllContactsRubricaImported;
+        window.updateBulkActionsRubricaImported = updateBulkActionsRubricaImported;
+        window.deleteSelectedContactsRubricaImported = deleteSelectedContactsRubricaImported;
         window.openRuleEditor = openRuleEditor;
         window.deleteGroupRule = deleteGroupRule;
         window.toggleRuleStatus = toggleRuleStatus;
