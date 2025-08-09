@@ -1898,7 +1898,7 @@
                     loadRubricaNumbers();
                     break;
                 case 'numeriUtiliCustode':
-                    loadCustodeNumbers();
+                    loadCustodeSchedule();
                     break;
 
                 case 'userManagement': if (['supervisore', 'adm'].includes(userType)) { loadUsers(); setupAdminUserCreationHandler(); } break;
@@ -2727,34 +2727,74 @@
             let orariCustodeFileName = '';
             let orariCustodeDataToSave = null;
 
-            const generateTableHTML = (data) => {
+            const generateTableHTML = (data, isPreview = false) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
-                let tableHTML = `<table class="data-table" id="orari-custode-preview-table">`;
-                const headers = Object.keys(data[0]);
-                tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
-                data.forEach(row => {
-                    tableHTML += '<tr>';
+                
+                const originalHeaders = Object.keys(data[0]);
+                const canManage = userProfile?.tipoUtente === 'supervisore';
+
+                // --- NUOVA LOGICA DI ORDINAMENTO ROBUSTA ---
+                const desiredOrderKeywords = ['nominativo', 'lun - ven', 'sabato', 'ruolo', 'telefono'];
+                let headers = [];
+                let remainingHeaders = [...originalHeaders]; // Crea una copia per lavorarci su
+
+                desiredOrderKeywords.forEach(keyword => {
+                    const foundHeader = remainingHeaders.find(h => h.toLowerCase().includes(keyword));
+                    if (foundHeader) {
+                        headers.push(foundHeader);
+                        // Rimuove l'header trovato per non aggiungerlo due volte
+                        remainingHeaders = remainingHeaders.filter(h => h !== foundHeader);
+                    }
+                });
+                
+                // Aggiunge alla fine eventuali header non previsti nell'ordine
+                headers = [...headers, ...remainingHeaders];
+                // --- FINE NUOVA LOGICA ---
+
+                let tableHTML = `<table class="data-table" id="orari-custode-preview-table"><thead><tr>`;
+                headers.forEach(header => {
+                    tableHTML += `<th>${header.toUpperCase()}</th>`;
+                });
+                if (canManage && !isPreview) {
+                    tableHTML += `<th style="text-align:right;">AZIONI</th>`;
+                }
+                tableHTML += `</tr></thead><tbody>`;
+
+                data.forEach((row, index) => {
+                    tableHTML += `<tr>`;
                     headers.forEach(header => {
                         const cellValue = row[header] !== undefined ? row[header] : '';
                         tableHTML += `<td>${cellValue}</td>`;
                     });
-                    tableHTML += '</tr>';
+
+                    if (canManage && !isPreview) {
+                        const editIcon = `<button onclick="editImportedScheduleEntry(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`;
+                        const deleteIcon = `<button onclick="deleteImportedScheduleEntry(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
+                        tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
+                    }
+                    tableHTML += `</tr>`;
                 });
-                return tableHTML + '</tbody></table>';
+                tableHTML += '</tbody></table>';
+                return tableHTML;
             };
 
             const loadLatestOrariCustodeData = async () => {
-                const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
-                const snapshot = await getDocs(q);
-                if (!snapshot.empty) {
-                    const docData = snapshot.docs[0].data();
-                    const data = docData.tableData;
-                    tableContainerOrariCustode.innerHTML = generateTableHTML(data);
-                    saveBtnContainerOrariCustode.classList.remove('hidden');
-                    orariCustodeFileName = docData.fileName || 'orari_custode_esistenti.xlsx';
-                } else {
-                    tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
-                    saveBtnContainerOrariCustode.classList.add('hidden');
+                try {
+                    const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const docData = snapshot.docs[0].data();
+                        const data = docData.tableData;
+                        tableContainerOrariCustode.innerHTML = generateTableHTML(data, false);
+                        saveBtnContainerOrariCustode.classList.add('hidden');
+                        orariCustodeDataToSave = null;
+                    } else {
+                        tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
+                        saveBtnContainerOrariCustode.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error("Errore critico durante il caricamento degli orari:", error);
+                    tableContainerOrariCustode.innerHTML = `<div class="message-box error" style="display:block;">Errore critico nel caricamento dei dati. Contattare l'assistenza.</div>`;
                 }
             };
 
@@ -2778,11 +2818,10 @@
                     try {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
-                        // Utilizza solo il primo foglio del file Excel
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                         if (jsonData.length === 0) throw new Error("Il file è vuoto.");
                         orariCustodeDataToSave = jsonData;
-                        tableContainerOrariCustode.innerHTML = generateTableHTML(jsonData);
+                        tableContainerOrariCustode.innerHTML = generateTableHTML(jsonData, true);
                         saveBtnContainerOrariCustode.classList.remove('hidden');
                     } catch (err) {
                         messageBoxOrariCustode.className = 'message-box error';
@@ -2807,7 +2846,6 @@
                     });
                     await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: orariCustodeFileName });
                     fileInputOrariCustode.value = '';
-                    saveBtnContainerOrariCustode.classList.add('hidden');
                     messageBoxOrariCustode.className = 'message-box success';
                     messageBoxOrariCustode.textContent = 'Orari custode salvati con successo!';
                     messageBoxOrariCustode.style.display = 'block';
@@ -3337,55 +3375,61 @@
 
             // Per i contatti importati, creiamo un form dinamico basato sui campi disponibili
             const formFields = Object.keys(currentData).map(key => {
-                const value = currentData[key] || '';
+                const value = String(currentData[key] || '');
                 const label = key;
-                return `<div><label class="form-label">${label}</label><input type="text" id="edit-imported-${key}" value="${value}" class="form-input"></div>`;
+                // Using data-key to associate input with its original key, escaping quotes for safety
+                return `<div><label class="form-label">${label}</label><input type="text" data-key="${key.replace(/"/g, '&quot;')}" value="${value.replace(/"/g, '&quot;')}" class="form-input"></div>`;
             }).join('');
 
             const editFormHtml = `
-                <div class="space-y-4">
+                <form id="edit-imported-contact-form" class="space-y-4">
                     ${formFields}
-                </div>
+                    <div class="flex justify-end gap-4 pt-2">
+                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva</button>
+                    </div>
+                </form>
             `;
 
-            showModal('Modifica Contatto Importato', editFormHtml, [
-                { text: 'Annulla', class: 'btn-secondary', action: 'close' },
-                { text: 'Salva', class: 'btn-primary', action: async () => {
+            showModal('Modifica Contatto Importato', editFormHtml);
+
+            // Add event listener to the form after it has been added to the DOM
+            const form = document.getElementById('edit-imported-contact-form');
+            if (form) {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
                     try {
-                        // Per i contatti importati, dobbiamo aggiornare il documento Firestore
-                        // Questo richiede di ricaricare i dati e aggiornare l'array
                         const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
                         const snapshot = await getDocs(qImported);
                         
                         if (snapshot.empty) {
                             alert("Impossibile trovare i dati importati.");
-                            return false;
+                            return;
                         }
                         
                         const docRef = snapshot.docs[0].ref;
                         const docData = snapshot.docs[0].data();
-                        const updatedData = [...docData.tableData];
+                        const allImportedData = [...docData.tableData];
                         
-                        // Aggiorna i campi modificati
-                        Object.keys(currentData).forEach(key => {
-                            const inputElement = document.getElementById(`edit-imported-${key}`);
-                            if (inputElement) {
-                                updatedData[index][key] = inputElement.value.trim();
-                            }
+                        const updatedRow = { ...allImportedData[index] };
+                        
+                        form.querySelectorAll('input[data-key]').forEach(input => {
+                            const key = input.dataset.key;
+                            updatedRow[key] = input.value.trim();
                         });
+
+                        allImportedData[index] = updatedRow;
                         
-                        await updateDoc(docRef, { tableData: updatedData });
+                        await updateDoc(docRef, { tableData: allImportedData });
                         await logActivity("imported_contact_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedIndex: index });
                         
-                        closeModal();
-                        return true;
+                        hideModal();
                     } catch (error) {
                         console.error("Errore durante l'aggiornamento del contatto importato:", error);
                         alert("Si è verificato un errore durante l'aggiornamento.");
-                        return false;
                     }
-                }}
-            ]);
+                });
+            }
         };
 
         const deleteImportedContact = async (index) => {
@@ -3453,6 +3497,71 @@
             } catch (error) {
                 console.error("Errore durante l'eliminazione multipla dei contatti importati:", error);
                 alert("Si è verificato un errore durante l'eliminazione multipla.");
+            }
+        };
+
+        const editImportedScheduleEntry = async (index, currentData) => {
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per modificare questa voce.');
+                return;
+            }
+
+            const formFields = Object.keys(currentData).map(key => {
+                const value = String(currentData[key] || '');
+                const label = key;
+                return `<div><label class="form-label">${label}</label><input type="text" data-key="${key.replace(/"/g, '&quot;')}" value="${value.replace(/"/g, '&quot;')}" class="form-input"></div>`;
+            }).join('');
+
+            const editFormHtml = `<form id="edit-schedule-form" class="space-y-4">${formFields}<div class="flex justify-end gap-4 pt-2"><button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button><button type="submit" class="btn btn-primary">Salva</button></div></form>`;
+
+            showModal('Modifica Voce Orario', editFormHtml);
+
+            document.getElementById('edit-schedule-form')?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                try {
+                    const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+                    const snapshot = await getDocs(qSchedule);
+                    if (snapshot.empty) throw new Error("Dati orario non trovati.");
+                    
+                    const docRef = snapshot.docs[0].ref;
+                    const allScheduleData = [...snapshot.docs[0].data().tableData];
+                    const updatedRow = { ...allScheduleData[index] };
+
+                    event.target.querySelectorAll('input[data-key]').forEach(input => {
+                        updatedRow[input.dataset.key] = input.value.trim();
+                    });
+
+                    allScheduleData[index] = updatedRow;
+                    await updateDoc(docRef, { tableData: allScheduleData });
+                    await logActivity("custode_schedule_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedIndex: index });
+                    hideModal();
+                } catch (error) {
+                    console.error("Errore aggiornamento orario:", error);
+                    alert("Si è verificato un errore durante l'aggiornamento.");
+                }
+            });
+        };
+
+        const deleteImportedScheduleEntry = async (index) => {
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per eliminare questa voce.');
+                return;
+            }
+            if (!confirm('Sei sicuro di voler eliminare questa riga dagli orari?')) return;
+
+            try {
+                const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(qSchedule);
+                if (snapshot.empty) throw new Error("Dati orario non trovati.");
+                
+                const docRef = snapshot.docs[0].ref;
+                const updatedData = snapshot.docs[0].data().tableData.filter((_, i) => i !== index);
+                
+                await updateDoc(docRef, { tableData: updatedData });
+                await logActivity("custode_schedule_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
+            } catch (error) {
+                console.error("Errore eliminazione orario:", error);
+                alert("Si è verificato un errore durante l'eliminazione.");
             }
         };
 
@@ -3676,22 +3785,12 @@
         };
 
         const renderNumeriUtiliCustode = () => `
-            ${renderHeader('Contatti Custode')}
+            ${renderHeader('Custode')}
             <main>
-                <div class="card" style="margin-bottom: 2rem;">
-                    <h3 class="card-title">Contatti del Custode</h3>
-                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
-                        Contatti del custode del condominio.
-                    </p>
-                    <div id="custode-container" class="data-table-container">
-                        <p style="color:var(--secondary-text);">Caricamento contatti custode...</p>
-                    </div>
-                </div>
-
                 <div class="card">
                     <h3 class="card-title">Orari del Custode</h3>
                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
-                        Orari di servizio del custode del condominio.
+                        SCORRERE A DESTRA PER VISUALIZZARE AL COMPLETO
                     </p>
                     <div id="custode-schedule-container" class="data-table-container">
                         <p style="color:var(--secondary-text);">Caricamento orari custode...</p>
@@ -3703,52 +3802,12 @@
 
 
 
-        const loadCustodeNumbers = () => {
-            const custodeContainer = document.getElementById('custode-container');
-            if (!custodeContainer) return;
 
-            // Query per trovare tutti gli utenti di tipo 'custode'
-            const qCustode = query(collection(db, "users"), where("tipoUtente", "==", "custode"));
-            onSnapshot(qCustode, (snapshot) => {
-                if (snapshot.empty) {
-                    custodeContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun custode trovato.</p>`;
-                    return;
-                }
 
-                let tableHTML = `<table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>NOME</th>
-                            <th>COGNOME</th>
-                            <th>EMAIL</th>
-                            <th>TELEFONO</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-                tableHTML += snapshot.docs.map(docSnap => {
-                    const custode = docSnap.data();
-                    return `<tr>
-                        <td>${custode.nome || '–'}</td>
-                        <td>${custode.cognome || '–'}</td>
-                        <td>${custode.email || '–'}</td>
-                        <td>${custode.telefono || '–'}</td>
-                    </tr>`;
-                }).join('');
-
-                tableHTML += '</tbody></table>';
-                custodeContainer.innerHTML = tableHTML;
-            });
-
-            // Carica anche gli orari del custode
-            loadCustodeSchedule();
-        };
-
-        const loadCustodeSchedule = () => {
+                const loadCustodeSchedule = () => {
             const scheduleContainer = document.getElementById('custode-schedule-container');
             if (!scheduleContainer) return;
 
-            // Query per trovare i dati degli orari del custode
             const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
             onSnapshot(qSchedule, (snapshot) => {
                 if (snapshot.empty) {
@@ -3758,22 +3817,41 @@
 
                 const scheduleData = snapshot.docs[0].data();
                 if (scheduleData.tableData && scheduleData.tableData.length > 0) {
-                    const headers = Object.keys(scheduleData.tableData[0]);
-                    let tableHTML = `<table class="data-table">
-                        <thead>
-                            <tr>`;
-                    
+                    let headers = Object.keys(scheduleData.tableData[0]);
+                    const canManage = userProfile?.tipoUtente === 'supervisore';
+
+                    // --- INIZIO MODIFICA: Inversione colonne ---
+                    const ruoloKey = headers.find(h => h.toLowerCase().includes('ruolo'));
+                    const sabatoKey = headers.find(h => h.toLowerCase().includes('sabato'));
+                    if (ruoloKey && sabatoKey) {
+                        const ruoloIndex = headers.indexOf(ruoloKey);
+                        const sabatoIndex = headers.indexOf(sabatoKey);
+                        [headers[ruoloIndex], headers[sabatoIndex]] = [headers[sabatoIndex], headers[ruoloIndex]];
+                    }
+                    // --- FINE MODIFICA ---
+
+                    let tableHTML = `<table class="data-table"><thead><tr>`;
                     headers.forEach(header => {
                         tableHTML += `<th>${header.toUpperCase()}</th>`;
                     });
-                    
+                    if (canManage) {
+                        tableHTML += `<th style="text-align:right;">AZIONI</th>`;
+                    }
                     tableHTML += `</tr></thead><tbody>`;
 
-                    scheduleData.tableData.forEach(row => {
+                    scheduleData.tableData.forEach((row, index) => {
                         tableHTML += `<tr>`;
                         headers.forEach(header => {
                             tableHTML += `<td>${row[header] || '–'}</td>`;
                         });
+
+                        // --- INIZIO MODIFICA: Aggiunta pulsanti di azione ---
+                        if (canManage) {
+                            const editIcon = `<button onclick="editImportedScheduleEntry(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`;
+                            const deleteIcon = `<button onclick="deleteImportedScheduleEntry(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
+                            tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
+                        }
+                        // --- FINE MODIFICA ---
                         tableHTML += `</tr>`;
                     });
 
@@ -3783,6 +3861,87 @@
                     scheduleContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>`;
                 }
             });
+        };
+
+        const editCustodeScheduleEntry = async (docId, index, currentData) => {
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per modificare gli orari.');
+                return;
+            }
+
+            const formFields = Object.keys(currentData).map(key => {
+                const value = currentData[key] || '';
+                const sanitizedKey = key.replace(/[^a-zA-Z0-9]/g, '');
+                return `<div><label class="form-label">${key}</label><input type="text" id="edit-schedule-${sanitizedKey}" value="${value}" class="form-input"></div>`;
+            }).join('');
+
+            const modalContent = `
+                <form id="edit-schedule-form" class="space-y-4">
+                    ${formFields}
+                    <div class="flex justify-end gap-4 mt-4">
+                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva</button>
+                    </div>
+                </form>
+            `;
+            showModal('Modifica Riga Orario', modalContent);
+
+            document.getElementById('edit-schedule-form').onsubmit = async (e) => {
+                e.preventDefault();
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Salvataggio...';
+
+                try {
+                    const docRef = doc(db, "importedCustodeSchedule", docId);
+                    await runTransaction(db, async (transaction) => {
+                        const docSnap = await transaction.get(docRef);
+                        if (!docSnap.exists()) throw new Error("Documento degli orari non trovato.");
+
+                        const tableData = docSnap.data().tableData;
+                        const newRowData = {};
+                        Object.keys(currentData).forEach(key => {
+                            const sanitizedKey = key.replace(/[^a-zA-Z0-9]/g, '');
+                            newRowData[key] = document.getElementById(`edit-schedule-${sanitizedKey}`).value;
+                        });
+                        tableData[index] = newRowData;
+                        transaction.update(docRef, { tableData });
+                    });
+
+                    await logActivity("custode_schedule_entry_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedIndex: index });
+                    hideModal();
+                } catch (error) {
+                    console.error("Errore aggiornamento orario:", error);
+                    alert("Errore durante il salvataggio: " + error.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Salva';
+                }
+            };
+        };
+
+        const deleteCustodeScheduleEntry = async (docId, index) => {
+            if (userProfile?.tipoUtente !== 'supervisore') {
+                alert('Non hai i permessi per eliminare orari.');
+                return;
+            }
+            if (!confirm('Sei sicuro di voler eliminare questa riga di orario?')) return;
+
+            try {
+                const docRef = doc(db, "importedCustodeSchedule", docId);
+                await runTransaction(db, async (transaction) => {
+                    const docSnap = await transaction.get(docRef);
+                    if (!docSnap.exists()) throw new Error("Documento degli orari non trovato.");
+                    
+                    const tableData = docSnap.data().tableData;
+                    const updatedData = tableData.filter((_, i) => i !== index);
+                    transaction.update(docRef, { tableData: updatedData });
+                });
+
+                await logActivity("custode_schedule_entry_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
+            } catch (error) {
+                console.error("Errore eliminazione orario:", error);
+                alert("Errore durante l'eliminazione: " + error.message);
+            }
         };
 
 
@@ -4529,7 +4688,7 @@
         const updateNotificationUI=e=>{const t=document.getElementById("bacheca-notification-badge");t?.classList.toggle("hidden",!e)};
         const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
         
-        window.navigateTo = navigateTo;
+                window.navigateTo = navigateTo;
         window.navigateBack = navigateBack;
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
@@ -4555,6 +4714,8 @@
         window.toggleAllContactsRubricaImported = toggleAllContactsRubricaImported;
         window.updateBulkActionsRubricaImported = updateBulkActionsRubricaImported;
         window.deleteSelectedContactsRubricaImported = deleteSelectedContactsRubricaImported;
+        window.editImportedScheduleEntry = editImportedScheduleEntry;
+        window.deleteImportedScheduleEntry = deleteImportedScheduleEntry;
         window.openRuleEditor = openRuleEditor;
         window.deleteGroupRule = deleteGroupRule;
         window.toggleRuleStatus = toggleRuleStatus;
