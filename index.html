@@ -1101,10 +1101,9 @@
         
                 const renderInfoUtili = () => {
             const isSupervisore = userProfile?.tipoUtente === 'supervisore';
-            const isCondomino = userProfile?.tipoUtente === 'condomino';
             
             if (isSupervisore) {
-                // Supervisore users see all subsections
+                // La visualizzazione per il Supervisore rimane invariata
                 return `
                 ${renderHeader('Numeri Utili')}
                 <main>
@@ -1119,7 +1118,7 @@
                         </div>
                         <div onclick="navigateTo('numeriUtiliRubrica')" class="dashboard-item" style="grid-column: 1 / -1;">
                             <div class="dashboard-card" style="aspect-ratio: auto; height: 80px; flex-direction: row; justify-content: flex-start; gap: 1.5rem; padding: 1rem 1.5rem;">
-                                <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20,2H4A2,2 0 0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg>
+                                <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20,2H4A2,2 0,0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg>
                                 <p style="text-align: left; font-size: 1.1rem;">Rubrica Completa</p>
                             </div>
                         </div>
@@ -1127,36 +1126,25 @@
                 </main>
                 ${renderBottomNavigation()}
                 `;
-            } else if (isCondomino) {
-                // Condomino users see Rubrica Completa plus Custode
+            } else {
+                // Tutti gli altri utenti (condomino, custode, etc.) vedono la nuova visualizzazione
                 return `
                 ${renderHeader('Numeri Utili')}
                 <main>
                     <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
                         <div onclick="navigateTo('numeriUtiliRubrica')" class="dashboard-item">
                             <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20,2H4A2,2 0,0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg></div>
-                            <p>Rubrica Completa</p>
+                            <p>Rubrica Fornitori</p>
                         </div>
                         <div onclick="navigateTo('numeriUtiliCustode')" class="dashboard-item">
                             <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg></div>
                             <p>Custode</p>
                         </div>
-
-                    </div>
-                </main>
-                ${renderBottomNavigation()}
-                `;
-            } else {
-                // All other users go directly to Rubrica Completa
-                return `
-                ${renderHeader('Numeri Utili')}
-                <main>
-                    <div class="dashboard-grid">
-                        <div onclick="navigateTo('numeriUtiliRubrica')" class="dashboard-item" style="grid-column: 1 / -1;">
-                            <div class="dashboard-card" style="aspect-ratio: auto; height: 80px; flex-direction: row; justify-content: flex-start; gap: 1.5rem; padding: 1rem 1.5rem;">
-                                <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20,2H4A2,2 0,0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg>
-                                <p style="text-align: left; font-size: 1.1rem;">Rubrica Completa</p>
+                        <div onclick="navigateTo('infoUtili_amministratore')" class="dashboard-item">
+                            <div class="dashboard-card">
+                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
                             </div>
+                            <p>Amministratore</p>
                         </div>
                     </div>
                 </main>
@@ -1437,10 +1425,10 @@
         };
 
                 const renderImportazione = () => `
-            ${renderHeader('Importazione Dati')}
+            ${renderHeader('Importa Anagrafica e Millesimi')}
             <main>
-                <!-- SEZIONE 1: IMPORTAZIONE MILLESIMI / ANAGRAFICA -->
-                <div class="card" style="margin-bottom: 2rem;">
+                <!-- SEZIONE UNICA: IMPORTAZIONE MILLESIMI / ANAGRAFICA -->
+                <div class="card">
                     <h3 class="card-title">Importa Anagrafica e Millesimi</h3>
                     <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
                         Carica il file Excel contenente i dati anagrafici dei proprietari, le unità immobiliari e i relativi millesimi. Questo file è <strong>fondamentale</strong> per la registrazione degli utenti e per i report.
@@ -1460,47 +1448,30 @@
                         </div>
                     </div>
                 </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
 
-                <!-- SEZIONE 2: IMPORTAZIONE NUMERI DI TELEFONO -->
-                <div class="card">
-                    <h3 class="card-title">Importa Numeri di Telefono Utili</h3>
-                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
-                        Carica un file Excel separato per i numeri di telefono utili (es. fornitori, emergenze). Questi dati verranno visualizzati nella pagina "Numeri Utili".
-                    </p>
-                    <div class="form-group">
-                        <label class="form-label">Carica Nuovo File Numeri (.xlsx, .xls)</label>
-                        <input type="file" id="excel-file-input-phones" class="form-input" accept=".xlsx, .xls">
-                    </div>
-                    <div id="message-import-phones" class="message-box"></div>
-                    <div id="save-button-container-phones" class="hidden mt-4">
-                        <button id="save-imported-data-btn-phones" class="btn btn-primary w-full">Salva Numeri Utili</button>
-                    </div>
-                    <div class="mt-4">
-                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
-                        <div id="excel-table-container-phones" class="data-table-container">
-                            <p style="color:var(--secondary-text);">Nessun file selezionato o caricato.</p>
+        const renderOrariCustode = () => `
+            ${renderHeader('Orari Custode')}
+            <main>
+                <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div onclick="navigateTo('orariCustode_manuale')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.13,5.12L18.88,8.87M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"/></svg>
                         </div>
+                        <p>Gestione Manuale</p>
                     </div>
-                </div>
-
-                <!-- SEZIONE 3: IMPORTAZIONE ORARI CUSTODE -->
-                <div class="card">
-                    <h3 class="card-title">Importa Orari Custode</h3>
-                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
-                        Carica il file Excel contenente gli orari del custode. Il sistema utilizzerà esclusivamente il primo foglio del file caricato. Questi dati verranno visualizzati nella sezione "Custode".
-                    </p>
-                    <div class="form-group">
-                        <label class="form-label">Carica File Orari Custode (.xlsx, .xls)</label>
-                        <input type="file" id="excel-file-input-orari-custode-import" class="form-input" accept=".xlsx, .xls">
+                    <div onclick="navigateTo('orariCustode_import')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
+                        </div>
+                        <p>Importazione Dati</p>
                     </div>
-                    <div id="message-import-orari-custode-import" class="message-box"></div>
-                    <div id="save-button-container-orari-custode-import" class="hidden mt-4">
-                        <button id="save-imported-data-btn-orari-custode-import" class="btn btn-primary w-full">Salva Orari Custode</button>
-                    </div>
-                    <div class="mt-4">
-                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
-                        <div id="excel-table-container-orari-custode-import" class="data-table-container">
-                            <p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>
+                    <div onclick="navigateTo('orariCustode_visualizza')" class="dashboard-item" style="grid-column: 1 / -1;">
+                        <div class="dashboard-card" style="aspect-ratio: auto; height: 80px; flex-direction: row; justify-content: flex-start; gap: 1.5rem; padding: 1rem 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20,2H4A2,2 0 0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Riepilogo Dati</p>
                         </div>
                     </div>
                 </div>
@@ -1508,13 +1479,62 @@
             ${renderBottomNavigation()}
         `;
 
-        const renderOrariCustode = () => `
-            ${renderHeader('Importa Orari Custode')}
+        const renderOrariCustodeManuale = () => `
+            ${renderHeader('Gestione Manuale Orari')}
             <main>
                 <div class="card" style="margin-bottom: 2rem;">
-                    <h3 class="card-title">Importa Orari Custode</h3>
+                    <h3 class="card-title">Aggiungi Nuova Voce</h3>
+                    <div id="add-custodian-message" class="message-box"></div>
+                    <form id="add-custodian-form" class="space-y-4">
+                        <div class="form-group">
+                            <label for="custodian-nominativo" class="form-label">Nominativo</label>
+                            <input type="text" id="custodian-nominativo" required class="form-input" placeholder="Es. Mario Rossi">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="custodian-lun-ven" class="form-label">Orario Lun-Ven</label>
+                                <input type="text" id="custodian-lun-ven" class="form-input" placeholder="Es. 08:00 - 12:00">
+                            </div>
+                            <div class="form-group">
+                                <label for="custodian-sabato" class="form-label">Orario Sabato</label>
+                                <input type="text" id="custodian-sabato" class="form-input" placeholder="Es. 09:00 - 11:00">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="custodian-ruolo" class="form-label">Ruolo</label>
+                                <input type="text" id="custodian-ruolo" class="form-input" placeholder="Es. Custode Principale">
+                            </div>
+                            <div class="form-group">
+                                <label for="custodian-telefono" class="form-label">Telefono</label>
+                                <input type="tel" id="custodian-telefono" class="form-input" placeholder="Numero di telefono">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn btn-primary">Aggiungi Voce</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Dati Attuali</h3>
                     <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
-                        Carica il file Excel contenente gli orari del custode. Il sistema utilizzerà esclusivamente il primo foglio del file caricato.
+                        Visualizza, modifica o elimina le voci esistenti.
+                    </p>
+                    <div id="excel-table-container-orari-custode" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Nessun dato presente.</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderOrariCustodeImport = () => `
+            ${renderHeader('Importazione Orari')}
+            <main>
+                <div class="card">
+                    <h3 class="card-title">Importa da File</h3>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Carica un file Excel per sostituire tutti i dati degli orari esistenti. Questa azione è irreversibile.
                     </p>
                     <div class="form-group">
                         <label class="form-label">Carica File Orari Custode (.xlsx, .xls)</label>
@@ -1522,13 +1542,155 @@
                     </div>
                     <div id="message-import-orari-custode" class="message-box"></div>
                     <div id="save-button-container-orari-custode" class="hidden mt-4">
-                        <button id="save-imported-data-btn-orari-custode" class="btn btn-primary w-full">Salva Orari Custode</button>
+                        <button id="save-imported-data-btn-orari-custode" class="btn btn-primary w-full">Salva e Sostituisci Dati</button>
                     </div>
                     <div class="mt-4">
-                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
+                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima</h4>
                         <div id="excel-table-container-orari-custode" class="data-table-container">
-                            <p style="color:var(--secondary-text);">Nessun file selezionato o caricato.</p>
+                            <p style="color:var(--secondary-text);">Nessun file selezionato.</p>
                         </div>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderOrariCustodeVisualizza = () => `
+            ${renderHeader('Riepilogo Orari Custode')}
+            <main>
+                <div class="card">
+                    <h3 class="card-title">Elenco Completo Orari</h3>
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
+                        Elenco completo di tutti i dati relativi agli orari del custode. Le modifiche possono essere effettuate nella sezione "Gestione Manuale".
+                    </p>
+                    <div id="excel-table-container-orari-custode" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Caricamento dati...</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderDatiAmministratoreMenu = () => `
+            ${renderHeader('Dati Amministratore')}
+            <main>
+                <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div onclick="navigateTo('datiAmministratore_manuale')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.13,5.12L18.88,8.87M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"/></svg>
+                        </div>
+                        <p>Gestione Manuale</p>
+                    </div>
+                    <div onclick="navigateTo('datiAmministratore_import')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
+                        </div>
+                        <p>Importazione Dati</p>
+                    </div>
+                    <div onclick="navigateTo('datiAmministratore_visualizza')" class="dashboard-item" style="grid-column: 1 / -1;">
+                        <div class="dashboard-card" style="aspect-ratio: auto; height: 80px; flex-direction: row; justify-content: flex-start; gap: 1.5rem; padding: 1rem 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20,2H4A2,2 0 0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Riepilogo Dati</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderDatiAmministratoreManuale = () => `
+            ${renderHeader('Gestione Manuale Amministratore')}
+            <main>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Aggiungi Nuova Voce</h3>
+                    <div id="add-admin-data-message" class="message-box"></div>
+                    <form id="add-admin-data-form" class="space-y-4">
+                        <div class="form-group">
+                            <label for="admin-data-nominativo" class="form-label">Nominativo</label>
+                            <input type="text" id="admin-data-nominativo" required class="form-input" placeholder="Es. Studio Amministrazioni S.r.l.">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="admin-data-referente" class="form-label">Referente</label>
+                                <input type="text" id="admin-data-referente" class="form-input" placeholder="Es. Dott. Rossi">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-data-telefono" class="form-label">Telefono</label>
+                                <input type="tel" id="admin-data-telefono" class="form-input" placeholder="Numero di telefono">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-data-email" class="form-label">Email</label>
+                            <input type="email" id="admin-data-email" class="form-input" placeholder="Indirizzo email">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn btn-primary">Aggiungi Voce</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Dati Attuali</h3>
+                    <div id="table-container-admin-data" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Nessun dato presente.</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderDatiAmministratoreImport = () => `
+            ${renderHeader('Importazione Dati Amministratore')}
+            <main>
+                <div class="card">
+                    <h3 class="card-title">Importa da File</h3>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Carica un file Excel per sostituire tutti i dati dell'amministratore. Questa azione è irreversibile.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Carica File Dati Amministratore (.xlsx, .xls)</label>
+                        <input type="file" id="file-input-admin-data" class="form-input" accept=".xlsx, .xls">
+                    </div>
+                    <div id="message-import-admin-data" class="message-box"></div>
+                    <div id="save-button-container-admin-data" class="hidden mt-4">
+                        <button id="save-imported-data-btn-admin-data" class="btn btn-primary w-full">Salva e Sostituisci Dati</button>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima</h4>
+                        <div id="table-container-admin-data" class="data-table-container">
+                            <p style="color:var(--secondary-text);">Nessun file selezionato.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderDatiAmministratoreVisualizza = () => `
+            ${renderHeader('Riepilogo Dati Amministratore')}
+            <main>
+                <div class="card">
+                    <h3 class="card-title">Elenco Completo Dati</h3>
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
+                        Elenco completo di tutti i dati relativi all'amministratore.
+                    </p>
+                    <div id="table-container-admin-data" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Caricamento dati...</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderInfoUtiliAmministratore = () => `
+            ${renderHeader('Amministratore')}
+            <main>
+                <div class="card">
+                    <h3 class="card-title">Recapiti Amministrazione</h3>
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
+                        Informazioni di contatto per l'amministrazione del condominio.
+                    </p>
+                    <div id="admin-data-summary-container" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Caricamento dati...</p>
                     </div>
                 </div>
             </main>
@@ -1560,7 +1722,7 @@
                     <div onclick="navigateTo('importazione')" class="dashboard-item">
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
-                            <p style="text-align: left; font-size: 1.1rem;">Importa Dati</p>
+                            <p style="text-align: left; font-size: 1.1rem;">Importa Dati Millesimi</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('impostazioniSondaggi')" class="dashboard-item">
@@ -1572,7 +1734,13 @@
                     <div onclick="navigateTo('orariCustode')" class="dashboard-item">
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
-                            <p style="text-align: left; font-size: 1.1rem;">Orari Custode</p>
+                            <p style="text-align: left; font-size: 1.1rem;">Importa Dati Custode</p>
+                        </div>
+                    </div>
+                    <div onclick="navigateTo('datiAmministratore')" class="dashboard-item">
+                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Importa Dati Amministratore</p>
                         </div>
                     </div>
                 </div>
@@ -1812,6 +1980,7 @@
                     break;
                 case 'numeriUtiliRubrica': content = renderNumeriUtiliRubrica(); break;
                 case 'numeriUtiliCustode': content = renderNumeriUtiliCustode(); break;
+                case 'infoUtili_amministratore': content = renderInfoUtiliAmministratore(); break;
 
                 case 'userManagement': 
                     if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement(); 
@@ -1835,6 +2004,34 @@
                     break;
                 case 'orariCustode':
                     if (userType === 'supervisore') content = renderOrariCustode();
+                    else navigateTo('dashboard');
+                    break;
+                case 'orariCustode_manuale':
+                    if (userType === 'supervisore') content = renderOrariCustodeManuale();
+                    else navigateTo('dashboard');
+                    break;
+                case 'orariCustode_import':
+                    if (userType === 'supervisore') content = renderOrariCustodeImport();
+                    else navigateTo('dashboard');
+                    break;
+                case 'orariCustode_visualizza':
+                    if (userType === 'supervisore') content = renderOrariCustodeVisualizza();
+                    else navigateTo('dashboard');
+                    break;
+                case 'datiAmministratore':
+                    if (userType === 'supervisore') content = renderDatiAmministratoreMenu();
+                    else navigateTo('dashboard');
+                    break;
+                case 'datiAmministratore_manuale':
+                    if (userType === 'supervisore') content = renderDatiAmministratoreManuale();
+                    else navigateTo('dashboard');
+                    break;
+                case 'datiAmministratore_import':
+                    if (userType === 'supervisore') content = renderDatiAmministratoreImport();
+                    else navigateTo('dashboard');
+                    break;
+                case 'datiAmministratore_visualizza':
+                    if (userType === 'supervisore') content = renderDatiAmministratoreVisualizza();
                     else navigateTo('dashboard');
                     break;
                 case 'reportPage':
@@ -1900,13 +2097,23 @@
                 case 'numeriUtiliCustode':
                     loadCustodeSchedule();
                     break;
+                case 'infoUtili_amministratore':
+                    setupInfoUtiliAmministratoreHandlers();
+                    break;
 
                 case 'userManagement': if (['supervisore', 'adm'].includes(userType)) { loadUsers(); setupAdminUserCreationHandler(); } break;
                 case 'gestioneGruppi': /* No handlers needed for the menu page */ break;
                 case 'gestioneGruppi_lista': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
                 case 'gestioneGruppi_regole': if (['supervisore', 'adm'].includes(userType)) { loadGroupRules(); setupGestioneGruppiHandlers(); } break;
                 case 'importazione': if (userType === 'supervisore') { setupImportazioneHandlers(); } break;
-                case 'orariCustode': if (userType === 'supervisore') { setupOrariCustodeHandlers(); } break;
+                case 'orariCustode': /* No handlers needed for the menu page */ break;
+                case 'orariCustode_manuale': if (userType === 'supervisore') { setupOrariCustodeManualeHandlers(); } break;
+                case 'orariCustode_import': if (userType === 'supervisore') { setupOrariCustodeImportHandlers(); } break;
+                case 'orariCustode_visualizza': if (userType === 'supervisore') { setupOrariCustodeVisualizzaHandlers(); } break;
+                case 'datiAmministratore': /* No handlers needed for the menu page */ break;
+                case 'datiAmministratore_manuale': if (userType === 'supervisore') { setupDatiAmministratoreManualeHandlers(); } break;
+                case 'datiAmministratore_import': if (userType === 'supervisore') { setupDatiAmministratoreImportHandlers(); } break;
+                case 'datiAmministratore_visualizza': if (userType === 'supervisore') { setupDatiAmministratoreVisualizzaHandlers(); } break;
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
             }
 
@@ -2539,223 +2746,37 @@
                 }
             });
 
-            const fileInputPhones = document.getElementById('excel-file-input-phones');
-            const tableContainerPhones = document.getElementById('excel-table-container-phones');
-            const messageBoxPhones = document.getElementById('message-import-phones');
-            const saveBtnContainerPhones = document.getElementById('save-button-container-phones');
-            const saveBtnPhones = document.getElementById('save-imported-data-btn-phones');
-            let phoneDataToSave = null;
-            let phoneFileNameForSave = '';
-
-            const loadLatestPhoneData = async () => {
-                const q = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
-                const snapshot = await getDocs(q);
-                if (!snapshot.empty) {
-                    const data = snapshot.docs[0].data().tableData;
-                    tableContainerPhones.innerHTML = generateTableHTML(data);
-                } else {
-                    tableContainerPhones.innerHTML = '<p style="color:var(--secondary-text);">Nessun numero utile ancora importato.</p>';
-                }
-            };
-
-            fileInputPhones.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                phoneDataToSave = null; phoneFileNameForSave = '';
-                saveBtnContainerPhones.classList.add('hidden'); messageBoxPhones.style.display = 'none';
-                if (!file) { loadLatestPhoneData(); return; }
-                phoneFileNameForSave = file.name;
-                tableContainerPhones.innerHTML = '<p>Caricamento anteprima...</p>';
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
-                        phoneDataToSave = jsonData;
-                        tableContainerPhones.innerHTML = generateTableHTML(jsonData);
-                        saveBtnContainerPhones.classList.remove('hidden');
-                    } catch (err) {
-                        messageBoxPhones.className = 'message-box error';
-                        messageBoxPhones.textContent = `Errore: ${err.message}`;
-                        messageBoxPhones.style.display = 'block';
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            });
-
-            saveBtnPhones.addEventListener('click', async () => {
-                if (!phoneDataToSave) return;
-                saveBtnPhones.disabled = true; saveBtnPhones.textContent = 'Salvataggio...';
-                try {
-                    await addDoc(collection(db, "importedPhoneNumbers"), {
-                        fileName: phoneFileNameForSave,
-                        tableData: phoneDataToSave,
-                        uploadedBy: currentUser.uid,
-                        uploadedAt: serverTimestamp()
-                    });
-                    await logActivity("phone_data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: phoneFileNameForSave });
-                    fileInputPhones.value = '';
-                    saveBtnContainerPhones.classList.add('hidden');
-                    await loadLatestPhoneData();
-                } catch (error) {
-                    messageBoxPhones.className = 'message-box error';
-                    messageBoxPhones.textContent = 'Errore durante il salvataggio.';
-                    messageBoxPhones.style.display = 'block';
-                } finally {
-                    saveBtnPhones.disabled = false; saveBtnPhones.textContent = 'Salva Numeri Utili';
-                }
-            });
-
             await loadPrerequisites();
-            await Promise.all([loadLatestMillesimiData(), loadLatestPhoneData()]);
-
-            // Setup handlers for custode schedule import in the import page
-            const fileInputOrariCustodeImport = document.getElementById('excel-file-input-orari-custode-import');
-            const tableContainerOrariCustodeImport = document.getElementById('excel-table-container-orari-custode-import');
-            const messageBoxOrariCustodeImport = document.getElementById('message-import-orari-custode-import');
-            const saveBtnContainerOrariCustodeImport = document.getElementById('save-button-container-orari-custode-import');
-            const saveBtnOrariCustodeImport = document.getElementById('save-imported-data-btn-orari-custode-import');
-            let orariCustodeImportFileName = '';
-            let orariCustodeImportDataToSave = null;
-
-            const generateOrariCustodeTableHTML = (data) => {
-                if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
-                let tableHTML = `<table class="data-table" id="orari-custode-import-preview-table">`;
-                const headers = Object.keys(data[0]);
-                tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
-                data.forEach(row => {
-                    tableHTML += '<tr>';
-                    headers.forEach(header => {
-                        const cellValue = row[header] !== undefined ? row[header] : '';
-                        tableHTML += `<td>${cellValue}</td>`;
-                    });
-                    tableHTML += '</tr>';
-                });
-                return tableHTML + '</tbody></table>';
-            };
-
-            const loadLatestOrariCustodeImportData = async () => {
-                const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
-                const snapshot = await getDocs(q);
-                if (!snapshot.empty) {
-                    const docData = snapshot.docs[0].data();
-                    const data = docData.tableData;
-                    tableContainerOrariCustodeImport.innerHTML = generateOrariCustodeTableHTML(data);
-                    saveBtnContainerOrariCustodeImport.classList.remove('hidden');
-                    orariCustodeImportFileName = docData.fileName || 'orari_custode_esistenti.xlsx';
-                } else {
-                    tableContainerOrariCustodeImport.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
-                    saveBtnContainerOrariCustodeImport.classList.add('hidden');
-                }
-            };
-
-            fileInputOrariCustodeImport.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                orariCustodeImportFileName = '';
-                orariCustodeImportDataToSave = null;
-                saveBtnContainerOrariCustodeImport.classList.add('hidden');
-                messageBoxOrariCustodeImport.style.display = 'none';
-                
-                if (!file) { 
-                    loadLatestOrariCustodeImportData(); 
-                    return; 
-                }
-                
-                orariCustodeImportFileName = file.name;
-                tableContainerOrariCustodeImport.innerHTML = '<p>Caricamento anteprima...</p>';
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        // Utilizza solo il primo foglio del file Excel
-                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
-                        orariCustodeImportDataToSave = jsonData;
-                        tableContainerOrariCustodeImport.innerHTML = generateOrariCustodeTableHTML(jsonData);
-                        saveBtnContainerOrariCustodeImport.classList.remove('hidden');
-                    } catch (err) {
-                        messageBoxOrariCustodeImport.className = 'message-box error';
-                        messageBoxOrariCustodeImport.textContent = `Errore: ${err.message}`;
-                        messageBoxOrariCustodeImport.style.display = 'block';
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            });
-
-            saveBtnOrariCustodeImport.addEventListener('click', async () => {
-                if (!orariCustodeImportDataToSave) return;
-                saveBtnOrariCustodeImport.disabled = true;
-                saveBtnOrariCustodeImport.textContent = 'Salvataggio...';
-                
-                try {
-                    await addDoc(collection(db, "importedCustodeSchedule"), {
-                        fileName: orariCustodeImportFileName,
-                        tableData: orariCustodeImportDataToSave,
-                        uploadedBy: currentUser.uid,
-                        uploadedAt: serverTimestamp()
-                    });
-                    await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: orariCustodeImportFileName });
-                    fileInputOrariCustodeImport.value = '';
-                    saveBtnContainerOrariCustodeImport.classList.add('hidden');
-                    messageBoxOrariCustodeImport.className = 'message-box success';
-                    messageBoxOrariCustodeImport.textContent = 'Orari custode salvati con successo!';
-                    messageBoxOrariCustodeImport.style.display = 'block';
-                    setTimeout(() => { messageBoxOrariCustodeImport.style.display = 'none'; }, 3000);
-                    await loadLatestOrariCustodeImportData();
-                } catch (error) {
-                    messageBoxOrariCustodeImport.className = 'message-box error';
-                    messageBoxOrariCustodeImport.textContent = `Errore durante il salvataggio: ${error.message}`;
-                    messageBoxOrariCustodeImport.style.display = 'block';
-                } finally {
-                    saveBtnOrariCustodeImport.disabled = false;
-                    saveBtnOrariCustodeImport.textContent = 'Salva Orari Custode';
-                }
-            });
-
-            await loadLatestOrariCustodeImportData();
+            await loadLatestMillesimiData();
         };
 
-        const setupOrariCustodeHandlers = async () => {
-            const fileInputOrariCustode = document.getElementById('excel-file-input-orari-custode');
-            const tableContainerOrariCustode = document.getElementById('excel-table-container-orari-custode');
-            const messageBoxOrariCustode = document.getElementById('message-import-orari-custode');
-            const saveBtnContainerOrariCustode = document.getElementById('save-button-container-orari-custode');
-            const saveBtnOrariCustode = document.getElementById('save-imported-data-btn-orari-custode');
-            let orariCustodeFileName = '';
-            let orariCustodeDataToSave = null;
+        const loadAndRenderCustodianSchedule = (containerId, isEditable) => {
+            const tableContainer = document.getElementById(containerId);
+            if (!tableContainer) return;
 
-            const generateTableHTML = (data, isPreview = false) => {
+            const generateTableHTML = (data) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
                 
                 const originalHeaders = Object.keys(data[0]);
-                const canManage = userProfile?.tipoUtente === 'supervisore';
-
-                // --- NUOVA LOGICA DI ORDINAMENTO ROBUSTA ---
                 const desiredOrderKeywords = ['nominativo', 'lun - ven', 'sabato', 'ruolo', 'telefono'];
                 let headers = [];
-                let remainingHeaders = [...originalHeaders]; // Crea una copia per lavorarci su
+                let remainingHeaders = [...originalHeaders];
 
                 desiredOrderKeywords.forEach(keyword => {
                     const foundHeader = remainingHeaders.find(h => h.toLowerCase().includes(keyword));
                     if (foundHeader) {
                         headers.push(foundHeader);
-                        // Rimuove l'header trovato per non aggiungerlo due volte
                         remainingHeaders = remainingHeaders.filter(h => h !== foundHeader);
                     }
                 });
                 
-                // Aggiunge alla fine eventuali header non previsti nell'ordine
                 headers = [...headers, ...remainingHeaders];
-                // --- FINE NUOVA LOGICA ---
 
-                let tableHTML = `<table class="data-table" id="orari-custode-preview-table"><thead><tr>`;
+                let tableHTML = `<table class="data-table"><thead><tr>`;
                 headers.forEach(header => {
                     tableHTML += `<th>${header.toUpperCase()}</th>`;
                 });
-                if (canManage && !isPreview) {
+                if (isEditable) {
                     tableHTML += `<th style="text-align:right;">AZIONI</th>`;
                 }
                 tableHTML += `</tr></thead><tbody>`;
@@ -2767,7 +2788,7 @@
                         tableHTML += `<td>${cellValue}</td>`;
                     });
 
-                    if (canManage && !isPreview) {
+                    if (isEditable) {
                         const editIcon = `<button onclick="editImportedScheduleEntry(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`;
                         const deleteIcon = `<button onclick="deleteImportedScheduleEntry(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
                         tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
@@ -2778,24 +2799,304 @@
                 return tableHTML;
             };
 
-            const loadLatestOrariCustodeData = async () => {
-                try {
-                    const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
-                    const snapshot = await getDocs(q);
-                    if (!snapshot.empty) {
-                        const docData = snapshot.docs[0].data();
-                        const data = docData.tableData;
-                        tableContainerOrariCustode.innerHTML = generateTableHTML(data, false);
-                        saveBtnContainerOrariCustode.classList.add('hidden');
-                        orariCustodeDataToSave = null;
-                    } else {
-                        tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
-                        saveBtnContainerOrariCustode.classList.add('hidden');
-                    }
-                } catch (error) {
-                    console.error("Errore critico durante il caricamento degli orari:", error);
-                    tableContainerOrariCustode.innerHTML = `<div class="message-box error" style="display:block;">Errore critico nel caricamento dei dati. Contattare l'assistenza.</div>`;
+            const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+            onSnapshot(q, (snapshot) => {
+                if (!snapshot.empty) {
+                    const docData = snapshot.docs[0].data();
+                    const data = docData.tableData;
+                    tableContainer.innerHTML = generateTableHTML(data);
+                } else {
+                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
                 }
+            });
+        };
+
+        const setupOrariCustodeManualeHandlers = async () => {
+            const addForm = document.getElementById('add-custodian-form');
+            
+            if (addForm) {
+                addForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const messageBox = document.getElementById('add-custodian-message');
+                    const submitBtn = addForm.querySelector('button[type="submit"]');
+                    messageBox.style.display = 'none';
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Aggiungo...';
+
+                    try {
+                        const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+                        const snapshot = await getDocs(qSchedule);
+
+                        let docRef;
+                        let tableData = [];
+                        let headers = [];
+
+                        if (!snapshot.empty) {
+                            const docSnap = snapshot.docs[0];
+                            docRef = docSnap.ref;
+                            tableData = docSnap.data().tableData || [];
+                            if (tableData.length > 0) {
+                                headers = Object.keys(tableData[0]);
+                            }
+                        }
+
+                        const findKey = (keywords, fallback) => headers.find(h => keywords.some(k => h.toLowerCase().includes(k))) || fallback;
+                        
+                        const newEntry = {
+                            [findKey(['nominativo'], 'Nominativo')]: document.getElementById('custodian-nominativo').value,
+                            [findKey(['lun - ven', 'lun-ven'], 'Lun - Ven')]: document.getElementById('custodian-lun-ven').value,
+                            [findKey(['sabato'], 'Sabato')]: document.getElementById('custodian-sabato').value,
+                            [findKey(['ruolo'], 'Ruolo')]: document.getElementById('custodian-ruolo').value,
+                            [findKey(['telefono'], 'Telefono')]: document.getElementById('custodian-telefono').value,
+                        };
+
+                        tableData.push(newEntry);
+
+                        if (docRef) {
+                            await updateDoc(docRef, { tableData: tableData });
+                        } else {
+                            await addDoc(collection(db, "importedCustodeSchedule"), {
+                                fileName: 'dati_manuali.xlsx',
+                                tableData: tableData,
+                                uploadedBy: currentUser.uid,
+                                uploadedAt: serverTimestamp()
+                            });
+                        }
+
+                        await logActivity("custode_schedule_entry_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { entry: newEntry });
+                        
+                        messageBox.className = 'message-box success';
+                        messageBox.textContent = 'Voce aggiunta con successo!';
+                        messageBox.style.display = 'block';
+                        addForm.reset();
+                        setTimeout(() => { messageBox.style.display = 'none'; }, 3000);
+
+                    } catch (error) {
+                        console.error("Errore nell'aggiunta della voce orario:", error);
+                        messageBox.className = 'message-box error';
+                        messageBox.textContent = `Errore: ${error.message}`;
+                        messageBox.style.display = 'block';
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Aggiungi Voce';
+                    }
+                });
+            }
+
+            loadAndRenderCustodianSchedule('excel-table-container-orari-custode', true);
+        };
+
+        const setupOrariCustodeVisualizzaHandlers = () => {
+            loadAndRenderCustodianSchedule('excel-table-container-orari-custode', false);
+        };
+
+        const loadAndRenderAdminData = (containerId, isEditable) => {
+            const tableContainer = document.getElementById(containerId);
+            if (!tableContainer) return;
+
+            const generateTableHTML = (data) => {
+                if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
+                
+                const headers = Object.keys(data[0]);
+                let tableHTML = `<table class="data-table"><thead><tr>`;
+                headers.forEach(header => {
+                    tableHTML += `<th>${header.toUpperCase()}</th>`;
+                });
+                if (isEditable) {
+                    tableHTML += `<th style="text-align:right;">AZIONI</th>`;
+                }
+                tableHTML += `</tr></thead><tbody>`;
+
+                data.forEach((row, index) => {
+                    tableHTML += `<tr>`;
+                    headers.forEach(header => {
+                        tableHTML += `<td>${row[header] !== undefined ? row[header] : ''}</td>`;
+                    });
+
+                    if (isEditable) {
+                        const editIcon = `<button onclick="editImportedAdminEntry(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`;
+                        const deleteIcon = `<button onclick="deleteImportedAdminEntry(${index})" class="btn-icon" title="Elimina" style="background:var(--danger); color:white;"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`;
+                        tableHTML += `<td style="text-align:right;">${editIcon}${deleteIcon}</td>`;
+                    }
+                    tableHTML += `</tr>`;
+                });
+                tableHTML += '</tbody></table>';
+                return tableHTML;
+            };
+
+            const q = query(collection(db, "importedAdminData"), orderBy("uploadedAt", "desc"), limit(1));
+            onSnapshot(q, (snapshot) => {
+                if (!snapshot.empty) {
+                    tableContainer.innerHTML = generateTableHTML(snapshot.docs[0].data().tableData);
+                } else {
+                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun dato amministratore importato.</p>';
+                }
+            });
+        };
+
+        const setupDatiAmministratoreManualeHandlers = () => {
+            const addForm = document.getElementById('add-admin-data-form');
+            if (addForm) {
+                addForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const messageBox = document.getElementById('add-admin-data-message');
+                    const submitBtn = addForm.querySelector('button[type="submit"]');
+                    messageBox.style.display = 'none';
+                    submitBtn.disabled = true;
+
+                    try {
+                        const q = query(collection(db, "importedAdminData"), orderBy("uploadedAt", "desc"), limit(1));
+                        const snapshot = await getDocs(q);
+                        let docRef, tableData = [], headers = [];
+
+                        if (!snapshot.empty) {
+                            docRef = snapshot.docs[0].ref;
+                            tableData = snapshot.docs[0].data().tableData || [];
+                            if (tableData.length > 0) headers = Object.keys(tableData[0]);
+                        }
+
+                        const findKey = (keywords, fallback) => headers.find(h => keywords.some(k => h.toLowerCase().includes(k))) || fallback;
+                        
+                        const newEntry = {
+                            [findKey(['nominativo'], 'Nominativo')]: document.getElementById('admin-data-nominativo').value,
+                            [findKey(['referente'], 'Referente')]: document.getElementById('admin-data-referente').value,
+                            [findKey(['telefono'], 'Telefono')]: document.getElementById('admin-data-telefono').value,
+                            [findKey(['email'], 'Email')]: document.getElementById('admin-data-email').value,
+                        };
+
+                        tableData.push(newEntry);
+
+                        if (docRef) {
+                            await updateDoc(docRef, { tableData });
+                        } else {
+                            await addDoc(collection(db, "importedAdminData"), {
+                                fileName: 'dati_manuali_admin.xlsx',
+                                tableData,
+                                uploadedBy: currentUser.uid,
+                                uploadedAt: serverTimestamp()
+                            });
+                        }
+                        await logActivity("admin_data_entry_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { entry: newEntry });
+                        messageBox.className = 'message-box success';
+                        messageBox.textContent = 'Voce aggiunta con successo!';
+                        messageBox.style.display = 'block';
+                        addForm.reset();
+                        setTimeout(() => { messageBox.style.display = 'none'; }, 3000);
+                    } catch (error) {
+                        messageBox.className = 'message-box error';
+                        messageBox.textContent = `Errore: ${error.message}`;
+                        messageBox.style.display = 'block';
+                    } finally {
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+            loadAndRenderAdminData('table-container-admin-data', true);
+        };
+
+        const setupDatiAmministratoreImportHandlers = () => {
+            const fileInput = document.getElementById('file-input-admin-data');
+            const tableContainer = document.getElementById('table-container-admin-data');
+            const messageBox = document.getElementById('message-import-admin-data');
+            const saveBtnContainer = document.getElementById('save-button-container-admin-data');
+            const saveBtn = document.getElementById('save-imported-data-btn-admin-data');
+            let dataToSave = null;
+            let fileNameForSave = '';
+
+            const generateTableHTML = (data) => {
+                if (!data || data.length === 0) return '<p>File vuoto o non valido.</p>';
+                const headers = Object.keys(data[0]);
+                let tableHTML = `<table class="data-table"><thead><tr>${headers.map(h => `<th>${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>`;
+                data.forEach(row => {
+                    tableHTML += `<tr>${headers.map(h => `<td>${row[h] !== undefined ? row[h] : ''}</td>`).join('')}</tr>`;
+                });
+                return tableHTML + '</tbody></table>';
+            };
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                dataToSave = null;
+                fileNameForSave = '';
+                saveBtnContainer.classList.add('hidden');
+                messageBox.style.display = 'none';
+                if (!file) {
+                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
+                    return;
+                }
+                fileNameForSave = file.name;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        dataToSave = jsonData;
+                        tableContainer.innerHTML = generateTableHTML(jsonData);
+                        saveBtnContainer.classList.remove('hidden');
+                    } catch (err) {
+                        messageBox.className = 'message-box error';
+                        messageBox.textContent = `Errore: ${err.message}`;
+                        messageBox.style.display = 'block';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            saveBtn.addEventListener('click', async () => {
+                if (!dataToSave) return;
+                saveBtn.disabled = true;
+                try {
+                    await addDoc(collection(db, "importedAdminData"), {
+                        fileName: fileNameForSave,
+                        tableData: dataToSave,
+                        uploadedBy: currentUser.uid,
+                        uploadedAt: serverTimestamp()
+                    });
+                    await logActivity("admin_data_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: fileNameForSave });
+                    fileInput.value = '';
+                    saveBtnContainer.classList.add('hidden');
+                    tableContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
+                    messageBox.className = 'message-box success';
+                    messageBox.textContent = 'Dati importati con successo!';
+                    messageBox.style.display = 'block';
+                    setTimeout(() => { messageBox.style.display = 'none'; }, 3000);
+                } catch (error) {
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = `Errore: ${error.message}`;
+                    messageBox.style.display = 'block';
+                } finally {
+                    saveBtn.disabled = false;
+                }
+            });
+        };
+
+        const setupDatiAmministratoreVisualizzaHandlers = () => {
+            loadAndRenderAdminData('table-container-admin-data', false);
+        };
+
+        const setupInfoUtiliAmministratoreHandlers = () => {
+            loadAndRenderAdminData('admin-data-summary-container', false);
+        };
+
+        const setupOrariCustodeImportHandlers = async () => {
+            const fileInputOrariCustode = document.getElementById('excel-file-input-orari-custode');
+            const tableContainerOrariCustode = document.getElementById('excel-table-container-orari-custode');
+            const messageBoxOrariCustode = document.getElementById('message-import-orari-custode');
+            const saveBtnContainerOrariCustode = document.getElementById('save-button-container-orari-custode');
+            const saveBtnOrariCustode = document.getElementById('save-imported-data-btn-orari-custode');
+            let orariCustodeFileName = '';
+            let orariCustodeDataToSave = null;
+
+            const generateTableHTML = (data) => {
+                if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
+                const headers = Object.keys(data[0]);
+                let tableHTML = `<table class="data-table"><thead><tr>${headers.map(h => `<th>${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>`;
+                data.forEach(row => {
+                    tableHTML += `<tr>${headers.map(h => `<td>${row[h] !== undefined ? row[h] : ''}</td>`).join('')}</tr>`;
+                });
+                tableHTML += '</tbody></table>';
+                return tableHTML;
             };
 
             fileInputOrariCustode.addEventListener('change', (event) => {
@@ -2806,7 +3107,7 @@
                 messageBoxOrariCustode.style.display = 'none';
                 
                 if (!file) { 
-                    loadLatestOrariCustodeData(); 
+                    tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                     return; 
                 }
                 
@@ -2821,7 +3122,7 @@
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                         if (jsonData.length === 0) throw new Error("Il file è vuoto.");
                         orariCustodeDataToSave = jsonData;
-                        tableContainerOrariCustode.innerHTML = generateTableHTML(jsonData, true);
+                        tableContainerOrariCustode.innerHTML = generateTableHTML(jsonData);
                         saveBtnContainerOrariCustode.classList.remove('hidden');
                     } catch (err) {
                         messageBoxOrariCustode.className = 'message-box error';
@@ -2846,22 +3147,21 @@
                     });
                     await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: orariCustodeFileName });
                     fileInputOrariCustode.value = '';
+                    saveBtnContainerOrariCustode.classList.add('hidden');
+                    tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                     messageBoxOrariCustode.className = 'message-box success';
-                    messageBoxOrariCustode.textContent = 'Orari custode salvati con successo!';
+                    messageBoxOrariCustode.textContent = 'Orari importati con successo!';
                     messageBoxOrariCustode.style.display = 'block';
                     setTimeout(() => { messageBoxOrariCustode.style.display = 'none'; }, 3000);
-                    await loadLatestOrariCustodeData();
                 } catch (error) {
                     messageBoxOrariCustode.className = 'message-box error';
                     messageBoxOrariCustode.textContent = `Errore durante il salvataggio: ${error.message}`;
                     messageBoxOrariCustode.style.display = 'block';
                 } finally {
                     saveBtnOrariCustode.disabled = false;
-                    saveBtnOrariCustode.textContent = 'Salva Orari Custode';
+                    saveBtnOrariCustode.textContent = 'Salva e Sostituisci Dati';
                 }
             });
-
-            await loadLatestOrariCustodeData();
         };
 
         const setupUserManagementHandlers = () => {
@@ -3561,6 +3861,51 @@
                 await logActivity("custode_schedule_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
             } catch (error) {
                 console.error("Errore eliminazione orario:", error);
+                alert("Si è verificato un errore durante l'eliminazione.");
+            }
+        };
+
+        const editImportedAdminEntry = async (index, currentData) => {
+            if (userProfile?.tipoUtente !== 'supervisore') return;
+            const formFields = Object.keys(currentData).map(key => {
+                const value = currentData[key] || '';
+                return `<div><label class="form-label">${key}</label><input type="text" data-key="${key.replace(/"/g, '&quot;')}" value="${value.replace(/"/g, '&quot;')}" class="form-input"></div>`;
+            }).join('');
+            const editFormHtml = `<form id="edit-admin-data-form" class="space-y-4">${formFields}<div class="flex justify-end gap-4 pt-2"><button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button><button type="submit" class="btn btn-primary">Salva</button></div></form>`;
+            showModal('Modifica Voce Amministratore', editFormHtml);
+            document.getElementById('edit-admin-data-form')?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                try {
+                    const q = query(collection(db, "importedAdminData"), orderBy("uploadedAt", "desc"), limit(1));
+                    const snapshot = await getDocs(q);
+                    if (snapshot.empty) throw new Error("Dati amministratore non trovati.");
+                    const docRef = snapshot.docs[0].ref;
+                    const allData = [...snapshot.docs[0].data().tableData];
+                    const updatedRow = { ...allData[index] };
+                    event.target.querySelectorAll('input[data-key]').forEach(input => {
+                        updatedRow[input.dataset.key] = input.value.trim();
+                    });
+                    allData[index] = updatedRow;
+                    await updateDoc(docRef, { tableData: allData });
+                    await logActivity("admin_data_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedIndex: index });
+                    hideModal();
+                } catch (error) {
+                    alert("Si è verificato un errore durante l'aggiornamento.");
+                }
+            });
+        };
+
+        const deleteImportedAdminEntry = async (index) => {
+            if (userProfile?.tipoUtente !== 'supervisore' || !confirm('Sei sicuro di voler eliminare questa voce?')) return;
+            try {
+                const q = query(collection(db, "importedAdminData"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) throw new Error("Dati amministratore non trovati.");
+                const docRef = snapshot.docs[0].ref;
+                const updatedData = snapshot.docs[0].data().tableData.filter((_, i) => i !== index);
+                await updateDoc(docRef, { tableData: updatedData });
+                await logActivity("admin_data_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
+            } catch (error) {
                 alert("Si è verificato un errore durante l'eliminazione.");
             }
         };
@@ -4723,6 +5068,8 @@
         window.deleteSelectedContactsRubricaImported = deleteSelectedContactsRubricaImported;
         window.editImportedScheduleEntry = editImportedScheduleEntry;
         window.deleteImportedScheduleEntry = deleteImportedScheduleEntry;
+        window.editImportedAdminEntry = editImportedAdminEntry;
+        window.deleteImportedAdminEntry = deleteImportedAdminEntry;
         window.openRuleEditor = openRuleEditor;
         window.deleteGroupRule = deleteGroupRule;
         window.toggleRuleStatus = toggleRuleStatus;
