@@ -701,12 +701,12 @@
                 navigationHistory.push(e);
             }
 
-            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione'].includes(e)) {
+            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode'].includes(e)) {
                  currentPage = e;
                  renderCurrentPage();
                  return;
             }
-            if(userType==="custode"&&["dashboard","bacheca","sondaggi"].includes(e)){
+            if(userType==="custode"&&["dashboard","bacheca","sondaggi","sondaggi_crea","sondaggi_elenco","sondaggi_attivi","sondaggi_conclusi"].includes(e)){
                 navigateTo("segnalazioni");
             } else {
                 currentPage=e,renderCurrentPage();
@@ -839,7 +839,7 @@
                     <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
                     <a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}"><span id="bacheca-notification-badge" class="notification-badge hidden"></span><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg><span>Bacheca</span></a>
                     <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg><span>Segnala</span></a>
-                    <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg><span>Sondaggi</span></a>
+                    <a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg><span>Sondaggi</span></a>
                     <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg><span>Profilo</span></a>
                 `;
             return `<nav class="bottom-nav">${navItems}</nav>`;
@@ -925,6 +925,18 @@
                         </div>
                         <p>Elenco Sondaggi</p>
                     </div>
+                    <div onclick="navigateTo('sondaggi_attivi')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        </div>
+                        <p>Sondaggi Attivi</p>
+                    </div>
+                    <div onclick="navigateTo('sondaggi_conclusi')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </div>
+                        <p>Sondaggi Conclusi</p>
+                    </div>
                 </div>
             </main>
             ${renderBottomNavigation()}
@@ -971,6 +983,46 @@
                 <div class="card" style="margin-bottom: 1rem;">
                     <div style="margin-bottom: 1rem;">
                         <input type="text" id="poll-search" placeholder="Cerca sondaggi per parole chiave..." class="form-input w-full">
+                    </div>
+                    <div>
+                        <select id="poll-type-filter" class="form-select w-full">
+                            <option value="">Tutti i tipi</option>
+                            <option value="supervisor-consiglieri">Supervisor e Consiglieri</option>
+                            <option value="condomini">Condomini</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="polls-container" class="list-container"></div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderSondaggiAttivi = () => `
+            ${renderHeader('Sondaggi Attivi')}
+            <main>
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="text" id="poll-search" placeholder="Cerca sondaggi attivi per parole chiave..." class="form-input w-full">
+                    </div>
+                    <div>
+                        <select id="poll-type-filter" class="form-select w-full">
+                            <option value="">Tutti i tipi</option>
+                            <option value="supervisor-consiglieri">Supervisor e Consiglieri</option>
+                            <option value="condomini">Condomini</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="polls-container" class="list-container"></div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderSondaggiConclusi = () => `
+            ${renderHeader('Sondaggi Conclusi')}
+            <main>
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="text" id="poll-search" placeholder="Cerca sondaggi conclusi per parole chiave..." class="form-input w-full">
                     </div>
                     <div>
                         <select id="poll-type-filter" class="form-select w-full">
@@ -1430,11 +1482,60 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- SEZIONE 3: IMPORTAZIONE ORARI CUSTODE -->
+                <div class="card">
+                    <h3 class="card-title">Importa Orari Custode</h3>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Carica il file Excel contenente gli orari del custode. Il sistema utilizzerà esclusivamente il primo foglio del file caricato. Questi dati verranno visualizzati nella sezione "Custode".
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Carica File Orari Custode (.xlsx, .xls)</label>
+                        <input type="file" id="excel-file-input-orari-custode-import" class="form-input" accept=".xlsx, .xls">
+                    </div>
+                    <div id="message-import-orari-custode-import" class="message-box"></div>
+                    <div id="save-button-container-orari-custode-import" class="hidden mt-4">
+                        <button id="save-imported-data-btn-orari-custode-import" class="btn btn-primary w-full">Salva Orari Custode</button>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
+                        <div id="excel-table-container-orari-custode-import" class="data-table-container">
+                            <p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderOrariCustode = () => `
+            ${renderHeader('Importa Orari Custode')}
+            <main>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Importa Orari Custode</h3>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Carica il file Excel contenente gli orari del custode. Il sistema utilizzerà esclusivamente il primo foglio del file caricato.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Carica File Orari Custode (.xlsx, .xls)</label>
+                        <input type="file" id="excel-file-input-orari-custode" class="form-input" accept=".xlsx, .xls">
+                    </div>
+                    <div id="message-import-orari-custode" class="message-box"></div>
+                    <div id="save-button-container-orari-custode" class="hidden mt-4">
+                        <button id="save-imported-data-btn-orari-custode" class="btn btn-primary w-full">Salva Orari Custode</button>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Anteprima / Dati Attuali</h4>
+                        <div id="excel-table-container-orari-custode" class="data-table-container">
+                            <p style="color:var(--secondary-text);">Nessun file selezionato o caricato.</p>
+                        </div>
+                    </div>
+                </div>
             </main>
             ${renderBottomNavigation()}
         `;
         
-                const renderGestioneGruppiMenu = () => `
+        const renderGestioneGruppiMenu = () => `
             ${renderHeader('Funzioni Supervisor')}
             <main>
                 <div class="dashboard-grid" style="grid-template-columns: 1fr;">
@@ -1466,6 +1567,12 @@
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,15H7V17H5V15M3,13H9V19H3V13Z" /></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Sondaggi</p>
+                        </div>
+                    </div>
+                    <div onclick="navigateTo('orariCustode')" class="dashboard-item">
+                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Orari Custode</p>
                         </div>
                     </div>
                 </div>
@@ -1690,6 +1797,8 @@
                 case 'sondaggi': if (userType !== 'custode') { content = await renderSondaggiMenu(); } break;
                 case 'sondaggi_crea': if (userType !== 'custode') { content = renderSondaggiCrea(); } break;
                 case 'sondaggi_elenco': if (userType !== 'custode') { content = renderSondaggiElenco(); } break;
+                case 'sondaggi_attivi': if (userType !== 'custode') { content = renderSondaggiAttivi(); } break;
+                case 'sondaggi_conclusi': if (userType !== 'custode') { content = renderSondaggiConclusi(); } break;
                 case 'segnalazioni': content = renderSegnalazioni(); break;
                 case 'profilo': content = renderProfilo(); break;
                 case 'infoUtili': content = renderInfoUtili(); break;
@@ -1724,6 +1833,10 @@
                     if (userType === 'supervisore') content = renderImportazione();
                     else navigateTo('dashboard');
                     break;
+                case 'orariCustode':
+                    if (userType === 'supervisore') content = renderOrariCustode();
+                    else navigateTo('dashboard');
+                    break;
                 case 'reportPage':
                     content = renderReportPage();
                     break;
@@ -1746,11 +1859,29 @@
                 case 'sondaggi_crea': if (userType !== 'custode') { setupPollHandlers(); } break;
                 case 'sondaggi_elenco': 
                     if (userType !== 'custode') { 
-                        loadPolls(); 
+                        loadPolls('all'); 
                         const searchInput = document.getElementById('poll-search');
                         const typeFilter = document.getElementById('poll-type-filter');
-                        searchInput?.addEventListener('input', loadPolls);
-                        typeFilter?.addEventListener('change', loadPolls);
+                        searchInput?.addEventListener('input', () => loadPolls('all'));
+                        typeFilter?.addEventListener('change', () => loadPolls('all'));
+                    } 
+                    break;
+                case 'sondaggi_attivi': 
+                    if (userType !== 'custode') { 
+                        loadPolls('active'); 
+                        const searchInput = document.getElementById('poll-search');
+                        const typeFilter = document.getElementById('poll-type-filter');
+                        searchInput?.addEventListener('input', () => loadPolls('active'));
+                        typeFilter?.addEventListener('change', () => loadPolls('active'));
+                    } 
+                    break;
+                case 'sondaggi_conclusi': 
+                    if (userType !== 'custode') { 
+                        loadPolls('closed'); 
+                        const searchInput = document.getElementById('poll-search');
+                        const typeFilter = document.getElementById('poll-type-filter');
+                        searchInput?.addEventListener('input', () => loadPolls('closed'));
+                        typeFilter?.addEventListener('change', () => loadPolls('closed'));
                     } 
                     break;
                 case 'segnalazioni': loadReports(); setupReportHandlers(); break;
@@ -1775,6 +1906,7 @@
                 case 'gestioneGruppi_lista': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
                 case 'gestioneGruppi_regole': if (['supervisore', 'adm'].includes(userType)) { loadGroupRules(); setupGestioneGruppiHandlers(); } break;
                 case 'importazione': if (userType === 'supervisore') { setupImportazioneHandlers(); } break;
+                case 'orariCustode': if (userType === 'supervisore') { setupOrariCustodeHandlers(); } break;
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
             }
 
@@ -2477,6 +2609,221 @@
 
             await loadPrerequisites();
             await Promise.all([loadLatestMillesimiData(), loadLatestPhoneData()]);
+
+            // Setup handlers for custode schedule import in the import page
+            const fileInputOrariCustodeImport = document.getElementById('excel-file-input-orari-custode-import');
+            const tableContainerOrariCustodeImport = document.getElementById('excel-table-container-orari-custode-import');
+            const messageBoxOrariCustodeImport = document.getElementById('message-import-orari-custode-import');
+            const saveBtnContainerOrariCustodeImport = document.getElementById('save-button-container-orari-custode-import');
+            const saveBtnOrariCustodeImport = document.getElementById('save-imported-data-btn-orari-custode-import');
+            let orariCustodeImportFileName = '';
+            let orariCustodeImportDataToSave = null;
+
+            const generateOrariCustodeTableHTML = (data) => {
+                if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
+                let tableHTML = `<table class="data-table" id="orari-custode-import-preview-table">`;
+                const headers = Object.keys(data[0]);
+                tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+                data.forEach(row => {
+                    tableHTML += '<tr>';
+                    headers.forEach(header => {
+                        const cellValue = row[header] !== undefined ? row[header] : '';
+                        tableHTML += `<td>${cellValue}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+                return tableHTML + '</tbody></table>';
+            };
+
+            const loadLatestOrariCustodeImportData = async () => {
+                const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const docData = snapshot.docs[0].data();
+                    const data = docData.tableData;
+                    tableContainerOrariCustodeImport.innerHTML = generateOrariCustodeTableHTML(data);
+                    saveBtnContainerOrariCustodeImport.classList.remove('hidden');
+                    orariCustodeImportFileName = docData.fileName || 'orari_custode_esistenti.xlsx';
+                } else {
+                    tableContainerOrariCustodeImport.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
+                    saveBtnContainerOrariCustodeImport.classList.add('hidden');
+                }
+            };
+
+            fileInputOrariCustodeImport.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                orariCustodeImportFileName = '';
+                orariCustodeImportDataToSave = null;
+                saveBtnContainerOrariCustodeImport.classList.add('hidden');
+                messageBoxOrariCustodeImport.style.display = 'none';
+                
+                if (!file) { 
+                    loadLatestOrariCustodeImportData(); 
+                    return; 
+                }
+                
+                orariCustodeImportFileName = file.name;
+                tableContainerOrariCustodeImport.innerHTML = '<p>Caricamento anteprima...</p>';
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        // Utilizza solo il primo foglio del file Excel
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        orariCustodeImportDataToSave = jsonData;
+                        tableContainerOrariCustodeImport.innerHTML = generateOrariCustodeTableHTML(jsonData);
+                        saveBtnContainerOrariCustodeImport.classList.remove('hidden');
+                    } catch (err) {
+                        messageBoxOrariCustodeImport.className = 'message-box error';
+                        messageBoxOrariCustodeImport.textContent = `Errore: ${err.message}`;
+                        messageBoxOrariCustodeImport.style.display = 'block';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            saveBtnOrariCustodeImport.addEventListener('click', async () => {
+                if (!orariCustodeImportDataToSave) return;
+                saveBtnOrariCustodeImport.disabled = true;
+                saveBtnOrariCustodeImport.textContent = 'Salvataggio...';
+                
+                try {
+                    await addDoc(collection(db, "importedCustodeSchedule"), {
+                        fileName: orariCustodeImportFileName,
+                        tableData: orariCustodeImportDataToSave,
+                        uploadedBy: currentUser.uid,
+                        uploadedAt: serverTimestamp()
+                    });
+                    await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: orariCustodeImportFileName });
+                    fileInputOrariCustodeImport.value = '';
+                    saveBtnContainerOrariCustodeImport.classList.add('hidden');
+                    messageBoxOrariCustodeImport.className = 'message-box success';
+                    messageBoxOrariCustodeImport.textContent = 'Orari custode salvati con successo!';
+                    messageBoxOrariCustodeImport.style.display = 'block';
+                    setTimeout(() => { messageBoxOrariCustodeImport.style.display = 'none'; }, 3000);
+                    await loadLatestOrariCustodeImportData();
+                } catch (error) {
+                    messageBoxOrariCustodeImport.className = 'message-box error';
+                    messageBoxOrariCustodeImport.textContent = `Errore durante il salvataggio: ${error.message}`;
+                    messageBoxOrariCustodeImport.style.display = 'block';
+                } finally {
+                    saveBtnOrariCustodeImport.disabled = false;
+                    saveBtnOrariCustodeImport.textContent = 'Salva Orari Custode';
+                }
+            });
+
+            await loadLatestOrariCustodeImportData();
+        };
+
+        const setupOrariCustodeHandlers = async () => {
+            const fileInputOrariCustode = document.getElementById('excel-file-input-orari-custode');
+            const tableContainerOrariCustode = document.getElementById('excel-table-container-orari-custode');
+            const messageBoxOrariCustode = document.getElementById('message-import-orari-custode');
+            const saveBtnContainerOrariCustode = document.getElementById('save-button-container-orari-custode');
+            const saveBtnOrariCustode = document.getElementById('save-imported-data-btn-orari-custode');
+            let orariCustodeFileName = '';
+            let orariCustodeDataToSave = null;
+
+            const generateTableHTML = (data) => {
+                if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
+                let tableHTML = `<table class="data-table" id="orari-custode-preview-table">`;
+                const headers = Object.keys(data[0]);
+                tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+                data.forEach(row => {
+                    tableHTML += '<tr>';
+                    headers.forEach(header => {
+                        const cellValue = row[header] !== undefined ? row[header] : '';
+                        tableHTML += `<td>${cellValue}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+                return tableHTML + '</tbody></table>';
+            };
+
+            const loadLatestOrariCustodeData = async () => {
+                const q = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const docData = snapshot.docs[0].data();
+                    const data = docData.tableData;
+                    tableContainerOrariCustode.innerHTML = generateTableHTML(data);
+                    saveBtnContainerOrariCustode.classList.remove('hidden');
+                    orariCustodeFileName = docData.fileName || 'orari_custode_esistenti.xlsx';
+                } else {
+                    tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>';
+                    saveBtnContainerOrariCustode.classList.add('hidden');
+                }
+            };
+
+            fileInputOrariCustode.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                orariCustodeFileName = '';
+                orariCustodeDataToSave = null;
+                saveBtnContainerOrariCustode.classList.add('hidden');
+                messageBoxOrariCustode.style.display = 'none';
+                
+                if (!file) { 
+                    loadLatestOrariCustodeData(); 
+                    return; 
+                }
+                
+                orariCustodeFileName = file.name;
+                tableContainerOrariCustode.innerHTML = '<p>Caricamento anteprima...</p>';
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        // Utilizza solo il primo foglio del file Excel
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                        if (jsonData.length === 0) throw new Error("Il file è vuoto.");
+                        orariCustodeDataToSave = jsonData;
+                        tableContainerOrariCustode.innerHTML = generateTableHTML(jsonData);
+                        saveBtnContainerOrariCustode.classList.remove('hidden');
+                    } catch (err) {
+                        messageBoxOrariCustode.className = 'message-box error';
+                        messageBoxOrariCustode.textContent = `Errore: ${err.message}`;
+                        messageBoxOrariCustode.style.display = 'block';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            saveBtnOrariCustode.addEventListener('click', async () => {
+                if (!orariCustodeDataToSave) return;
+                saveBtnOrariCustode.disabled = true;
+                saveBtnOrariCustode.textContent = 'Salvataggio...';
+                
+                try {
+                    await addDoc(collection(db, "importedCustodeSchedule"), {
+                        fileName: orariCustodeFileName,
+                        tableData: orariCustodeDataToSave,
+                        uploadedBy: currentUser.uid,
+                        uploadedAt: serverTimestamp()
+                    });
+                    await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { fileName: orariCustodeFileName });
+                    fileInputOrariCustode.value = '';
+                    saveBtnContainerOrariCustode.classList.add('hidden');
+                    messageBoxOrariCustode.className = 'message-box success';
+                    messageBoxOrariCustode.textContent = 'Orari custode salvati con successo!';
+                    messageBoxOrariCustode.style.display = 'block';
+                    setTimeout(() => { messageBoxOrariCustode.style.display = 'none'; }, 3000);
+                    await loadLatestOrariCustodeData();
+                } catch (error) {
+                    messageBoxOrariCustode.className = 'message-box error';
+                    messageBoxOrariCustode.textContent = `Errore durante il salvataggio: ${error.message}`;
+                    messageBoxOrariCustode.style.display = 'block';
+                } finally {
+                    saveBtnOrariCustode.disabled = false;
+                    saveBtnOrariCustode.textContent = 'Salva Orari Custode';
+                }
+            });
+
+            await loadLatestOrariCustodeData();
         };
 
         const setupUserManagementHandlers = () => {
@@ -3331,12 +3678,23 @@
         const renderNumeriUtiliCustode = () => `
             ${renderHeader('Contatti Custode')}
             <main>
-                <div class="card">
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Contatti del Custode</h3>
                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
                         Contatti del custode del condominio.
                     </p>
                     <div id="custode-container" class="data-table-container">
                         <p style="color:var(--secondary-text);">Caricamento contatti custode...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Orari del Custode</h3>
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
+                        Orari di servizio del custode del condominio.
+                    </p>
+                    <div id="custode-schedule-container" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Caricamento orari custode...</p>
                     </div>
                 </div>
             </main>
@@ -3380,6 +3738,50 @@
 
                 tableHTML += '</tbody></table>';
                 custodeContainer.innerHTML = tableHTML;
+            });
+
+            // Carica anche gli orari del custode
+            loadCustodeSchedule();
+        };
+
+        const loadCustodeSchedule = () => {
+            const scheduleContainer = document.getElementById('custode-schedule-container');
+            if (!scheduleContainer) return;
+
+            // Query per trovare i dati degli orari del custode
+            const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
+            onSnapshot(qSchedule, (snapshot) => {
+                if (snapshot.empty) {
+                    scheduleContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>`;
+                    return;
+                }
+
+                const scheduleData = snapshot.docs[0].data();
+                if (scheduleData.tableData && scheduleData.tableData.length > 0) {
+                    const headers = Object.keys(scheduleData.tableData[0]);
+                    let tableHTML = `<table class="data-table">
+                        <thead>
+                            <tr>`;
+                    
+                    headers.forEach(header => {
+                        tableHTML += `<th>${header.toUpperCase()}</th>`;
+                    });
+                    
+                    tableHTML += `</tr></thead><tbody>`;
+
+                    scheduleData.tableData.forEach(row => {
+                        tableHTML += `<tr>`;
+                        headers.forEach(header => {
+                            tableHTML += `<td>${row[header] || '–'}</td>`;
+                        });
+                        tableHTML += `</tr>`;
+                    });
+
+                    tableHTML += '</tbody></table>';
+                    scheduleContainer.innerHTML = tableHTML;
+                } else {
+                    scheduleContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun orario custode ancora importato.</p>`;
+                }
             });
         };
 
@@ -3495,7 +3897,7 @@
             }
         };
 
-        const loadPolls = () => {
+        const loadPolls = (status = 'all') => {
             const container = document.getElementById("polls-container");
             if (!container) return;
             
@@ -3506,7 +3908,13 @@
                 const q = query(collection(db, "polls"), orderBy("createdAt", "desc"));
                 onSnapshot(q, snapshot => {
                     if (snapshot.empty) {
-                        container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun sondaggio disponibile.</p></div>`;
+                        let message = 'Nessun sondaggio disponibile.';
+                        if (status === 'active') {
+                            message = 'Nessun sondaggio attivo disponibile.';
+                        } else if (status === 'closed') {
+                            message = 'Nessun sondaggio concluso disponibile.';
+                        }
+                        container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p></div>`;
                         return;
                     }
                     
@@ -3514,9 +3922,17 @@
                     const searchTerm = document.getElementById('poll-search')?.value?.toLowerCase() || '';
                     const typeFilter = document.getElementById('poll-type-filter')?.value || '';
                     
-                    // Filter polls based on search and type
+                    // Filter polls based on search, type, and status
                     let filteredPolls = snapshot.docs.filter(docSnap => {
                         const poll = docSnap.data();
+                        
+                        // Filter by status (active/closed)
+                        if (status !== 'all') {
+                            const deadline = poll.deadline?.toDate();
+                            const isExpired = deadline && deadline < new Date();
+                            if (status === 'active' && isExpired) return false;
+                            if (status === 'closed' && !isExpired) return false;
+                        }
                         
                         // Filter by type if specified
                         if (typeFilter && poll.pollType !== typeFilter) {
@@ -3535,7 +3951,13 @@
                     });
                     
                     if (filteredPolls.length === 0) {
-                        container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun sondaggio trovato con i criteri di ricerca.</p></div>`;
+                        let message = 'Nessun sondaggio trovato con i criteri di ricerca.';
+                        if (status === 'active') {
+                            message = 'Nessun sondaggio attivo trovato.';
+                        } else if (status === 'closed') {
+                            message = 'Nessun sondaggio concluso trovato.';
+                        }
+                        container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p></div>`;
                         return;
                     }
                     
