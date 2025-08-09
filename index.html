@@ -1049,6 +1049,7 @@
         
                 const renderInfoUtili = () => {
             const isSupervisore = userProfile?.tipoUtente === 'supervisore';
+            const isCondomino = userProfile?.tipoUtente === 'condomino';
             
             if (isSupervisore) {
                 // Supervisore users see all subsections
@@ -1070,6 +1071,25 @@
                                 <p style="text-align: left; font-size: 1.1rem;">Rubrica Completa</p>
                             </div>
                         </div>
+                    </div>
+                </main>
+                ${renderBottomNavigation()}
+                `;
+            } else if (isCondomino) {
+                // Condomino users see Rubrica Completa plus Custode
+                return `
+                ${renderHeader('Numeri Utili')}
+                <main>
+                    <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div onclick="navigateTo('numeriUtiliRubrica')" class="dashboard-item">
+                            <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20,2H4A2,2 0,0,0 2,4V20A2,2 0,0,0 4,22H20A2,2 0,0,0 22,20V4A2,2 0,0,0 20,2M12,6A3,3 0,0,1 15,9A3,3 0,0,1 12,12A3,3 0,0,1 9,9A3,3 0,0,1 12,6M18,20H6V18.6C6,16.6 10,15.5 12,15.5C14,15.5 18,16.6 18,18.6V20Z"/></svg></div>
+                            <p>Rubrica Completa</p>
+                        </div>
+                        <div onclick="navigateTo('numeriUtiliCustode')" class="dashboard-item">
+                            <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg></div>
+                            <p>Custode</p>
+                        </div>
+
                     </div>
                 </main>
                 ${renderBottomNavigation()}
@@ -1682,6 +1702,8 @@
                     else navigateTo('dashboard');
                     break;
                 case 'numeriUtiliRubrica': content = renderNumeriUtiliRubrica(); break;
+                case 'numeriUtiliCustode': content = renderNumeriUtiliCustode(); break;
+
                 case 'userManagement': 
                     if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement(); 
                     else navigateTo('dashboard');
@@ -1744,6 +1766,10 @@
                 case 'numeriUtiliRubrica':
                     loadRubricaNumbers();
                     break;
+                case 'numeriUtiliCustode':
+                    loadCustodeNumbers();
+                    break;
+
                 case 'userManagement': if (['supervisore', 'adm'].includes(userType)) { loadUsers(); setupAdminUserCreationHandler(); } break;
                 case 'gestioneGruppi': /* No handlers needed for the menu page */ break;
                 case 'gestioneGruppi_lista': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
@@ -3117,12 +3143,18 @@
             deleteMultipleImportedContacts(selectedIndices);
         };
 
-        const renderNumeriUtiliRubrica = () => `
+        const renderNumeriUtiliRubrica = () => {
+            const isSupervisore = userProfile?.tipoUtente === 'supervisore';
+            const descriptionText = isSupervisore 
+                ? 'Visualizzazione unificata di tutti i contatti, sia quelli importati automaticamente che quelli inseriti manualmente.'
+                : 'Contatti fornitori condominiali - SOLO IN CASO DI EMERGENZA';
+            
+            return `
             ${renderHeader('Rubrica Completa')}
             <main>
                 <div class="card">
                     <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
-                        Visualizzazione unificata di tutti i contatti, sia quelli importati automaticamente che quelli inseriti manualmente.
+                        ${descriptionText}
                     </p>
 
                     <h3 class="section-title" style="font-size: 1.1rem;">Contatti da Importazione Automatica</h3>
@@ -3138,6 +3170,7 @@
             </main>
             ${renderBottomNavigation()}
         `;
+        };
 
         const loadRubricaNumbers = () => {
             const importedContainer = document.getElementById('rubrica-imported-container');
@@ -3294,6 +3327,64 @@
                 });
             }
         };
+
+        const renderNumeriUtiliCustode = () => `
+            ${renderHeader('Contatti Custode')}
+            <main>
+                <div class="card">
+                    <p class="form-label" style="color: var(--secondary-text); margin-bottom: 2rem;">
+                        Contatti del custode del condominio.
+                    </p>
+                    <div id="custode-container" class="data-table-container">
+                        <p style="color:var(--secondary-text);">Caricamento contatti custode...</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+
+
+        const loadCustodeNumbers = () => {
+            const custodeContainer = document.getElementById('custode-container');
+            if (!custodeContainer) return;
+
+            // Query per trovare tutti gli utenti di tipo 'custode'
+            const qCustode = query(collection(db, "users"), where("tipoUtente", "==", "custode"));
+            onSnapshot(qCustode, (snapshot) => {
+                if (snapshot.empty) {
+                    custodeContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun custode trovato.</p>`;
+                    return;
+                }
+
+                let tableHTML = `<table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>NOME</th>
+                            <th>COGNOME</th>
+                            <th>EMAIL</th>
+                            <th>TELEFONO</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+                tableHTML += snapshot.docs.map(docSnap => {
+                    const custode = docSnap.data();
+                    return `<tr>
+                        <td>${custode.nome || '–'}</td>
+                        <td>${custode.cognome || '–'}</td>
+                        <td>${custode.email || '–'}</td>
+                        <td>${custode.telefono || '–'}</td>
+                    </tr>`;
+                }).join('');
+
+                tableHTML += '</tbody></table>';
+                custodeContainer.innerHTML = tableHTML;
+            });
+        };
+
+
+
         const showProfileMessage=(e,t)=>{const o=document.getElementById("profile-message");o&&(o.className=`message-box ${e}`,o.textContent=t,o.style.display="block",setTimeout(()=>{o.style.display="none"},5e3))};
         
         const showCommunicationDetail = async (commId) => {
