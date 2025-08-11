@@ -579,6 +579,38 @@
             border-bottom: none;
         }
 
+        /* Stili per l'icona di modifica in linea nella tabella */
+        .cell-content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .inline-edit-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text);
+            opacity: 0; /* Nascosto di default */
+            transition: opacity 0.2s ease-in-out;
+        }
+        .data-table tr:hover .inline-edit-btn {
+            opacity: 0.7; /* Visibile al passaggio del mouse sulla riga */
+        }
+        .inline-edit-btn:hover {
+            opacity: 1;
+            color: var(--accent-color); /* Evidenzia l'icona al passaggio del mouse */
+        }
+        .inline-edit-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
         /* --- Stili per Custom Searchable Dropdown --- */
         .custom-dropdown-container {
             position: relative;
@@ -1809,10 +1841,37 @@
             ${renderBottomNavigation()}
         `;
 
-        const renderUserManagement = () => `
+        const renderUserManagementMenu = () => `
             ${renderHeader('Gestione Utenti')}
             <main>
-                <div class="card" style="margin-bottom:2rem;">
+                <div class="dashboard-grid">
+                    <div onclick="navigateTo('userManagement_create')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                        <p>Crea Nuovi Utenti</p>
+                    </div>
+                    <div onclick="navigateTo('userManagement_list')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <p>Elenco Utenti</p>
+                    </div>
+                    <div onclick="navigateTo('userManagement_edit')" class="dashboard-item">
+                        <div class="dashboard-card">
+                           <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z"/></svg>
+                        </div>
+                        <p>Modifica Utenti</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderUserManagement_Create = () => `
+            ${renderHeader('Crea Nuovo Utente')}
+            <main>
+                <div class="card">
                     <h3 class="card-title">Crea Nuovo Utente</h3>
                     <div id="admin-create-user-message" class="message-box"></div>
                     <form id="admin-create-user-form" class="space-y-4">
@@ -1840,18 +1899,59 @@
                                 <option value="adm">Admin (ADM)</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group"><label for="admin-appartamento" class="form-label">Appartamento</label><input id="admin-appartamento" type="text" class="form-input"></div>
-                            <div class="form-group"><label for="admin-millesimi" class="form-label">Millesimi</label><input id="admin-millesimi" type="number" step="0.01" class="form-input"></div>
-                        </div>
                         <div class="form-group"><label for="admin-telefono" class="form-label">Telefono</label><input id="admin-telefono" type="tel" class="form-input"></div>
+                        
+                        <hr style="border-color: var(--surface-color-light); margin: 1.5rem 0;">
+
+                        <div class="form-group">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="form-label" style="margin-bottom:0;">Proprietà, Millesimi e Gruppi</label>
+                                <button type="button" onclick="addPropertyRow()" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;">+ Aggiungi Proprietà</button>
+                            </div>
+                            <div id="properties-editor-container">
+                                <!-- Le righe delle proprietà verranno aggiunte qui dinamicamente -->
+                            </div>
+                        </div>
+
                         <div class="flex justify-end pt-2">
                            <button type="submit" class="btn btn-primary">Crea Utente</button>
                         </div>
                     </form>
                 </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
 
+        const renderUserManagement_List = () => `
+            ${renderHeader('Elenco Utenti')}
+            <main>
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <input type="text" id="user-list-search" placeholder="Cerca per nome o cognome..." class="form-input">
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Riepilogo Utenti e Proprietà</h3>
+                    <div id="user-summary-table-container" class="data-table-container">
+                        <p>Caricamento elenco...</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const renderUserManagement_Edit = () => `
+            ${renderHeader('Modifica Utenti')}
+            <main>
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <input type="text" id="user-edit-search" placeholder="Cerca per nome o cognome..." class="form-input">
+                    </div>
+                </div>
                 <h2 class="section-title">Elenco Utenti Esistenti</h2>
+                <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                    Clicca sull'icona di modifica per aggiornare i dati di un utente, incluse le sue proprietà, millesimi e raggruppamenti.
+                </p>
                 <div id="user-list-container" class="list-container">
                     <p>Caricamento utenti...</p>
                 </div>
@@ -1982,8 +2082,20 @@
                 case 'numeriUtiliCustode': content = renderNumeriUtiliCustode(); break;
                 case 'infoUtili_amministratore': content = renderInfoUtiliAmministratore(); break;
 
-                case 'userManagement': 
-                    if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement(); 
+                case 'userManagement':
+                    if (['supervisore', 'adm'].includes(userType)) content = renderUserManagementMenu();
+                    else navigateTo('dashboard');
+                    break;
+                case 'userManagement_create':
+                    if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement_Create();
+                    else navigateTo('dashboard');
+                    break;
+                case 'userManagement_list':
+                    if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement_List();
+                    else navigateTo('dashboard');
+                    break;
+                case 'userManagement_edit':
+                    if (['supervisore', 'adm'].includes(userType)) content = renderUserManagement_Edit();
                     else navigateTo('dashboard');
                     break;
                 case 'gestioneGruppi':
@@ -2101,7 +2213,20 @@
                     setupInfoUtiliAmministratoreHandlers();
                     break;
 
-                case 'userManagement': if (['supervisore', 'adm'].includes(userType)) { loadUsers(); setupAdminUserCreationHandler(); } break;
+                case 'userManagement': /* No handlers needed for the menu page */ break;
+                case 'userManagement_create': if (['supervisore', 'adm'].includes(userType)) { setupAdminUserCreationHandler(); } break;
+                case 'userManagement_list': 
+                    if (['supervisore', 'adm'].includes(userType)) { 
+                        loadUserListTable(); 
+                        document.getElementById('user-list-search')?.addEventListener('input', loadUserListTable);
+                    } 
+                    break;
+                case 'userManagement_edit': 
+                    if (['supervisore', 'adm'].includes(userType)) { 
+                        loadUsers(); 
+                        document.getElementById('user-edit-search')?.addEventListener('input', loadUsers);
+                    } 
+                    break;
                 case 'gestioneGruppi': /* No handlers needed for the menu page */ break;
                 case 'gestioneGruppi_lista': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
                 case 'gestioneGruppi_regole': if (['supervisore', 'adm'].includes(userType)) { loadGroupRules(); setupGestioneGruppiHandlers(); } break;
@@ -3236,35 +3361,67 @@
         };
 
         const setupAdminUserCreationHandler = () => {
+            // Carica i gruppi quando la pagina viene renderizzata, così `addPropertyRow` può usarli
+            const loadGroupsForCreation = async () => {
+                try {
+                    const q = query(collection(db, "partialCondos"), orderBy("name"));
+                    const querySnapshot = await getDocs(q);
+                    availableGroups = querySnapshot.docs.map(doc => doc.data());
+                } catch (error) {
+                    console.error("Impossibile caricare i gruppi per la pagina di creazione:", error);
+                    availableGroups = [];
+                }
+            };
+            loadGroupsForCreation();
+
             const form = document.getElementById('admin-create-user-form');
             if (!form) return;
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('admin-email').value;
-                const password = document.getElementById('admin-password').value;
-                const profileData = {
-                    nome: document.getElementById('admin-nome').value,
-                    cognome: document.getElementById('admin-cognome').value,
-                    tipoUtente: document.getElementById('admin-tipo-utente').value,
-                    proprieta: [],
-                    telefono: document.getElementById('admin-telefono').value
-                };
-                const appartamento = document.getElementById('admin-appartamento').value;
-                const millesimi = parseFloat(document.getElementById('admin-millesimi').value);
-                if (appartamento && !isNaN(millesimi)) {
-                    profileData.proprieta.push({ interno: appartamento, millesimi: millesimi, gruppo: '' });
-                }
                 const messageBox = document.getElementById('admin-create-user-message');
                 messageBox.style.display = 'none';
+
                 try {
+                    const email = document.getElementById('admin-email').value;
+                    const password = document.getElementById('admin-password').value;
+                    
+                    const propertiesForUser = [];
+                    let totalMillesimi = 0;
+                    const propertyRows = form.querySelectorAll('.property-edit-row');
+                    
+                    propertyRows.forEach(row => {
+                        const interno = row.querySelector('input[data-field="interno"]').value.trim();
+                        const millesimi = parseFloat(row.querySelector('input[data-field="millesimi"]').value) || 0;
+                        const gruppo = row.querySelector('select[data-field="gruppo"]').value; // <-- MODIFICA QUI
+                        
+                        if (interno) {
+                            propertiesForUser.push({ interno, millesimi, gruppo });
+                            totalMillesimi += millesimi;
+                        }
+                    });
+
+                    const profileData = {
+                        nome: document.getElementById('admin-nome').value,
+                        cognome: document.getElementById('admin-cognome').value,
+                        tipoUtente: document.getElementById('admin-tipo-utente').value,
+                        telefono: document.getElementById('admin-telefono').value,
+                        proprieta: propertiesForUser,
+                        millesimiTotali: totalMillesimi
+                    };
+
                     if (!profileData.nome || !profileData.cognome || !profileData.tipoUtente) {
                         throw new Error('Nome, Cognome e Tipo Utente sono obbligatori.');
                     }
+                    
                     await register(email, password, profileData);
+                    
                     messageBox.className = 'message-box success';
                     messageBox.textContent = `Utente ${email} creato con successo!`;
                     messageBox.style.display = 'block';
                     form.reset();
+                    const propertiesContainer = document.getElementById('properties-editor-container');
+                    if (propertiesContainer) propertiesContainer.innerHTML = '';
+
                 } catch (error) {
                     messageBox.className = 'message-box error';
                     messageBox.textContent = `Errore: ${error.message}`;
@@ -4675,25 +4832,42 @@
             const submitButton = form.querySelector('button[type="submit"]');
             const messageBox = form.querySelector('#edit-user-message');
             
-            const updatedData = {
-                nome: form.querySelector('#edit-nome').value,
-                cognome: form.querySelector('#edit-cognome').value,
-                tipoUtente: form.querySelector('#edit-tipo-utente').value,
-                telefono: form.querySelector('#edit-telefono').value,
-            };
-
             submitButton.disabled = true;
             submitButton.textContent = 'Salvataggio...';
             messageBox.style.display = 'none';
 
             try {
-                // Nota: la modifica delle proprietà (appartamenti/millesimi) non è inclusa in questo form
-                // per semplicità. Viene gestita solo la modifica dei dati principali dell'utente.
+                const updatedProperties = [];
+                let totalMillesimi = 0;
+                const propertyRows = form.querySelectorAll('.property-edit-row');
+                
+                propertyRows.forEach(row => {
+                    const interno = row.querySelector('input[data-field="interno"]').value.trim();
+                    const millesimi = parseFloat(row.querySelector('input[data-field="millesimi"]').value) || 0;
+                    const gruppo = row.querySelector('select[data-field="gruppo"]').value; // <-- MODIFICA QUI
+                    
+                    if (interno) {
+                        updatedProperties.push({ interno, millesimi, gruppo });
+                        totalMillesimi += millesimi;
+                    }
+                });
+
+                const updatedData = {
+                    nome: form.querySelector('#edit-nome').value,
+                    cognome: form.querySelector('#edit-cognome').value,
+                    tipoUtente: form.querySelector('#edit-tipo-utente').value,
+                    telefono: form.querySelector('#edit-telefono').value,
+                    proprieta: updatedProperties,
+                    millesimiTotali: totalMillesimi
+                };
+
                 await updateDoc(doc(db, "users", userId), updatedData);
                 await logActivity("user_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedUserId: userId, changes: updatedData });
                 
                 hideModal();
-                loadUsers(); // Ricarica la lista per mostrare i dati aggiornati
+                if (currentPage === 'userManagement_edit') {
+                    loadUsers();
+                }
             } catch (error) {
                 console.error("Errore durante l'aggiornamento dell'utente:", error);
                 messageBox.className = 'message-box error';
@@ -4704,46 +4878,60 @@
             }
         };
 
-        const openUserEditModal = (user) => {
-            // L'oggetto 'user' contiene id, nome, cognome, email, tipoUtente, etc.
+        const openUserEditModal = async (user) => {
+            // Carica i gruppi disponibili prima di costruire il modal
+            try {
+                const q = query(collection(db, "partialCondos"), orderBy("name"));
+                const querySnapshot = await getDocs(q);
+                availableGroups = querySnapshot.docs.map(doc => doc.data());
+            } catch (error) {
+                console.error("Impossibile caricare i gruppi per il modal:", error);
+                availableGroups = []; // Assicura che sia un array vuoto in caso di errore
+            }
+
             const allRoles = ["condomino", "amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"];
             const rolesOptions = allRoles.map(role => {
                 const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
                 return `<option value="${role}" ${user.tipoUtente === role ? 'selected' : ''}>${capitalizedRole}</option>`
             }).join('');
 
+            const propertiesHtml = (user.proprieta || []).map((prop) => {
+                const groupOptionsHtml = availableGroups.map(group => 
+                    `<option value="${group.name}" ${prop.gruppo === group.name ? 'selected' : ''}>${group.name}</option>`
+                ).join('');
+
+                return `
+                <div class="property-edit-row grid grid-cols-4 gap-2 items-center" style="margin-bottom: 0.5rem;">
+                    <input type="text" data-field="interno" value="${prop.interno || ''}" class="form-input" placeholder="ID Unità">
+                    <input type="number" step="0.01" data-field="millesimi" value="${prop.millesimi || 0}" class="form-input" placeholder="Millesimi">
+                    <select data-field="gruppo" class="form-select">
+                        <option value="">Nessun Gruppo</option>
+                        ${groupOptionsHtml}
+                    </select>
+                    <button type="button" onclick="this.parentElement.remove()" class="btn-icon" style="background:var(--danger); color:white;">&times;</button>
+                </div>
+                `;
+            }).join('');
+
             const modalContent = `
                 <form id="edit-user-form" class="space-y-4" onsubmit="updateUser(event)">
                     <input type="hidden" id="edit-user-id" value="${user.id}">
                     <div id="edit-user-message" class="message-box"></div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" value="${user.email || ''}" class="form-input" disabled>
-                        <p class="form-label" style="font-size:0.8rem; margin-top:0.25rem;">L'email non può essere modificata.</p>
-                    </div>
-
+                    <div class="form-group"><label class="form-label">Email</label><input type="email" value="${user.email || ''}" class="form-input" disabled></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label for="edit-nome" class="form-label">Nome</label>
-                            <input id="edit-nome" type="text" required class="form-input" value="${user.nome || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-cognome" class="form-label">Cognome</label>
-                            <input id="edit-cognome" type="text" required class="form-input" value="${user.cognome || ''}">
-                        </div>
+                        <div class="form-group"><label for="edit-nome" class="form-label">Nome</label><input id="edit-nome" type="text" required class="form-input" value="${user.nome || ''}"></div>
+                        <div class="form-group"><label for="edit-cognome" class="form-label">Cognome</label><input id="edit-cognome" type="text" required class="form-input" value="${user.cognome || ''}"></div>
                     </div>
-
+                    <div class="form-group"><label for="edit-tipo-utente" class="form-label">Tipo Utente</label><select id="edit-tipo-utente" required class="form-select">${rolesOptions}</select></div>
+                    <div class="form-group"><label for="edit-telefono" class="form-label">Telefono</label><input id="edit-telefono" type="tel" class="form-input" value="${user.telefono || ''}"></div>
+                    <hr style="border-color: var(--surface-color-light); margin: 1.5rem 0;">
                     <div class="form-group">
-                        <label for="edit-tipo-utente" class="form-label">Tipo di Utente</label>
-                        <select id="edit-tipo-utente" required class="form-select">${rolesOptions}</select>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="form-label" style="margin-bottom:0;">Proprietà, Millesimi e Gruppi</label>
+                            <button type="button" onclick="addPropertyRow()" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;">+ Aggiungi</button>
+                        </div>
+                        <div id="properties-editor-container">${propertiesHtml}</div>
                     </div>
-
-                    <div class="form-group">
-                        <label for="edit-telefono" class="form-label">Telefono</label>
-                        <input id="edit-telefono" type="tel" class="form-input" value="${user.telefono || ''}">
-                    </div>
-                    
                     <div class="flex justify-end gap-4 pt-2">
                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
                        <button type="submit" class="btn btn-primary">Salva Modifiche</button>
@@ -4762,18 +4950,26 @@
                 return;
             }
             try {
+                const searchTerm = document.getElementById('user-edit-search')?.value.toLowerCase().trim() || '';
                 const usersSnapshot = await getDocs(query(collection(db, "users"), orderBy("cognome")));
-                if (usersSnapshot.empty) {
-                    container.innerHTML = '<p>Nessun utente trovato.</p>';
+
+                const filteredUsers = usersSnapshot.docs.filter(doc => {
+                    if (!searchTerm) return true;
+                    const user = doc.data();
+                    const fullName = `${user.nome || ''} ${user.cognome || ''}`.toLowerCase();
+                    return fullName.includes(searchTerm);
+                });
+
+                if (filteredUsers.length === 0) {
+                    container.innerHTML = '<p>Nessun utente trovato con i criteri di ricerca.</p>';
                 } else {
-                    container.innerHTML = usersSnapshot.docs.map(docSnap => {
+                    container.innerHTML = filteredUsers.map(docSnap => {
                         const user = docSnap.data();
                         const userId = docSnap.id;
                         const propertiesHtml = user.proprieta && user.proprieta.length > 0
-                            ? user.proprieta.map(p => `<li>${p.interno}: ${p.millesimi.toFixed(2)} ‰ ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')
+                            ? user.proprieta.map(p => `<li>${p.interno}: ${(p.millesimi || 0).toFixed(2)} ‰ ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')
                             : '<li>Nessuna proprietà</li>';
                         
-                        // Aggiunta delle icone di modifica ed eliminazione
                         const userObjectString = JSON.stringify({ id: userId, ...user }).replace(/'/g, "&apos;");
 
                         return `
@@ -4807,6 +5003,62 @@
             } catch (error) {
                 console.error("Errore nel caricare gli utenti:", error);
                 container.innerHTML = '<p>Errore nel caricamento degli utenti.</p>';
+            }
+        };
+
+        const loadUserListTable = async () => {
+            const container = document.getElementById('user-summary-table-container');
+            if (!container) return;
+            try {
+                const searchTerm = document.getElementById('user-list-search')?.value.toLowerCase().trim() || '';
+                const usersSnapshot = await getDocs(query(collection(db, "users"), orderBy("cognome")));
+
+                const filteredUsers = usersSnapshot.docs.filter(doc => {
+                    if (!searchTerm) return true;
+                    const user = doc.data();
+                    const fullName = `${user.nome || ''} ${user.cognome || ''}`.toLowerCase();
+                    return fullName.includes(searchTerm);
+                });
+
+                if (filteredUsers.length === 0) {
+                    container.innerHTML = '<p>Nessun utente trovato con i criteri di ricerca.</p>';
+                    return;
+                }
+
+                let tableHtml = `<table class="data-table"><thead><tr><th>Nome</th><th>Cognome</th><th>Proprietà</th><th>Raggruppamento</th><th>Millesimi</th></tr></thead><tbody>`;
+
+                filteredUsers.forEach(docSnap => {
+                    const user = docSnap.data();
+                    const userObjectString = JSON.stringify({ id: docSnap.id, ...user }).replace(/'/g, "&apos;");
+                    const editIconHtml = `<button class="inline-edit-btn" onclick='openUserEditModal(${userObjectString})' title="Modifica utente"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z"/></svg></button>`;
+                    const createCell = (content) => `<div class="cell-content-wrapper"><span>${content}</span>${editIconHtml}</div>`;
+
+                    if (user.proprieta && user.proprieta.length > 0) {
+                        user.proprieta.forEach((prop, index) => {
+                            tableHtml += `<tr>
+                                ${index === 0 ? `<td rowspan="${user.proprieta.length}">${createCell(user.nome)}</td><td rowspan="${user.proprieta.length}">${createCell(user.cognome)}</td>` : ''}
+                                <td>${createCell(prop.interno || 'N/D')}</td>
+                                <td>${createCell(prop.gruppo || 'N/D')}</td>
+                                <td>${createCell((prop.millesimi || 0).toFixed(2))}</td>
+                            </tr>`;
+                        });
+                    } else {
+                        tableHtml += `<tr>
+                            <td>${createCell(user.nome)}</td>
+                            <td>${createCell(user.cognome)}</td>
+                            <td>${createCell('Nessuna')}</td>
+                            <td>${createCell('N/D')}</td>
+                            <td>${createCell('0.00')}</td>
+                        </tr>`;
+                    }
+                });
+
+                tableHtml += `</tbody></table>`;
+                container.innerHTML = tableHtml;
+
+            } catch (error) {
+                console.error("Errore nel caricare la tabella utenti:", error);
+                container.innerHTML = '<p>Errore nel caricamento della tabella utenti.</p>';
             }
         };
 
@@ -5141,6 +5393,32 @@
 
         window.updateUser = updateUser;
         window.deletePoll = deletePoll;
+
+        let availableGroups = []; // Variabile globale per contenere i gruppi
+
+        const addPropertyRow = () => {
+            const container = document.getElementById('properties-editor-container');
+            if (!container) return;
+
+            const groupOptionsHtml = availableGroups.map(group => 
+                `<option value="${group.name}">${group.name}</option>`
+            ).join('');
+
+            const newRow = document.createElement('div');
+            newRow.className = 'property-edit-row grid grid-cols-4 gap-2 items-center';
+            newRow.style.marginBottom = '0.5rem';
+            newRow.innerHTML = `
+                <input type="text" data-field="interno" value="" class="form-input" placeholder="ID Unità">
+                <input type="number" step="0.01" data-field="millesimi" value="0" class="form-input" placeholder="Millesimi">
+                <select data-field="gruppo" class="form-select">
+                    <option value="">Nessun Gruppo</option>
+                    ${groupOptionsHtml}
+                </select>
+                <button type="button" onclick="this.parentElement.remove()" class="btn-icon" style="background:var(--danger); color:white;">&times;</button>
+            `;
+            container.appendChild(newRow);
+        };
+        window.addPropertyRow = addPropertyRow;
 
         // --- FUNZIONE onAuthStateChanged CORRETTA E ROBUSTA ---
         onAuthStateChanged(auth, async (user) => {
