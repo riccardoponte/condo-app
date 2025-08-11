@@ -1875,14 +1875,18 @@
                     <h3 class="card-title">Crea Nuovo Utente</h3>
                     <div id="admin-create-user-message" class="message-box"></div>
                     <form id="admin-create-user-form" class="space-y-4">
-                        <div class="form-group">
-                            <label for="admin-email" class="form-label">Email</label>
-                            <input id="admin-email" type="email" required class="form-input">
+                        <div class="form-group"><label for="admin-email" class="form-label">Email</label><input id="admin-email" type="email" required class="form-input"></div>
+                        <div class="form-group"><label for="admin-password" class="form-label">Password Temporanea</label><input id="admin-password" type="password" required class="form-input"></div>
+                        
+                        <div class="form-group custom-dropdown-container">
+                            <label for="admin-nominativo-search" class="form-label">Cerca Nominativo (per auto-compilazione)</label>
+                            <div style="position: relative;">
+                                <input id="admin-nominativo-search" type="text" placeholder="Digita per cercare nella tabella importata..." class="form-input" autocomplete="off">
+                                <button type="button" id="admin-clear-nominativo-search" class="password-toggle-btn hidden" style="transform: translateY(calc(-50% + 0.25rem));">&times;</button>
+                            </div>
+                            <div id="admin-nominativo-options" class="custom-dropdown-list hidden"></div>
                         </div>
-                        <div class="form-group">
-                            <label for="admin-password" class="form-label">Password Temporanea</label>
-                            <input id="admin-password" type="password" required class="form-input">
-                        </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             <div class="form-group"><label for="admin-nome" class="form-label">Nome</label><input id="admin-nome" type="text" required class="form-input"></div>
                             <div class="form-group"><label for="admin-cognome" class="form-label">Cognome</label><input id="admin-cognome" type="text" required class="form-input"></div>
@@ -1906,10 +1910,10 @@
                         <div class="form-group">
                             <div class="flex justify-between items-center mb-2">
                                 <label class="form-label" style="margin-bottom:0;">Proprietà, Millesimi e Gruppi</label>
-                                <button type="button" onclick="addPropertyRow()" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;">+ Aggiungi Proprietà</button>
+                                <button type="button" id="admin-add-property-btn" onclick="addPropertyRow()" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size:0.8rem;">+ Aggiungi Proprietà</button>
                             </div>
                             <div id="properties-editor-container">
-                                <!-- Le righe delle proprietà verranno aggiunte qui dinamicamente -->
+                                <p class="form-label" style="color:var(--secondary-text); font-size:0.9rem;">Cerca un nominativo per caricare i dati o aggiungi le proprietà manualmente.</p>
                             </div>
                         </div>
 
@@ -3361,38 +3365,132 @@
         };
 
         const setupAdminUserCreationHandler = () => {
-            // Carica i gruppi quando la pagina viene renderizzata, così `addPropertyRow` può usarli
-            const loadGroupsForCreation = async () => {
+            let groupedProperties = {};
+
+            const findHeader = (headers, keywords) => headers.find(h => keywords.some(k => h.toLowerCase().includes(k)));
+
+            const loadPrerequisitesForCreation = async () => {
                 try {
-                    const q = query(collection(db, "partialCondos"), orderBy("name"));
-                    const querySnapshot = await getDocs(q);
-                    availableGroups = querySnapshot.docs.map(doc => doc.data());
+                    const qGroups = query(collection(db, "partialCondos"), orderBy("name"));
+                    const qData = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
+                    
+                    const [groupsSnapshot, dataSnapshot] = await Promise.all([getDocs(qGroups), getDocs(qData)]);
+
+                    availableGroups = groupsSnapshot.docs.map(doc => doc.data());
+                    
+                    if (!dataSnapshot.empty) {
+                        const tableData = dataSnapshot.docs[0].data().tableData || [];
+                        const headers = tableData.length > 0 ? Object.keys(tableData[0]) : [];
+                        const nominativoHeader = findHeader(headers, ['nominativo']);
+                        const idHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
+                        const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
+                        const groupHeader = findHeader(headers, ['raggruppamento', 'gruppo']);
+
+                        if (nominativoHeader && idHeader && millesimiHeader) {
+                            groupedProperties = {};
+                            tableData.forEach(item => {
+                                const nominativo = item[nominativoHeader];
+                                if (!nominativo) return;
+                                if (!groupedProperties[nominativo]) groupedProperties[nominativo] = [];
+                                groupedProperties[nominativo].push({
+                                    interno: item[idHeader],
+                                    millesimi: item[millesimiHeader],
+                                    gruppo: item[groupHeader] || ''
+                                });
+                            });
+                        }
+                    }
                 } catch (error) {
-                    console.error("Impossibile caricare i gruppi per la pagina di creazione:", error);
-                    availableGroups = [];
+                    console.error("Impossibile caricare i dati per la pagina di creazione:", error);
                 }
             };
-            loadGroupsForCreation();
+            loadPrerequisitesForCreation();
 
             const form = document.getElementById('admin-create-user-form');
-            if (!form) return;
-            form.addEventListener('submit', async (e) => {
+            const searchInput = document.getElementById('admin-nominativo-search');
+            const optionsContainer = document.getElementById('admin-nominativo-options');
+            const propertiesContainer = document.getElementById('properties-editor-container');
+            const addPropertyBtn = document.getElementById('admin-add-property-btn');
+            const clearSearchBtn = document.getElementById('admin-clear-nominativo-search');
+            const nomeInput = document.getElementById('admin-nome');
+            const cognomeInput = document.getElementById('admin-cognome');
+
+            const renderDropdownOptions = (filter = '') => {
+                const lowerFilter = filter.toLowerCase();
+                const filteredNames = Object.keys(groupedProperties).filter(name => name.toLowerCase().includes(lowerFilter)).sort();
+                optionsContainer.innerHTML = filteredNames.length > 0
+                    ? filteredNames.map(name => `<div class="custom-dropdown-item" data-value="${name}">${name}</div>`).join('')
+                    : `<div class="custom-dropdown-item" style="cursor:default;">Nessun risultato</div>`;
+                optionsContainer.classList.remove('hidden');
+            };
+
+            const selectNominativo = (name) => {
+                searchInput.value = name;
+                optionsContainer.classList.add('hidden');
+                clearSearchBtn.classList.remove('hidden');
+                addPropertyBtn.classList.add('hidden');
+
+                // Auto-compila e blocca nome e cognome secondo la nuova regola
+                cognomeInput.value = name;   // Il "Nominativo" della tabella va nel cognome
+                nomeInput.value = 'Sig.';     // Il nome è fisso a "Sig."
+                cognomeInput.readOnly = true;
+                nomeInput.readOnly = true;
+
+                // Auto-compila e blocca le proprietà (gestisce anche le multiproprietà)
+                const properties = groupedProperties[name] || [];
+                propertiesContainer.innerHTML = properties.map(prop => `
+                    <div class="property-edit-row grid grid-cols-4 gap-2 items-center" style="margin-bottom: 0.5rem;">
+                        <input type="text" data-field="interno" value="${prop.interno || ''}" class="form-input" readonly>
+                        <input type="number" step="0.01" data-field="millesimi" value="${prop.millesimi || 0}" class="form-input" readonly>
+                        <input type="text" data-field="gruppo" value="${prop.gruppo || ''}" class="form-input" readonly>
+                        <div/>
+                    </div>
+                `).join('');
+            };
+
+            const clearSelection = () => {
+                searchInput.value = '';
+                clearSearchBtn.classList.add('hidden');
+                addPropertyBtn.classList.remove('hidden');
+                
+                // Svuota e sblocca nome e cognome
+                cognomeInput.value = '';
+                nomeInput.value = '';
+                cognomeInput.readOnly = false;
+                nomeInput.readOnly = false;
+
+                propertiesContainer.innerHTML = `<p class="form-label" style="color:var(--secondary-text); font-size:0.9rem;">Cerca un nominativo per caricare i dati o aggiungi le proprietà manualmente.</p>`;
+            };
+
+            searchInput?.addEventListener('input', () => renderDropdownOptions(searchInput.value));
+            searchInput?.addEventListener('focus', () => renderDropdownOptions(searchInput.value));
+            clearSearchBtn?.addEventListener('click', clearSelection);
+            optionsContainer?.addEventListener('click', (e) => {
+                if (e.target.dataset.value) selectNominativo(e.target.dataset.value);
+            });
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.custom-dropdown-container')) optionsContainer?.classList.add('hidden');
+            });
+
+            form?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const messageBox = document.getElementById('admin-create-user-message');
                 messageBox.style.display = 'none';
 
                 try {
-                    const email = document.getElementById('admin-email').value;
-                    const password = document.getElementById('admin-password').value;
-                    
                     const propertiesForUser = [];
                     let totalMillesimi = 0;
                     const propertyRows = form.querySelectorAll('.property-edit-row');
                     
                     propertyRows.forEach(row => {
-                        const interno = row.querySelector('input[data-field="interno"]').value.trim();
-                        const millesimi = parseFloat(row.querySelector('input[data-field="millesimi"]').value) || 0;
-                        const gruppo = row.querySelector('select[data-field="gruppo"]').value; // <-- MODIFICA QUI
+                        const internoInput = row.querySelector('input[data-field="interno"]');
+                        const millesimiInput = row.querySelector('input[data-field="millesimi"]');
+                        const gruppoSelect = row.querySelector('select[data-field="gruppo"]');
+                        const gruppoInput = row.querySelector('input[data-field="gruppo"]');
+
+                        const interno = internoInput.value.trim();
+                        const millesimi = parseFloat(millesimiInput.value) || 0;
+                        const gruppo = gruppoSelect ? gruppoSelect.value : (gruppoInput ? gruppoInput.value.trim() : '');
                         
                         if (interno) {
                             propertiesForUser.push({ interno, millesimi, gruppo });
@@ -3401,8 +3499,8 @@
                     });
 
                     const profileData = {
-                        nome: document.getElementById('admin-nome').value,
-                        cognome: document.getElementById('admin-cognome').value,
+                        nome: nomeInput.value,
+                        cognome: cognomeInput.value,
                         tipoUtente: document.getElementById('admin-tipo-utente').value,
                         telefono: document.getElementById('admin-telefono').value,
                         proprieta: propertiesForUser,
@@ -3413,14 +3511,13 @@
                         throw new Error('Nome, Cognome e Tipo Utente sono obbligatori.');
                     }
                     
-                    await register(email, password, profileData);
+                    await register(document.getElementById('admin-email').value, document.getElementById('admin-password').value, profileData);
                     
                     messageBox.className = 'message-box success';
-                    messageBox.textContent = `Utente ${email} creato con successo!`;
+                    messageBox.textContent = `Utente ${profileData.cognome} creato con successo!`;
                     messageBox.style.display = 'block';
                     form.reset();
-                    const propertiesContainer = document.getElementById('properties-editor-container');
-                    if (propertiesContainer) propertiesContainer.innerHTML = '';
+                    clearSelection();
 
                 } catch (error) {
                     messageBox.className = 'message-box error';
