@@ -988,7 +988,7 @@
                         <select id="poll-type-filter" class="form-select w-full">
                             <option value="">Tutti i tipi</option>
                             <option value="supervisor-consiglieri">Supervisor e Consiglieri</option>
-                            <option value="condomini">Condomini</option>
+                            <option value="condomino">Condomino</option>
                         </select>
                     </div>
                 </div>
@@ -2400,6 +2400,50 @@
                 addOptionInput();
             };
 
+            const triggerMakeWebhookForNewPoll = async (pollData) => {
+                // --- SECURITY BEST PRACTICE ---
+                // This URL should be stored in a secure backend or environment variable,
+                // not exposed in client-side code.
+                const MAKE_WEBHOOK_URL = "https://eomzj0cqj0dfwb3.m.pipedream.net";
+
+                try {
+                    // 1. Fetch all registered user emails from Firestore.
+                    const usersSnapshot = await getDocs(collection(db, "users"));
+                    const recipientEmails = usersSnapshot.docs
+                        .map(doc => doc.data().email)
+                        .filter(Boolean); // Filter out any null/undefined emails
+
+                    // 2. Prepare the payload for Make.com.
+                    //    The recipientEmails are formatted as a proper JSON array.
+                    //    Date objects are automatically converted to ISO strings by JSON.stringify.
+                    const payload = {
+                        surveyDetails: pollData,
+                        recipientEmails: recipientEmails
+                    };
+
+                    // 3. Send the data to the Make.com webhook endpoint.
+                    const response = await fetch(MAKE_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Webhook request failed with status: ${response.status}`);
+                    }
+
+                    console.log("Make.com webhook for new survey triggered successfully.");
+                    await logActivity("webhook_sent_poll", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { pollTitle: pollData.title, status: 'success' });
+
+                } catch (error) {
+                    console.error("Error triggering Make.com webhook:", error);
+                    // Log the failure but do not block the user interface.
+                    await logActivity("webhook_sent_poll_failed", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { pollTitle: pollData.title, error: error.message });
+                }
+            };
+
             form.addEventListener("submit", async (event) => {
                 event.preventDefault();
                 const messageBox = document.getElementById('poll-creation-message');
@@ -2442,6 +2486,11 @@
                     };
 
                     await addDoc(collection(db, "polls"), pollData);
+                    
+                    // WEBHOOK TRIGGER: Call the new function after successfully creating the poll.
+                    // This is a non-blocking "fire-and-forget" call to avoid delaying the UI.
+                    triggerMakeWebhookForNewPoll(pollData);
+
                     await logActivity("poll_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title });
                     
                     form.reset();
