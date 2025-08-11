@@ -4461,7 +4461,7 @@
             const container = document.getElementById("polls-container");
             if (!container) return;
             
-            const settingsRef = doc(db, "settings", "pollAuthorization");
+            const settingsRef = doc(db, "settings", "pollCreationAuthorization");
             getDoc(settingsRef).then(settingsSnap => {
                 const pollSetting = settingsSnap.exists() ? settingsSnap.data().setting : 'option2';
                 const canUserVote = isUserAllowedToVote(userProfile.tipoUtente, pollSetting);
@@ -5013,7 +5013,7 @@
 
         const voteOnPoll = async (pollId, optionIndex) => {
             try {
-                const settingsRef = doc(db, "settings", "pollAuthorization");
+                const settingsRef = doc(db, "settings", "pollCreationAuthorization");
                 const settingsSnap = await getDoc(settingsRef);
                 const pollSetting = settingsSnap.exists() ? settingsSnap.data().setting : "option2";
                 if (!isUserAllowedToVote(userProfile.tipoUtente, pollSetting)) {
