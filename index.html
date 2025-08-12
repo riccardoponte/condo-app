@@ -596,12 +596,10 @@
             align-items: center;
             justify-content: center;
             color: var(--secondary-text);
-            opacity: 0; /* Nascosto di default */
-            transition: opacity 0.2s ease-in-out;
+            opacity: 0.7; /* Visibile di default */
+            transition: opacity 0.2s, color 0.2s;
         }
-        .data-table tr:hover .inline-edit-btn {
-            opacity: 0.7; /* Visibile al passaggio del mouse sulla riga */
-        }
+        /* La regola .data-table tr:hover .inline-edit-btn è stata rimossa */
         .inline-edit-btn:hover {
             opacity: 1;
             color: var(--accent-color); /* Evidenzia l'icona al passaggio del mouse */
@@ -660,8 +658,8 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updateEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         const firebaseConfig = {
@@ -754,6 +752,39 @@
         
         const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
         const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
+
+        const adminCreateUser = async (email, password, profileData) => {
+            const tempAppName = `user-creation-${Date.now()}`;
+            const secondaryApp = initializeApp(firebaseConfig, tempAppName);
+            const secondaryAuth = getAuth(secondaryApp);
+
+            try {
+                const newUserCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                const newUserId = newUserCredential.user.uid;
+
+                const totalMillesimi = profileData.proprieta.reduce(((sum, prop) => sum + (parseFloat(prop.millesimi) || 0)), 0);
+                await setDoc(doc(db, "users", newUserId), {
+                    nome: profileData.nome,
+                    cognome: profileData.cognome,
+                    email: email,
+                    tipoUtente: profileData.tipoUtente,
+                    proprieta: profileData.proprieta || [],
+                    telefono: profileData.telefono || "",
+                    millesimiTotali: totalMillesimi,
+                    createdAt: (new Date).toISOString()
+                });
+
+                await logActivity("user_created_by_admin", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    createdUserId: newUserId,
+                    createdUserEmail: email,
+                    createdUserType: profileData.tipoUtente
+                });
+            } catch (error) {
+                throw error;
+            } finally {
+                await deleteApp(secondaryApp);
+            }
+        };
         const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
         
         // --- FUNZIONE LOGOUT CORRETTA ---
@@ -1235,7 +1266,7 @@
                             <div><label class="form-label">Nome</label><input type="text" id="profile-nome" value="${userProfile?.nome || ''}" required class="form-input"></div>
                             <div><label class="form-label">Cognome</label><input type="text" id="profile-cognome" value="${userProfile?.cognome || ''}" required class="form-input"></div>
                         </div>
-                        <div><label class="form-label">Email</label><input type="email" value="${currentUser?.email || ''}" required class="form-input" disabled></div>
+                        <div><label class="form-label">Email</label><input type="email" id="profile-email" value="${currentUser?.email || ''}" required class="form-input"></div>
                         <div><label class="form-label">Telefono</label><input type="tel" id="profile-telefono" value="${userProfile?.telefono || ''}" placeholder="Nessun numero" class="form-input"></div>
                         <div class="form-group">
                             <label class="form-label">Le Tue Proprietà</label>
@@ -2036,7 +2067,7 @@
                                 <option value="consigliere">Consigliere</option>
                                 <option value="fornitore">Fornitore</option>
                                 <option value="supervisore">Supervisore</option>
-                                <option value="adm">Admin (ADM)</option>
+                                ${userProfile?.tipoUtente === 'adm' ? `<option value="adm">Admin (ADM)</option>` : ''}
                             </select>
                         </div>
                         <div class="form-group"><label for="admin-telefono" class="form-label">Telefono</label><input id="admin-telefono" type="tel" class="form-input"></div>
@@ -2239,6 +2270,16 @@
                     if(checkbox) {
                         checkbox.checked = !checkbox.checked; // Ora questo è l'unico toggle che avviene
                         updateToggleVisuals(checkbox);
+
+                        // Se il toggle modificato è "Tutti i servizi", aggiorna gli altri
+                        if (checkbox.id === 'toggle-all_services') {
+                            const isChecked = checkbox.checked;
+                            const allOtherToggles = form.querySelectorAll('.service-toggle:not(#toggle-all_services)');
+                            allOtherToggles.forEach(toggle => {
+                                toggle.checked = isChecked;
+                                updateToggleVisuals(toggle);
+                            });
+                        }
                     }
                 }
             });
@@ -2423,11 +2464,11 @@
                     else navigateTo('dashboard');
                     break;
                 case 'importazione':
-                    if (userType === 'supervisore') content = renderImportazione();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderImportazione();
                     else navigateTo('dashboard');
                     break;
                 case 'orariCustode':
-                    if (userType === 'supervisore') content = renderOrariCustode();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderOrariCustode();
                     else navigateTo('dashboard');
                     break;
                 case 'orariCustode_manuale':
@@ -2443,7 +2484,7 @@
                     else navigateTo('dashboard');
                     break;
                 case 'datiAmministratore':
-                    if (userType === 'supervisore') content = renderDatiAmministratoreMenu();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderDatiAmministratoreMenu();
                     else navigateTo('dashboard');
                     break;
                 case 'datiAmministratore_manuale':
@@ -3001,7 +3042,53 @@
                 }
             });
         };
-        const setupProfileHandlers=()=>{const e=document.getElementById("profile-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("profile-nome").value,n=document.getElementById("profile-cognome").value,d=document.getElementById("profile-telefono").value;try{await updateDoc(doc(db,"users",currentUser.uid),{nome:o,cognome:n,telefono:d}),await loadUserProfile(currentUser),showProfileMessage("success","Profilo aggiornato!")}catch(m){showProfileMessage("error",`Errore: ${m.message}`)}})};
+        const setupProfileHandlers = () => {
+            const form = document.getElementById("profile-form");
+            form?.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const nome = document.getElementById("profile-nome").value;
+                const cognome = document.getElementById("profile-cognome").value;
+                const telefono = document.getElementById("profile-telefono").value;
+                const newEmail = document.getElementById("profile-email").value.trim();
+
+                try {
+                    // Oggetto per gli aggiornamenti del documento Firestore
+                    const firestoreUpdates = {
+                        nome: nome,
+                        cognome: cognome,
+                        telefono: telefono
+                    };
+
+                    // 1. Gestisci la modifica dell'email se è cambiata
+                    if (newEmail && newEmail !== currentUser.email) {
+                        try {
+                            // Aggiorna prima l'email in Firebase Authentication
+                            await updateEmail(auth.currentUser, newEmail);
+                            // Se l'aggiornamento ha successo, aggiungi l'email agli aggiornamenti di Firestore
+                            firestoreUpdates.email = newEmail;
+                        } catch (authError) {
+                            // Gestisci errori comuni, come la necessità di un login recente
+                            if (authError.code === 'auth/requires-recent-login') {
+                                showProfileMessage("error", "Azione sensibile. Effettua nuovamente il login prima di cambiare l'email.");
+                            } else {
+                                showProfileMessage("error", `Errore email: ${authError.message}`);
+                            }
+                            return; // Interrompi l'esecuzione se l'aggiornamento dell'email fallisce
+                        }
+                    }
+
+                    // 2. Aggiorna il documento utente in Firestore con tutti i dati
+                    await updateDoc(doc(db, "users", currentUser.uid), firestoreUpdates);
+
+                    // 3. Ricarica il profilo e mostra il messaggio di successo
+                    await loadUserProfile(currentUser);
+                    showProfileMessage("success", "Profilo aggiornato con successo!");
+
+                } catch (error) {
+                    showProfileMessage("error", `Errore: ${error.message}`);
+                }
+            });
+        };
 
         const setupInfoUtiliHandlers = () => {
             const manualForm = document.getElementById('add-useful-number-form');
@@ -3866,7 +3953,7 @@
                         throw new Error('Nome, Cognome e Tipo Utente sono obbligatori.');
                     }
                     
-                    await register(document.getElementById('admin-email').value, document.getElementById('admin-password').value, profileData);
+                    await adminCreateUser(document.getElementById('admin-email').value, document.getElementById('admin-password').value, profileData);
                     
                     messageBox.className = 'message-box success';
                     messageBox.textContent = `Utente ${profileData.cognome} creato con successo!`;
@@ -4162,18 +4249,25 @@
                 return;
             }
 
-            const editFormHtml = `
-                <div class="space-y-4">
-                    <div><label class="form-label">INTERVENTO RICHIESTO</label><input type="text" id="edit-title" value="${currentData.title || ''}" required class="form-input"></div>
-                    <div><label class="form-label">IMPRESA (Opzionale)</label><input type="text" id="edit-company" value="${currentData.company || ''}" class="form-input"></div>
-                    <div><label class="form-label">1 NUM. TELEFONICO</label><input type="text" id="edit-number" value="${currentData.number || ''}" required class="form-input"></div>
-                    <div><label class="form-label">2 NUM. TELEFONICO (Opzionale)</label><input type="text" id="edit-number-2" value="${currentData.number2 || ''}" class="form-input"></div>
-                </div>
+            const modalContent = `
+                <form id="edit-useful-number-form" class="space-y-4">
+                    <div><label class="form-label">INTERVENTO RICHIESTO</label><input type="text" id="edit-title" value="${(currentData.title || '').replace(/"/g, '&quot;')}" required class="form-input"></div>
+                    <div><label class="form-label">IMPRESA (Opzionale)</label><input type="text" id="edit-company" value="${(currentData.company || '').replace(/"/g, '&quot;')}" class="form-input"></div>
+                    <div><label class="form-label">1 NUM. TELEFONICO</label><input type="text" id="edit-number" value="${(currentData.number || '').replace(/"/g, '&quot;')}" required class="form-input"></div>
+                    <div><label class="form-label">2 NUM. TELEFONICO (Opzionale)</label><input type="text" id="edit-number-2" value="${(currentData.number2 || '').replace(/"/g, '&quot;')}" class="form-input"></div>
+                    <div class="flex justify-end gap-4 pt-2">
+                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva</button>
+                    </div>
+                </form>
             `;
 
-            showModal('Modifica Contatto', editFormHtml, [
-                { text: 'Annulla', class: 'btn-secondary', action: 'close' },
-                { text: 'Salva', class: 'btn-primary', action: async () => {
+            showModal('Modifica Contatto', modalContent);
+
+            const form = document.getElementById('edit-useful-number-form');
+            if (form) {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
                     const title = document.getElementById('edit-title').value.trim();
                     const company = document.getElementById('edit-company').value.trim();
                     const number = document.getElementById('edit-number').value.trim();
@@ -4181,7 +4275,7 @@
 
                     if (!title || !number) {
                         alert('I campi "INTERVENTO RICHIESTO" e "1 NUM. TELEFONICO" sono obbligatori.');
-                        return false;
+                        return;
                     }
 
                     try {
@@ -4189,15 +4283,13 @@
                             title, company, number, number2, updatedAt: serverTimestamp()
                         });
                         await logActivity("useful_number_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedId: id, title });
-                        closeModal();
-                        return true;
+                        hideModal();
                     } catch (error) {
                         console.error("Errore durante l'aggiornamento del numero:", error);
                         alert("Si è verificato un errore durante l'aggiornamento.");
-                        return false;
                     }
-                }}
-            ]);
+                });
+            }
         };
 
         const deleteMultipleUsefulNumbers = async (ids) => {
@@ -5358,9 +5450,14 @@
                 availableGroups = []; // Assicura che sia un array vuoto in caso di errore
             }
 
-            const allRoles = ["condomino", "amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"];
+            let allRoles = ["condomino", "amministratore", "custode", "consigliere", "fornitore", "supervisore"];
+            if (userProfile?.tipoUtente === 'adm') {
+                allRoles.push("adm");
+            }
             const rolesOptions = allRoles.map(role => {
-                const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
+                const capitalizedRole = role === 'adm' 
+                    ? 'Admin (ADM)' 
+                    : role.charAt(0).toUpperCase() + role.slice(1);
                 return `<option value="${role}" ${user.tipoUtente === role ? 'selected' : ''}>${capitalizedRole}</option>`
             }).join('');
 
@@ -5453,9 +5550,11 @@
                                     <button class="user-action-btn" onclick='openUserEditModal(${userObjectString})' title="Modifica Utente">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                                     </button>
+                                    ${user.tipoUtente !== 'adm' ? `
                                     <button class="user-action-btn" onclick="deleteUser('${userId}', '${user.nome} ${user.cognome}')" title="Elimina Utente">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                                     </button>
+                                    ` : ''}
                                 </div>
                             </div>
                             <div style="padding-left: 64px; margin-top: 0.5rem; font-size: 0.9rem;">
@@ -5817,6 +5916,7 @@
         window.updateReportStatus = updateReportStatus;
         window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
+        window.hideModal = hideModal;
         window.deletePartialCondo = deletePartialCondo;
         window.deleteUsefulNumber = deleteUsefulNumber;
         window.editUsefulNumber = editUsefulNumber;
