@@ -288,13 +288,14 @@
             z-index: 1000;
         }
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: var(--secondary-text);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
+    position: relative; /* <-- AGGIUNTA CHIAVE */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--secondary-text);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
         .nav-item svg {
             width: 1.75rem;
             height: 1.75rem;
@@ -308,15 +309,23 @@
             color: var(--accent-color);
         }
         .notification-badge {
-            position: absolute;
-            top: 0px;
-            right: 15px;
-            width: 8px;
-            height: 8px;
-            background-color: var(--danger);
-            border-radius: 50%;
-            border: 2px solid var(--bg-color);
-        }
+    position: absolute;
+    top: -2px;
+    right: 10px;
+    min-width: 20px;
+    height: 20px;
+    background-color: var(--danger);
+    color: var(--primary-text);
+    border-radius: 10px;
+    border: 2px solid var(--bg-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    line-height: 1;
+}
 
         /* Dashboard (Home Page) */
         .dashboard-grid {
@@ -803,7 +812,7 @@
             // Service permission check
             const serviceMap = {
                 'bacheca': 'bacheca',
-                'segnalazioni': 'segnalazioni', 'segnalazioni_crea': 'segnalazioni', 'segnalazioni_amministratore': 'segnalazioni', 'segnalazioni_custode': 'segnalazioni', 'segnalazioni_consiglieri': 'segnalazioni',
+                'segnalazioni': 'segnalazioni', 'segnalazioni_crea': 'segnalazioni', 'segnalazioni_amministratore': 'segnalazioni', 'segnalazioni_custode': 'segnalazioni', 'segnalazioni_consiglieri': 'segnalazioni', 'segnalazioni_ricevute': 'segnalazioni',
                 'sondaggi': 'sondaggi', 'sondaggi_crea': 'sondaggi', 'sondaggi_elenco': 'sondaggi', 'sondaggi_attivi': 'sondaggi', 'sondaggi_conclusi': 'sondaggi',
                 'infoUtili': 'numeri_utili', 'numeriUtiliImportati': 'numeri_utili', 'numeriUtiliManuali': 'numeri_utili', 'numeriUtiliRubrica': 'numeri_utili', 'numeriUtiliCustode': 'numeri_utili', 'infoUtili_amministratore': 'numeri_utili',
                 'reportPage': 'report', 'elencoCondomini': 'report'
@@ -841,7 +850,7 @@
         };
         
         const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");
-        const getStatusColor=t=>({aperta:"status-aperta","in-corso":"status-in-corso",chiusa:"status-chiusa"}[t]||"status-aperta");
+        const getStatusColor=t=>({aperta:"status-aperta","in-corso":"status-in-corso",risolta:"status-in-corso",chiusa:"status-chiusa"}[t]||"status-aperta");
         
         const renderHeader = (title) => {
             const userInitial = userProfile?.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U';
@@ -953,13 +962,18 @@
                         <span>Profilo</span>
                     </a>
                 `
-                : `
-                    <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
-                    ${isServiceEnabledForCurrentUser('bacheca') ? `<a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}"><span id="bacheca-notification-badge" class="notification-badge hidden"></span><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg><span>Bacheca</span></a>` : ''}
-                    ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_amministratore', 'segnalazioni_custode', 'segnalazioni_consiglieri'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg><span>Segnala</span></a>` : ''}
-                    ${isServiceEnabledForCurrentUser('sondaggi') ? `<a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg><span>Sondaggi</span></a>` : ''}
-                    <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg><span>Profilo</span></a>
-                `;
+                // --- SOSTITUISCI CON QUESTO BLOCCO ---
+: `
+    <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
+    ${isServiceEnabledForCurrentUser('bacheca') ? `<a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
+        <span id="bacheca-notification-badge" class="notification-badge hidden"></span>
+        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+        <span>Bacheca</span>
+    </a>` : ''}
+    ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_amministratore', 'segnalazioni_custode', 'segnalazioni_consiglieri'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg><span>Segnala</span></a>` : ''}
+    ${isServiceEnabledForCurrentUser('sondaggi') ? `<a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg><span>Sondaggi</span></a>` : ''}
+    <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg><span>Profilo</span></a>
+`;
             return `<nav class="bottom-nav">${navItems}</nav>`;
         };
         
@@ -967,13 +981,16 @@
             const dashboardItemsHtml = [];
 
             if (isServiceEnabledForCurrentUser('bacheca')) {
-                dashboardItemsHtml.push(`
-                    <div onclick="navigateTo('bacheca')" class="dashboard-item">
-                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
-                        <p>Bacheca</p>
-                    </div>
-                `);
-            }
+    dashboardItemsHtml.push(`
+        <div onclick="navigateTo('bacheca')" class="dashboard-item">
+            <div class="dashboard-card" style="position: relative;">
+                <span id="dashboard-bacheca-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <p>Bacheca</p>
+        </div>
+    `);
+}
             if (isServiceEnabledForCurrentUser('segnalazioni')) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
@@ -1035,14 +1052,60 @@
         `;
         }
 
-        const renderBacheca = () => `
-            ${renderHeader('Bacheca')}
+        const renderBachecaTutte = () => `
+            ${renderHeader('Tutte le Comunicazioni')}
             <main>
-                ${(userProfile?.tipoUtente === 'amministratore' || userProfile?.tipoUtente === 'supervisore') ? `<div class="card" style="margin-bottom:2rem;"><h3 class="card-title">Nuova comunicazione</h3><form id="create-communication-form" class="space-y-4"><div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div><div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div><div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div></form></div>` : ''}
                 <div id="communications-list" class="list-container"></div>
             </main>
             ${renderBottomNavigation()}
         `;
+
+        const renderBachecaCrea = () => `
+            ${renderHeader('Nuova Comunicazione')}
+            <main>
+                <div class="card" style="margin-bottom:2rem;"><h3 class="card-title">Nuova comunicazione</h3><form id="create-communication-form" class="space-y-4"><div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div><div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div>
+<div>
+    <label for="comm-target-group" class="form-label">Destinatari</label>
+    <select id="comm-target-group" class="form-select">
+        <option value="Tutti">Intero Condominio</option>
+        <!-- Groups will be populated dynamically -->
+    </select>
+</div>
+<div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div></form></div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+
+
+        const renderBacheca = () => {
+            const canCreate = ['supervisore', 'amministratore', 'adm', 'consigliere'].includes(userProfile?.tipoUtente);
+            const createButtonHtml = canCreate ? `
+                <div onclick="navigateTo('bacheca_crea')" class="dashboard-item">
+                    <div class="dashboard-card">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.13,5.12L18.88,8.87M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"/></svg>
+                    </div>
+                    <p>Nuova comunicazione</p>
+                </div>
+            ` : '';
+
+            return `
+            ${renderHeader('Bacheca')}
+            <main>
+                <div class="dashboard-grid">
+                    ${createButtonHtml}
+                    <div onclick="navigateTo('bacheca_tutte')" class="dashboard-item">
+                        <div class="dashboard-card" style="position: relative;">
+                            <span id="bacheca-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4,6H20V8H4V6M4,10H20V12H4V10M4,14H20V16H4V14M4,18H14V20H4V18Z"/></svg>
+                        </div>
+                        <p>Tutte le comunicazioni</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+        };
 
         const renderSondaggiMenu = async () => {
             const canCreatePolls = await isUserAllowedToCreatePolls();
@@ -1178,38 +1241,98 @@
             ${renderBottomNavigation()}
         `;
 
-        const renderSegnalazioniMenu = () => `
-            ${renderHeader('Segnalazioni')}
-            <main>
-                <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div onclick="navigateTo('segnalazioni_crea')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        const renderSegnalazioniMenu = () => {
+            const userRole = userProfile?.tipoUtente;
+            const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userRole);
+            
+            let menuItemsHtml = [];
+
+            // 1. Pulsanti gestionali
+            if (isManager) {
+                 if (['supervisore', 'adm', 'amministratore'].includes(userRole)) {
+                    menuItemsHtml.push(`
+                        <div onclick="navigateTo('segnalazioni_urgenti')" class="dashboard-item">
+                            <div class="dashboard-card" style="border: 2px solid var(--danger);">
+                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            </div>
+                            <p>Segnalazioni Urgenti</p>
                         </div>
-                        <p>Crea Segnalazione</p>
+                    `);
+                }
+                menuItemsHtml.push(`
+                    <div onclick="navigateTo('segnalazioni_ricevute')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89,3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M17,17H7V15H17V17M17,13H7V11H17V13M17,9H7V7H17V9Z"/></svg>
+                        </div>
+                        <p>Segnalazioni Ricevute</p>
                     </div>
+                `);
+            }
+
+            // 2. Pulsanti utente (visibili a tutti)
+            menuItemsHtml.push(`
+                <div onclick="navigateTo('segnalazioni_crea')" class="dashboard-item">
+                    <div class="dashboard-card">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    </div>
+                    <p>Crea Segnalazione</p>
+                </div>
+            `);
+             menuItemsHtml.push(`
+                <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item">
+                    <div class="dashboard-card">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
+                    </div>
+                    <p>Mie Segnalazioni</p>
+                </div>
+            `);
+
+            // 3. Pulsanti di destinazione: logica aggiornata per nasconderli ai ruoli non pertinenti
+            // Mostra "Ad Amministratore" a tutti tranne all'amministratore e al custode
+            if (userRole !== 'amministratore' && userRole !== 'custode') {
+                menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_amministratore')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
                         </div>
                         <p>Ad Amministratore</p>
                     </div>
+                `);
+            }
+            
+            // Mostra "Al Custode" a tutti tranne al custode e all'amministratore
+            if (userRole !== 'custode' && userRole !== 'amministratore') {
+                menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_custode')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>
                         </div>
                         <p>Al Custode</p>
                     </div>
+                `);
+            }
+            // Mostra "Ai Consiglieri" a tutti tranne al consigliere, all'amministratore e al custode
+            if (userRole !== 'consigliere' && userRole !== 'amministratore' && userRole !== 'custode') {
+                menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_consiglieri')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
                         </div>
                         <p>Ai Consiglieri</p>
                     </div>
+                `);
+            }
+
+            return `
+            ${renderHeader('Segnalazioni')}
+            <main>
+                <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+                    ${menuItemsHtml.join('')}
                 </div>
             </main>
             ${renderBottomNavigation()}
-        `;
+            `;
+        };
 
         const renderSegnalazioniCrea = () => {
              // Il campo destinatario è ora universale per tutti gli utenti che creano una segnalazione.
@@ -1241,7 +1364,7 @@
                             <div class="flex justify-end pt-4"><button type="submit" class="btn btn-primary">Invia Segnalazione</button></div>
                         </form>
                     </div>
-                    <div class="mt-4"><h2 class="section-title">Le Tue Segnalazioni Recenti</h2><div id="reports-secondary-container" class="list-container"></div></div>
+                    <div class="mt-4"><h2 class="section-title">Segnalazioni Recenti</h2><div id="reports-secondary-container" class="list-container"></div></div>
                 </main>
                 ${renderBottomNavigation()}
              `;
@@ -2425,6 +2548,8 @@
             switch (currentPage) {
                 case 'dashboard': content = renderDashboard(); break;
                 case 'bacheca': content = renderBacheca(); break;
+                case 'bacheca_tutte': content = renderBachecaTutte(); break;
+                case 'bacheca_crea': content = renderBachecaCrea(); break;
                 case 'sondaggi': if (userType !== 'custode') { content = await renderSondaggiMenu(); } break;
                 case 'sondaggi_crea': if (userType !== 'custode') { content = renderSondaggiCrea(); } break;
                 case 'sondaggi_elenco': if (userType !== 'custode') { content = renderSondaggiElenco(); } break;
@@ -2435,6 +2560,9 @@
                 case 'segnalazioni_amministratore': content = renderSegnalazioniElenco('Segnalazioni ad Amministratore'); break;
                 case 'segnalazioni_custode': content = renderSegnalazioniElenco('Segnalazioni al Custode'); break;
                 case 'segnalazioni_consiglieri': content = renderSegnalazioniElenco('Segnalazioni ai Consiglieri'); break;
+                case 'segnalazioni_ricevute': content = renderSegnalazioniRicevute(); break;
+                case 'segnalazioni_urgenti': content = renderSegnalazioniUrgenti(); break;
+                case 'segnalazioni_utente': content = renderSegnalazioniUtente(); break;
                 case 'profilo': content = renderProfilo(); break;
                 case 'infoUtili': content = renderInfoUtili(); break;
                 case 'numeriUtiliImportati': 
@@ -2534,7 +2662,9 @@
 
             switch (currentPage) {
                 case 'elencoCondomini': loadElencoCondomini(); break;
-                case 'bacheca': loadCommunications(); setupBachecaHandlers(); break;
+                case 'bacheca': /* No handlers needed for the menu page */ break;
+                case 'bacheca_tutte': loadCommunications(); break;
+                case 'bacheca_crea': setupBachecaHandlers(); break;
                 case 'sondaggi': /* No handlers needed for the menu page */ break;
                 case 'sondaggi_crea': if (userType !== 'custode') { setupPollHandlers(); } break;
                 case 'sondaggi_elenco': 
@@ -2569,6 +2699,9 @@
                 case 'segnalazioni_amministratore': loadFilteredReports('amministratore'); break;
                 case 'segnalazioni_custode': loadFilteredReports('custode'); break;
                 case 'segnalazioni_consiglieri': loadFilteredReports('consigliere'); break;
+                case 'segnalazioni_ricevute': loadReceivedReports(); break;
+                case 'segnalazioni_urgenti': loadUrgentReports(); break;
+                case 'segnalazioni_utente': loadUserReports(); break;
                 case 'profilo': setupProfileHandlers(); break;
                 case 'infoUtili': /* No handlers needed for the menu page */ break;
                 case 'numeriUtiliImportati':
@@ -2871,7 +3004,67 @@
             });
         };
 
-        const setupBachecaHandlers=()=>{const e=document.getElementById("create-communication-form");e?.addEventListener("submit",async t=>{t.preventDefault();const o=document.getElementById("comm-title"),n=document.getElementById("comm-content"),d=document.getElementById("publish-comm-btn"),i=o.value.trim(),r=n.value.trim();if(!i||!r)return alert("Compila titolo e messaggio.");d.disabled=!0,d.textContent="...";try{await addDoc(collection(db,"communications"),{title:i,content:r,createdBy:`${userProfile.nome} ${userProfile.cognome}`,createdById:currentUser.uid,createdAt:serverTimestamp()}),await logActivity("communication_posted",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{title:i}),e.reset()}catch(c){console.error("Errore:",c),alert("Si è verificato un errore.")}finally{d.disabled=!1,d.textContent="Pubblica"}})};
+        const setupBachecaHandlers = () => {
+    const form = document.getElementById("create-communication-form");
+
+    const populateGroupDropdown = async () => {
+        const targetSelect = document.getElementById('comm-target-group');
+        if (!targetSelect) return;
+        try {
+            const q = query(collection(db, "partialCondos"), orderBy("name"));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(doc => {
+                const group = doc.data();
+                const option = document.createElement('option');
+                option.value = group.name;
+                option.textContent = group.name;
+                targetSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Error populating group dropdown:", error);
+        }
+    };
+
+    if (form) {
+        populateGroupDropdown();
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const titleInput = document.getElementById("comm-title");
+            const contentInput = document.getElementById("comm-content");
+            const targetGroupInput = document.getElementById("comm-target-group");
+            const publishBtn = document.getElementById("publish-comm-btn");
+
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+            const targetGroup = targetGroupInput.value;
+
+            if (!title || !content) return alert("Compila titolo e messaggio.");
+
+            publishBtn.disabled = true;
+            publishBtn.textContent = "...";
+
+            try {
+                await addDoc(collection(db, "communications"), {
+                    title: title,
+                    content: content,
+                    targetGroup: targetGroup, // <-- FIELD ADDED
+                    createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                    createdById: currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+                await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup });
+                form.reset();
+            } catch (error) {
+                console.error("Errore:", error);
+                alert("Si è verificato un errore.");
+            } finally {
+                publishBtn.disabled = false;
+                publishBtn.textContent = "Pubblica";
+            }
+        });
+    }
+};
         const setupPollHandlers = () => {
             const form = document.getElementById("create-poll-form");
             if (!form) return;
@@ -3026,32 +3219,57 @@
                 const category = document.getElementById("report-category").value;
                 const priority = document.getElementById("report-priority").value;
                 const location = document.getElementById("report-location").value;
-                const recipient = document.getElementById("report-recipient").value; // Leggiamo il nuovo campo
+                const recipient = document.getElementById("report-recipient").value;
 
-                // Aggiungiamo il controllo sul nuovo campo
                 if (!title || !description || !category || !priority || !location || !recipient) {
                     return alert("Compila tutti i campi, incluso il destinatario.");
                 }
 
-                const reportData = {
-                    title: title,
-                    description: description,
-                    category: category,
-                    priority: priority,
-                    location: location,
-                    status: "aperta",
-                    createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-                    createdById: currentUser.uid,
-                    createdAt: serverTimestamp(),
-                    recipientType: recipient // Salviamo il destinatario scelto
-                };
-
                 try {
-                    await addDoc(collection(db, "reports"), reportData);
-                    await logActivity("report_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, priority: priority, recipient: recipient });
+                    const counterRef = doc(db, "counters", "reportsCounter");
+                    let finalReportNumber; // Variabile per memorizzare il numero di segnalazione
+
+                    // Eseguiamo una transazione per garantire che il numero del ticket sia unico e progressivo
+                    const newReportRef = await runTransaction(db, async (transaction) => {
+                        const counterDoc = await transaction.get(counterRef);
+                        const newReportNumber = (counterDoc.exists() ? counterDoc.data().lastNumber : 0) + 1;
+                        finalReportNumber = newReportNumber; // Assegnamo il numero alla variabile esterna
+
+                                                const reportData = {
+                            reportNumber: newReportNumber,
+                            title: title,
+                            description: description,
+                            category: category,
+                            priority: priority,
+                            location: location,
+                            status: "aperta",
+                            createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                            createdByUserType: userProfile.tipoUtente, // RIGA AGGIUNTA: Salva il tipo di utente
+                            createdById: currentUser.uid,
+                            createdAt: serverTimestamp(),
+                            recipientType: recipient,
+                            updates: [], // Array per la cronologia degli aggiornamenti
+                            lastReminderAt: null, // Timestamp per l'ultimo sollecito
+                            reminderCount: 0 // Conteggio solleciti
+                        };
+
+                        // Aggiorniamo il contatore
+                        transaction.set(counterRef, { lastNumber: newReportNumber });
+
+                        // Creiamo il nuovo documento di segnalazione
+                        const newDocRef = doc(collection(db, "reports"));
+                        transaction.set(newDocRef, reportData);
+
+                        return newDocRef;
+                    });
+
+                    await logActivity("report_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: newReportRef.id, title: title, priority: priority, recipient: recipient });
                     form.reset();
+                    // Usiamo la variabile che abbiamo salvato, senza rileggere il database
+                    alert(`Segnalazione #${finalReportNumber} creata con successo!`);
+
                 } catch (error) {
-                    console.error("Errore:", error);
+                    console.error("Errore nella creazione della segnalazione:", error);
                     alert("Si è verificato un errore durante l'invio della segnalazione.");
                 }
             });
@@ -5071,6 +5289,16 @@
                     const comm = commDoc.data();
                     const contentHtml = `<p>${comm.content.replace(/\n/g, '<br>')}</p>`;
                     showModal(comm.title, contentHtml);
+
+                    // Aggiunto per risolvere il bug: quando si apre una comunicazione,
+                    // le notifiche vengono azzerate. Si recupera la comunicazione più recente
+                    // per marcare tutte le precedenti come lette.
+                    const latestCommQuery = query(collection(db, "communications"), orderBy("createdAt", "desc"), limit(1));
+                    const snapshot = await getDocs(latestCommQuery);
+                    if (!snapshot.empty) {
+                        localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
+                        updateNotificationUI(0);
+                    }
                 }
             } catch (error) {
                 console.error("Errore nel caricare la comunicazione:", error);
@@ -5078,30 +5306,54 @@
         };
 
         const loadCommunications = () => {
-            const listEl = document.getElementById("communications-list");
-            if (!listEl) return;
-            const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
-            onSnapshot(q, snapshot => {
-                listEl.innerHTML = snapshot.empty ? `<p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna comunicazione.</p>` : snapshot.docs.map(docSnap => {
-                    const comm = docSnap.data();
-                    if (!comm.createdAt) return "";
-                    const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric"});
-                    return `
-                    <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
-                        <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
-                        <div class="list-item-content">
-                            <div class="title">${comm.title}</div>
-                            <div class="subtitle">${comm.content.substring(0, 50)}...</div>
-                            <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
+    const listEl = document.getElementById("communications-list");
+    if (!listEl) return;
+
+    const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
+    onSnapshot(q, snapshot => {
+        const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
+        const canSeeAll = ['adm', 'supervisore', 'amministratore'].includes(userProfile.tipoUtente);
+
+        const filteredDocs = snapshot.docs.filter(docSnap => {
+            const comm = docSnap.data();
+            if (canSeeAll) return true;
+            if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true;
+            return userGroups.includes(comm.targetGroup);
+        });
+
+        if (filteredDocs.length === 0) {
+            listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna comunicazione per te.</p>`;
+        } else {
+            listEl.innerHTML = filteredDocs.map(docSnap => {
+                const comm = docSnap.data();
+                if (!comm.createdAt) return "";
+
+                const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
+                const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
+                    ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
+                    : '';
+
+                return `
+                <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
+                    <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
+                    <div class="list-item-content">
+                        <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                            <span style="white-space: normal;">${comm.title}</span>
+                            ${targetGroupHtml}
                         </div>
-                    </div>`;
-                }).join("");
-                if (currentPage === 'bacheca' && !snapshot.empty) {
-                    localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
-                    updateNotificationUI(false);
-                }
-            });
-        };
+                        <div class="subtitle">${comm.content.substring(0, 50)}...</div>
+                        <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
+            localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
+            updateNotificationUI(0);
+        }
+    });
+};
         
         const isUserAllowedToVote = (userType, setting) => {
             // ADM can always vote
@@ -5390,30 +5642,262 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             });
         };
 
+                const renderReportCardHTML = (report, reportId) => {
+            if (!report.createdAt) return "";
+            
+            const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente);
+            const isCreator = report.createdById === currentUser.uid;
+            const canManageThisReport = isManager && (report.recipientType === userProfile.tipoUtente || (report.recipientType === 'consigliere' && userProfile.tipoUtente === 'consigliere') || userProfile.tipoUtente === 'supervisore' || userProfile.tipoUtente === 'adm');
+
+            let actionButtonsHtml = '';
+
+            // Logica pulsanti per il gestore
+            if (canManageThisReport) {
+                if (report.status === 'aperta') {
+                    actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'in-corso')" class="btn btn-primary" style="flex:1;">Prendi in Carico</button>`;
+                }
+                if (report.status === 'in-corso') {
+                    actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
+                }
+                if (report.status !== 'chiusa') {
+                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Aggiorna</button>`;
+                }
+                if (userProfile?.tipoUtente === 'amministratore' && (report.status === 'aperta' || report.status === 'in-corso')) {
+                    actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
+                }
+            }
+
+            // Logica pulsanti per il creatore (solo se è un "condomino")
+            if (isCreator && userProfile?.tipoUtente === 'condomino') {
+                if (report.status === 'aperta' || report.status === 'in-corso') {
+                    actionButtonsHtml += `<button onclick="sendReportReminder('${reportId}')" class="btn btn-secondary" style="flex:1;">Sollecita</button>`;
+                }
+                if (report.status === 'risolta') {
+                    actionButtonsHtml += `<button onclick="confirmReportResolution('${reportId}', true)" class="btn btn-primary" style="flex:1;">Conferma Risoluzione</button>`;
+                    actionButtonsHtml += `<button onclick="confirmReportResolution('${reportId}', false)" class="btn" style="background:var(--danger); color:white; flex:1;">Non Risolto</button>`;
+                }
+            }
+
+            const updatesHtml = report.updates && report.updates.length > 0 ? `
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--surface-color-light);">
+                    <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Cronologia Aggiornamenti:</h4>
+                    <ul style="font-size: 0.85rem; color: var(--secondary-text); list-style-type: disc; padding-left: 20px;">
+                        ${report.updates.map(upd => `<li><strong>${upd.at.toDate().toLocaleString('it-IT', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</strong> (${upd.by}): ${upd.text}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : '';
+
+            return `
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="list-item" style="padding:0; cursor:default;">
+                    <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
+                    <div class="list-item-content">
+                        <div class="title">${report.reportNumber ? `#${report.reportNumber}:` : ''} ${report.title}</div>
+                        <div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;">
+                            <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
+                            <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
+                            <span class="badge status-aperta">Dest: ${report.recipientType.charAt(0).toUpperCase() + report.recipientType.slice(1)}</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="form-label" style="padding-left: 64px; color: var(--secondary-text); margin-top: 0.75rem;">Inviata da: <strong>${report.createdByUserType ? (report.createdByUserType.charAt(0).toUpperCase() + report.createdByUserType.slice(1)) : report.createdBy}</strong></p>
+                <p style="color: var(--secondary-text); margin-top: 0.5rem; padding-left: 64px;">${report.description}</p>
+                ${updatesHtml}
+                ${actionButtonsHtml ? `<div class="flex gap-4 mt-4">${actionButtonsHtml}</div>` : ''}
+            </div>`;
+        };
+
         const loadMyReports = () => {
             const secondaryContainer = document.getElementById('reports-secondary-container');
             if (!secondaryContainer) return;
-            const renderReportCardHTML=(e,t)=>{if(!e.createdAt)return"";const o=e.createdAt.toDate().toLocaleString("it-IT",{day:"2-digit",month:"short"});const a=["amministratore","custode","consigliere","fornitore","supervisore", "adm"].includes(userProfile?.tipoUtente);const n=a,d="management"===e.recipientType&&n||e.recipientType===userProfile?.tipoUtente||"consigliere"===e.recipientType&&"consigliere"===userProfile?.tipoUtente;return`<div class="list-item"><div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div><div class="list-item-content"><div class="title">${e.title}</div><div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;"><span class="badge ${getPriorityColor(e.priority)}">${e.priority}</span><span class="badge ${getStatusColor(e.status)}">${e.status}</span></div></div>${a&&"chiusa"!==e.status&&d?`<div class="list-item-action"><button onclick="updateReportStatus('${t}','${"aperta"===e.status?"in-corso":"chiusa"}')" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${"aperta"===e.status?"Prendi":"Chiudi"}</button></div>`:""}</div>`};
+            
             const renderSnapshot=(e,t,o)=>{if(t.empty)return void(e.innerHTML=`<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`);const a=t.docs.sort((e,t)=>{const o=e.data().createdAt?.toMillis()||0,n=t.data().createdAt?.toMillis()||0;return n-o});e.innerHTML=a.map(e=>renderReportCardHTML(e.data(),e.id)).join("")};
+            
             const userId=currentUser.uid,qSent=query(collection(db,"reports"),where("createdById","==",userId));onSnapshot(qSent,s=>renderSnapshot(secondaryContainer,s,"Non hai inviato segnalazioni."));
         };
 
-        const loadFilteredReports = (filterType) => {
+                const loadFilteredReports = (filterType) => {
             const mainContainer = document.getElementById('reports-main-container');
             if (!mainContainer) return;
-            const renderReportCardHTML=(e,t)=>{if(!e.createdAt)return"";const o=e.createdAt.toDate().toLocaleString("it-IT",{day:"2-digit",month:"short"});const a=["amministratore","custode","consigliere","fornitore","supervisore", "adm"].includes(userProfile?.tipoUtente);const n=a,d="management"===e.recipientType&&n||e.recipientType===userProfile?.tipoUtente||"consigliere"===e.recipientType&&"consigliere"===userProfile?.tipoUtente;return`<div class="list-item"><div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div><div class="list-item-content"><div class="title">${e.title}</div><div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;"><span class="badge ${getPriorityColor(e.priority)}">${e.priority}</span><span class="badge ${getStatusColor(e.status)}">${e.status}</span></div></div>${a&&"chiusa"!==e.status&&d?`<div class="list-item-action"><button onclick="updateReportStatus('${t}','${"aperta"===e.status?"in-corso":"chiusa"}')" class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${"aperta"===e.status?"Prendi":"Chiudi"}</button></div>`:""}</div>`};
-            const renderSnapshot=(e,t,o)=>{if(t.empty)return void(e.innerHTML=`<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`);const a=t.docs.sort((e,t)=>{const o=e.data().createdAt?.toMillis()||0,n=t.data().createdAt?.toMillis()||0;return n-o});e.innerHTML=a.map(e=>renderReportCardHTML(e.data(),e.id)).join("")};
+
+            const userRole = userProfile?.tipoUtente;
+
+            const renderAndSort = (docs, emptyMessage) => {
+                if (!docs || docs.length === 0) {
+                    mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${emptyMessage}</p></div>`;
+                    return;
+                }
+                const sortedDocs = docs.sort((a, b) => {
+                    const timeA = a.data().createdAt?.toMillis() || 0;
+                    const timeB = b.data().createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+                mainContainer.innerHTML = sortedDocs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join("");
+            };
+
+            let reportsQuery;
+
+            // RUOLI "MANAGER" (Amministratore, Supervisore, ADM): Vedono tutte le segnalazioni per una data categoria.
+            if (['amministratore', 'supervisore', 'adm'].includes(userRole)) {
+                // Query semplice: filtra solo per destinatario e ordina. Funziona senza indici custom.
+                reportsQuery = query(
+                    collection(db, "reports"),
+                    where("recipientType", "==", filterType),
+                    orderBy("createdAt", "desc")
+                );
+                onSnapshot(reportsQuery, (snapshot) => {
+                    renderAndSort(snapshot.docs, `Nessuna segnalazione trovata per: ${filterType}.`);
+                });
+            }
+            // ALTRI RUOLI (Condomino, Consigliere, etc.): Vedono solo le segnalazioni che LORO hanno inviato.
+            else {
+                // Query semplice: prende tutte le segnalazioni dell'utente e le ordina.
+                reportsQuery = query(
+                    collection(db, "reports"),
+                    where("createdById", "==", currentUser.uid),
+                    orderBy("createdAt", "desc")
+                );
+                onSnapshot(reportsQuery, (snapshot) => {
+                    // Filtriamo in un secondo momento nel codice per il destinatario corretto.
+                    const filteredDocs = snapshot.docs.filter(doc => doc.data().recipientType === filterType);
+                    renderAndSort(filteredDocs, `Non hai inviato segnalazioni a: ${filterType}.`);
+                });
+            }
+        };
+
+        const renderSegnalazioniRicevute = () => `
+            ${renderHeader('Segnalazioni Ricevute')}
+            <main>
+                <div id="reports-main-container" class="list-container"></div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const loadReceivedReports = () => {
+            const mainContainer = document.getElementById('reports-main-container');
+            if (!mainContainer) return;
+
+            const renderAndSort = (docs, emptyMessage) => {
+                if (!docs || docs.length === 0) {
+                    mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${emptyMessage}</p></div>`;
+                    return;
+                }
+                // L'ordinamento viene fatto qui, garantendo coerenza
+                const sortedDocs = docs.sort((a, b) => {
+                    const timeA = a.data().createdAt?.toMillis() || 0;
+                    const timeB = b.data().createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+                mainContainer.innerHTML = sortedDocs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join("");
+            };
+
+            const userRole = userProfile?.tipoUtente;
             
-            let qToManage;
-            // Solo gli utenti con ruoli gestionali possono vedere queste liste
-            if(["amministratore","custode","consigliere","fornitore", "supervisore", "adm"].includes(userProfile.tipoUtente)){
-                // La query ora usa direttamente il filterType passato dalla navigazione
-                qToManage = query(collection(db, "reports"), where("recipientType", "==", filterType), orderBy("createdAt", "desc"));
-            } else {
-                mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Accesso non consentito a questa sezione.</p></div>`;
+            // Protezione per ruoli non autorizzati
+            if (!userRole || !["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userRole)) {
+                mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Accesso non consentito.</p></div>`;
                 return;
             }
-            onSnapshot(qToManage, s => renderSnapshot(mainContainer, s, `Nessuna segnalazione per ${filterType}.`));
+
+            // Usiamo una query semplice che ordina solo per data. Questa non richiede indici speciali.
+            const baseQuery = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+
+            onSnapshot(baseQuery, (snapshot) => {
+                let docsToRender = snapshot.docs;
+
+                // Se l'utente NON è un supervisore o admin, applichiamo un filtro post-query
+                if (userRole !== 'supervisore' && userRole !== 'adm') {
+                    docsToRender = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+                }
+
+                // Renderizziamo i documenti (filtrati o meno)
+                renderAndSort(docsToRender, "Nessuna segnalazione ricevuta.");
+            });
+        };
+
+        const renderSegnalazioniUrgenti = () => `
+            ${renderHeader('Solleciti ricevuti')}
+            <main>
+                <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                    Elenco delle segnalazioni per cui è stato inviato un sollecito.
+                </p>
+                <div id="reports-main-container" class="list-container"></div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const loadUrgentReports = () => {
+            const mainContainer = document.getElementById('reports-main-container');
+            if (!mainContainer) return;
+
+            // Nota: Questa query richiede un indice composito in Firestore su (isUrgent, createdAt).
+            // L'errore nella console di Firebase indicherà il link per crearlo automaticamente.
+            const urgentQuery = query(collection(db, "reports"), where("isUrgent", "==", true), orderBy("createdAt", "desc"));
+
+            onSnapshot(urgentQuery, (snapshot) => {
+                if (snapshot.empty) {
+                    mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna segnalazione urgente al momento.</p></div>`;
+                    return;
+                }
+                mainContainer.innerHTML = snapshot.docs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join("");
+            });
+        };
+
+        const renderSegnalazioniUtente = () => `
+            ${renderHeader('Mie Segnalazioni')}
+            <main>
+                <div style="margin-bottom: 2rem;">
+                    <h2 class="section-title">Ticket Attivi</h2>
+                    <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Segnalazioni aperte, in lavorazione o in attesa di una tua conferma.
+                    </p>
+                    <div id="user-reports-active" class="list-container"></div>
+                </div>
+
+                <div>
+                    <h2 class="section-title">Ticket Chiusi</h2>
+                     <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                        Storico delle segnalazioni completate e archiviate.
+                    </p>
+                    <div id="user-reports-closed" class="list-container"></div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const loadUserReports = () => {
+            const activeContainer = document.getElementById('user-reports-active');
+            const closedContainer = document.getElementById('user-reports-closed');
+            if (!activeContainer || !closedContainer) return;
+
+            const userReportsQuery = query(collection(db, "reports"), where("createdById", "==", currentUser.uid), orderBy("createdAt", "desc"));
+
+            onSnapshot(userReportsQuery, (snapshot) => {
+                const activeTickets = [];
+                const closedTickets = [];
+
+                snapshot.docs.forEach(doc => {
+                    const report = doc.data();
+                    // I ticket con stato 'chiusa' vanno nello storico, tutti gli altri sono considerati attivi.
+                    if (report.status === 'chiusa') {
+                        closedTickets.push({ id: doc.id, data: report });
+                    } else {
+                        activeTickets.push({ id: doc.id, data: report });
+                    }
+                });
+
+                if (activeTickets.length === 0) {
+                    activeContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket attivo.</p></div>`;
+                } else {
+                    activeContainer.innerHTML = activeTickets.map(t => renderReportCardHTML(t.data, t.id)).join("");
+                }
+
+                if (closedTickets.length === 0) {
+                    closedContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket chiuso.</p></div>`;
+                } else {
+                    closedContainer.innerHTML = closedTickets.map(t => renderReportCardHTML(t.data, t.id)).join("");
+                }
+            });
         };
 
         const deleteUser = async (userId, userName) => {
@@ -5952,15 +6436,207 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             }
         };
 
-        const updateReportStatus=async(e,t)=>{try{await updateDoc(doc(db,"reports",e),{status:t,updatedAt:serverTimestamp()}),await logActivity("report_updated",currentUser.uid,`${userProfile.nome} ${userProfile.cognome}`,{reportId:e,newStatus:t})}catch(o){console.error("Errore nell'aggiornamento:",o)}};
-        const updateNotificationUI=e=>{const t=document.getElementById("bacheca-notification-badge");t?.classList.toggle("hidden",!e)};
-        const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,e=>{updateNotificationUI(!e.empty)})};
+        const updateReportStatus = async (reportId, newStatus, updateText = null) => {
+            try {
+                const reportRef = doc(db, "reports", reportId);
+                const updateData = {
+                    status: newStatus,
+                    updatedAt: serverTimestamp()
+                };
+
+                if (updateText) {
+                    const newUpdate = {
+                        text: updateText,
+                        by: `${userProfile.nome} ${userProfile.cognome}`,
+                        at: new Date() // Usiamo un timestamp client per l'array
+                    };
+                    updateData.updates = arrayUnion(newUpdate);
+                }
+
+                await updateDoc(reportRef, updateData);
+                await logActivity("report_status_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId, newStatus: newStatus });
+            } catch (error) {
+                console.error("Errore nell'aggiornamento dello stato:", error);
+                alert("Si è verificato un errore.");
+            }
+        };
+
+        const openReportUpdateModal = (reportId) => {
+            const modalContent = `
+                <form id="report-update-form" class="space-y-4">
+                    <input type="hidden" id="update-report-id" value="${reportId}">
+                    <div>
+                        <label for="update-text" class="form-label">Testo dell'aggiornamento</label>
+                        <textarea id="update-text" rows="4" required class="form-textarea" placeholder="Scrivi qui l'aggiornamento..."></textarea>
+                    </div>
+                    <div class="flex justify-end gap-4 pt-2">
+                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Invia Aggiornamento</button>
+                    </div>
+                </form>
+            `;
+            showModal('Aggiungi Aggiornamento', modalContent);
+
+            document.getElementById('report-update-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = document.getElementById('update-text').value.trim();
+                if (!text) return;
+                
+                const newUpdate = {
+                    text: text,
+                    by: `${userProfile.nome} ${userProfile.cognome}`,
+                    at: new Date()
+                };
+
+                try {
+                    await updateDoc(doc(db, "reports", reportId), {
+                        updates: arrayUnion(newUpdate),
+                        updatedAt: serverTimestamp()
+                    });
+                    await logActivity("report_comment_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId });
+                    hideModal();
+                } catch (error) {
+                    console.error("Errore nell'aggiungere l'aggiornamento:", error);
+                    alert("Si è verificato un errore.");
+                }
+            });
+        };
+
+        const sendReportReminder = async (reportId) => {
+            if (!confirm("Vuoi inviare un sollecito per questa segnalazione?")) return;
+            try {
+                const reportRef = doc(db, "reports", reportId);
+                await runTransaction(db, async (transaction) => {
+                    const reportDoc = await transaction.get(reportRef);
+                    if (!reportDoc.exists()) throw "Segnalazione non trovata.";
+                    
+                    const currentReminderCount = reportDoc.data().reminderCount || 0;
+                    const newUpdate = {
+                        text: "L'utente ha inviato un sollecito.",
+                        by: "Sistema",
+                        at: new Date()
+                    };
+                    
+                    transaction.update(reportRef, {
+                        lastReminderAt: serverTimestamp(),
+                        reminderCount: currentReminderCount + 1,
+                        updates: arrayUnion(newUpdate),
+                        isUrgent: true // NUOVO: Marca il ticket come urgente
+                    });
+                });
+                await logActivity("report_reminder_sent", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId });
+                alert("Sollecito inviato.");
+            } catch (error) {
+                console.error("Errore nell'invio del sollecito:", error);
+                alert("Si è verificato un errore.");
+            }
+        };
+
+        const confirmReportResolution = async (reportId, isResolved) => {
+            if (isResolved) {
+                await updateReportStatus(reportId, 'chiusa', 'Utente ha confermato la risoluzione.');
+            } else {
+                if (confirm("Sei sicuro che il problema non sia stato risolto? La segnalazione verrà riaperta.")) {
+                    await updateReportStatus(reportId, 'aperta', 'Utente ha indicato che il problema non è risolto. Segnalazione riaperta.');
+                }
+            }
+        };
+
+        const openReassignmentModal = (reportId) => {
+            const modalContent = `
+                <form id="report-reassignment-form" class="space-y-4">
+                    <input type="hidden" id="reassign-report-id" value="${reportId}">
+                    <div class="form-group">
+                        <label for="reassign-to" class="form-label">Riassegna a:</label>
+                        <select id="reassign-to" required class="form-select">
+                            <option value="">Seleziona un ruolo...</option>
+                            <option value="custode">Custode</option>
+                            <option value="fornitore">Fornitore</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reassign-comment" class="form-label">Motivo/Commento (opzionale)</label>
+                        <textarea id="reassign-comment" rows="3" class="form-textarea" placeholder="Aggiungi una nota per il prossimo gestore..."></textarea>
+                    </div>
+                    <div class="flex justify-end gap-4 pt-2">
+                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Conferma Riassegnazione</button>
+                    </div>
+                </form>
+            `;
+            showModal('Riassegna Segnalazione', modalContent);
+
+            document.getElementById('report-reassignment-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newRecipient = document.getElementById('reassign-to').value;
+                const comment = document.getElementById('reassign-comment').value.trim();
+                if (!newRecipient) return;
+                
+                await reassignReport(reportId, newRecipient, comment);
+            });
+        };
+
+        const reassignReport = async (reportId, newRecipient, comment) => {
+            try {
+                const reportRef = doc(db, "reports", reportId);
+                let updateText = `Riassegnato a: ${newRecipient}.`;
+                if (comment) {
+                    updateText += ` Motivo: ${comment}`;
+                }
+
+                const newUpdate = {
+                    text: updateText,
+                    by: `${userProfile.nome} ${userProfile.cognome}`,
+                    at: new Date()
+                };
+
+                await updateDoc(reportRef, {
+                    recipientType: newRecipient,
+                    status: 'aperta', // Il ticket viene riaperto per il nuovo destinatario
+                    updates: arrayUnion(newUpdate),
+                    updatedAt: serverTimestamp()
+                });
+
+                await logActivity("report_reassigned", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    reportId: reportId,
+                    newRecipient: newRecipient
+                });
+                
+                hideModal();
+                alert(`Segnalazione riassegnata con successo a: ${newRecipient}.`);
+
+            } catch (error) {
+                console.error("Errore durante la riassegnazione:", error);
+                alert("Si è verificato un errore durante la riassegnazione.");
+            }
+        };
+        const updateNotificationUI = (count) => {
+    const navBadge = document.getElementById("bacheca-notification-badge");
+    const dashboardBadge = document.getElementById("dashboard-bacheca-badge");
+    const bachecaMenuBadge = document.getElementById("bacheca-menu-notification-badge");
+    const badges = [navBadge, dashboardBadge, bachecaMenuBadge];
+
+    badges.forEach(badge => {
+        if (badge) {
+            const shouldBeHidden = count === 0;
+            badge.classList.toggle("hidden", shouldBeHidden);
+            if (!shouldBeHidden) {
+                badge.textContent = count;
+            }
+        }
+    });
+};
+        const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,snapshot=>{const unreadCount = snapshot.size; updateNotificationUI(unreadCount)})};
         
                 window.navigateTo = navigateTo;
         window.navigateBack = navigateBack;
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
         window.updateReportStatus = updateReportStatus;
+        window.openReportUpdateModal = openReportUpdateModal;
+        window.sendReportReminder = sendReportReminder;
+        window.confirmReportResolution = confirmReportResolution;
+        window.openReassignmentModal = openReassignmentModal;
         window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
         window.hideModal = hideModal;
