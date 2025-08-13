@@ -669,7 +669,8 @@
     <script type="module">
         import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updateEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc, runTransaction, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getStorage, ref, listAll, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrLAomryfk-0s5Inm2XOsBrJusgmMI87E",
@@ -683,6 +684,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app, "gs://condo-app-49255.firebasestorage.app");
 
         let currentUser = null;
         let userProfile = null;
@@ -690,6 +692,8 @@
         let communicationsListener = null;
         let navigationHistory = [];
         let servicePermissions = null;
+        let currentStoragePath = '';
+        let selectedUploadPath = ''; // Nuova variabile per il percorso di upload scelto
 
         // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
         let groupedProperties = {};
@@ -1023,6 +1027,13 @@
                     </div>
                 `);
             }
+            // Aggiunta pulsante Archivio
+            dashboardItemsHtml.push(`
+                <div onclick="navigateTo('archivio')" class="dashboard-item">
+                    <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></div>
+                    <p>Archivio</p>
+                </div>
+            `);
             if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
@@ -1255,7 +1266,7 @@
                             <div class="dashboard-card" style="border: 2px solid var(--danger);">
                                 <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                             </div>
-                            <p>Segnalazioni Urgenti</p>
+                            <p>Solleciti</p>
                         </div>
                     `);
                 }
@@ -2039,6 +2050,12 @@
                             <p style="text-align: left; font-size: 1.1rem;">Importa Dati Millesimi</p>
                         </div>
                     </div>
+                    <div onclick="navigateTo('gestione_archivio')" class="dashboard-item">
+                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Gestione Archivio</p>
+                        </div>
+                    </div>
                     <div onclick="navigateTo('impostazioniSondaggi')" class="dashboard-item">
                         <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,15H7V17H5V15M3,13H9V19H3V13Z" /></svg>
@@ -2252,6 +2269,47 @@
             </main>
             ${renderBottomNavigation()}
         `;
+
+        const renderArchivio = () => {
+            const canManage = ['supervisore', 'adm'].includes(userProfile?.tipoUtente);
+            const managementButtons = canManage ? `
+                <div class="flex gap-4">
+                    <button onclick="openUploadModal()" class="btn btn-primary" style="flex:1;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                        Carica File
+                    </button>
+                    <input type="file" id="file-upload-input" class="hidden" multiple onchange="handleFileUpload(event)">
+                    <button id="create-folder-btn" class="btn btn-secondary" style="flex:1;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;"><path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5 7h-2v2h-2v-2H9v-2h2V9h2v2h2v2z"/></svg>
+                        Nuova Cartella
+                    </button>
+                </div>
+                <div id="upload-progress-container" class="hidden" style="margin-top: 1rem;"></div>
+            ` : '';
+
+            return `
+            ${renderHeader('Archivio Documenti')}
+            <main>
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div id="storage-breadcrumbs" class="filter-chips-container" style="padding-bottom: 0; margin-bottom: 1rem;">
+                        <!-- Breadcrumbs will be populated here -->
+                    </div>
+                    <div id="storage-list-container" class="list-container">
+                        <p style="color:var(--secondary-text);">Caricamento...</p>
+                    </div>
+                </div>
+                ${managementButtons}
+            </main>
+            ${renderBottomNavigation()}
+            `;
+        };
+
+        const setupArchivioHandlers = () => {
+            loadStorageItems(currentStoragePath);
+
+            const createFolderBtn = document.getElementById('create-folder-btn');
+            createFolderBtn?.addEventListener('click', handleCreateFolder);
+        };
 
         const renderImpostazioniSondaggi = () => {
     const userRole = userProfile?.tipoUtente;
@@ -2651,6 +2709,10 @@
                     if (['supervisore', 'adm'].includes(userType)) content = renderImpostazioniSondaggi();
                     else navigateTo('dashboard');
                     break;
+                case 'archivio':
+                case 'gestione_archivio':
+                    content = renderArchivio();
+                    break;
                 case 'abilitaServizi':
                     if (userProfile?.tipoUtente === 'adm') content = renderAbilitaServizi();
                     else navigateTo('dashboard');
@@ -2749,6 +2811,10 @@
                 case 'datiAmministratore_visualizza': if (userType === 'supervisore') { setupDatiAmministratoreVisualizzaHandlers(); } break;
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
                 case 'abilitaServizi': if (userProfile?.tipoUtente === 'adm') { setupAbilitaServiziHandlers(); } break;
+                case 'archivio':
+                case 'gestione_archivio':
+                    setupArchivioHandlers();
+                    break;
             }
 
             if (currentPage !== 'login') {
@@ -6610,6 +6676,322 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 alert("Si è verificato un errore durante la riassegnazione.");
             }
         };
+        const loadStorageItems = async (path) => {
+            const container = document.getElementById('storage-list-container');
+            const breadcrumbsContainer = document.getElementById('storage-breadcrumbs');
+            if (!container || !breadcrumbsContainer) return;
+
+            container.innerHTML = `<p style="color:var(--secondary-text);">Caricamento elementi...</p>`;
+            
+            const pathSegments = path.split('/').filter(Boolean);
+            let breadcrumbsHtml = `<div class="chip active" onclick="handleBreadcrumbClick('')">Archivio</div>`;
+            let currentPath = '';
+            pathSegments.forEach(segment => {
+                currentPath += segment + '/';
+                breadcrumbsHtml += `<div style="color:var(--secondary-text); align-self:center;">/</div><div class="chip active" onclick="handleBreadcrumbClick('${currentPath}')">${segment}</div>`;
+            });
+            breadcrumbsContainer.innerHTML = breadcrumbsHtml;
+
+            try {
+                const listRef = ref(storage, path);
+                const res = await listAll(listRef);
+                const canManage = ['supervisore', 'adm'].includes(userProfile?.tipoUtente);
+
+                let itemsHtml = '';
+
+                res.prefixes.forEach(folderRef => {
+                    const managementActions = canManage ? `
+                        <div class="list-item-action flex gap-2">
+                            <button onclick="event.stopPropagation(); handleRenameFolder('${folderRef.fullPath}')" class="btn-icon" title="Rinomina Cartella">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M21.41 6.34l-3.75-3.75L3 17.25V21h3.75L21.41 6.34zM19.53 8.21L15.79 4.47l1.88-1.88 3.75 3.75-1.88 1.88z"/></svg>
+                            </button>
+                            <button onclick="event.stopPropagation(); handleDeleteItem('${folderRef.fullPath}', true)" class="btn-icon" title="Elimina Cartella" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    ` : '';
+                    itemsHtml += `
+                    <div class="list-item" onclick="handleFolderClick('${folderRef.name}')">
+                        <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></div>
+                        <div class="list-item-content"><div class="title">${folderRef.name}</div></div>
+                        ${managementActions}
+                    </div>`;
+                });
+
+                res.items.forEach(itemRef => {
+                    if (itemRef.name === '.placeholder') return;
+                    const managementActions = canManage ? `
+                        <div class="list-item-action">
+                            <button onclick="event.stopPropagation(); handleDeleteItem('${itemRef.fullPath}', false)" class="btn-icon" title="Elimina File" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    ` : '';
+                    itemsHtml += `
+                    <div class="list-item" onclick="handleDownloadFile('${itemRef.fullPath}', '${itemRef.name}')">
+                        <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+                        <div class="list-item-content"><div class="title">${itemRef.name}</div></div>
+                        ${managementActions}
+                    </div>`;
+                });
+
+                if (itemsHtml === '') {
+                    container.innerHTML = `<p style="color:var(--secondary-text);">Questa cartella è vuota.</p>`;
+                } else {
+                    container.innerHTML = itemsHtml;
+                }
+
+            } catch (error) {
+                console.error("Errore nel caricare l'archivio:", error);
+                container.innerHTML = `<div class="message-box error" style="display:block;">Errore: ${error.message}</div>`;
+            }
+        };
+
+        const handleFolderClick = (folderName) => {
+            currentStoragePath += folderName + '/';
+            loadStorageItems(currentStoragePath);
+        };
+
+        const handleBreadcrumbClick = (path) => {
+            currentStoragePath = path;
+            loadStorageItems(currentStoragePath);
+        };
+
+        const handleFileUpload = (event) => {
+            const files = event.target.files;
+            if (!files.length) return;
+
+            const uploadPath = selectedUploadPath || currentStoragePath;
+            const progressContainer = document.getElementById('upload-progress-container');
+            progressContainer.innerHTML = '';
+            progressContainer.classList.remove('hidden');
+
+            Array.from(files).forEach(file => {
+                const filePath = uploadPath + file.name;
+                const storageRef = ref(storage, filePath);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                const progressElement = document.createElement('div');
+                progressElement.innerHTML = `
+                    <div style="margin-bottom: 0.5rem;">Caricamento di <strong>${file.name}</strong> in <i>${uploadPath || 'Archivio'}</i>...</div>
+                    <div class="poll-option-bar"><div class="poll-option-fill" id="progress-bar-${file.name.replace(/[^a-zA-Z0-9]/g, '')}" style="background: var(--accent-color);"></div></div>
+                `;
+                progressContainer.appendChild(progressElement);
+
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        const progressBar = document.getElementById(`progress-bar-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`);
+                        if(progressBar) progressBar.style.width = progress + '%';
+                    }, 
+                    (error) => {
+                        console.error("Errore di upload:", error);
+                        progressElement.innerHTML += `<div class="message-box error" style="display:block; margin-top:0.5rem;">Upload fallito: ${error.code}</div>`;
+                    }, 
+                    () => {
+                        getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+                            await logActivity("file_uploaded", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: filePath });
+                            progressElement.innerHTML = `<div class="message-box success" style="display:block;"><strong>${file.name}</strong> caricato con successo.</div>`;
+                            if (uploadPath === currentStoragePath) {
+                                loadStorageItems(currentStoragePath);
+                            }
+                            setTimeout(() => {
+                                progressElement.remove();
+                                if (progressContainer.childElementCount === 0) {
+                                    progressContainer.classList.add('hidden');
+                                }
+                            }, 5000);
+                        });
+                    }
+                );
+            });
+            event.target.value = '';
+            selectedUploadPath = '';
+        };
+
+        const openUploadModal = async () => {
+            showModal('Seleziona Cartella di Destinazione', '<p>Caricamento struttura cartelle...</p>');
+            
+            const getFolderTree = async (path = '') => {
+                const listRef = ref(storage, path);
+                const res = await listAll(listRef);
+                const children = await Promise.all(res.prefixes.map(folderRef => getFolderTree(folderRef.fullPath)));
+                return { name: path.split('/').filter(Boolean).pop() || 'Archivio', path, children };
+            };
+
+            const renderFolderTree = (node, level = 0) => {
+                let html = `
+                    <div class="list-item" style="padding-left: ${level * 1.5}rem; background-color: var(--surface-color-light); margin-bottom: 0.5rem;">
+                        <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></div>
+                        <div class="list-item-content"><div class="title">${node.name}</div></div>
+                        <div class="list-item-action">
+                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem;" onclick="selectUploadPath('${node.path}')">Carica qui</button>
+                        </div>
+                    </div>
+                `;
+                node.children.forEach(child => {
+                    html += renderFolderTree(child, level + 1);
+                });
+                return html;
+            };
+
+            try {
+                const tree = await getFolderTree();
+                const treeHtml = renderFolderTree(tree);
+                modalBody.innerHTML = `<div class="list-container">${treeHtml}</div>`;
+            } catch (error) {
+                modalBody.innerHTML = `<div class="message-box error" style="display:block;">Impossibile caricare la struttura: ${error.message}</div>`;
+            }
+        };
+
+        const selectUploadPath = (path) => {
+            selectedUploadPath = path;
+            hideModal();
+            document.getElementById('file-upload-input').click();
+        };
+
+        const handleRenameFolder = async (oldPath) => {
+            const oldName = oldPath.split('/').filter(Boolean).pop();
+            const newName = prompt("Inserisci il nuovo nome per la cartella:", oldName);
+
+            if (!newName || newName.trim() === '' || newName.includes('/')) {
+                alert("Nome non valido.");
+                return;
+            }
+            if (newName === oldName) return;
+
+            const parentPath = oldPath.substring(0, oldPath.lastIndexOf(oldName));
+            const newPath = parentPath + newName.trim() + '/';
+
+            showModal('Ridenominazione in corso...', '<p>Questa operazione potrebbe richiedere alcuni istanti. Non chiudere la pagina.</p><div class="poll-option-bar"><div id="rename-progress-bar" class="poll-option-fill" style="background: var(--accent-color); width: 0%;"></div></div>');
+
+            try {
+                await moveFolderContents(oldPath, newPath);
+                await logActivity("folder_renamed", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { from: oldPath, to: newPath });
+                hideModal();
+                loadStorageItems(currentStoragePath);
+            } catch (error) {
+                console.error("Errore durante la ridenominazione:", error);
+                hideModal();
+                alert(`Errore: ${error.message}`);
+            }
+        };
+
+        const moveFolderContents = async (oldPath, newPath) => {
+            const listRef = ref(storage, oldPath);
+            const res = await listAll(listRef);
+
+            const moveFile = async (fileRef) => {
+                const newFileRef = ref(storage, newPath + fileRef.name);
+                const url = await getDownloadURL(fileRef);
+                const response = await fetch(url);
+                const blob = await response.blob();
+                await uploadBytes(newFileRef, blob);
+                await deleteObject(fileRef);
+            };
+
+            const totalItems = res.items.length + res.prefixes.length;
+            let itemsProcessed = 0;
+            const progressBar = document.getElementById('rename-progress-bar');
+
+            const updateProgress = () => {
+                itemsProcessed++;
+                if (progressBar) {
+                    progressBar.style.width = `${(itemsProcessed / totalItems) * 100}%`;
+                }
+            };
+
+            for (const itemRef of res.items) {
+                await moveFile(itemRef);
+                updateProgress();
+            }
+
+            for (const folderRef of res.prefixes) {
+                await moveFolderContents(folderRef.fullPath, newPath + folderRef.name + '/');
+                updateProgress();
+            }
+        };
+
+        const handleCreateFolder = async () => {
+            const folderName = prompt("Inserisci il nome della nuova cartella:");
+            if (!folderName || folderName.trim() === '') return;
+
+            // In Storage, le cartelle sono create caricando un file placeholder al loro interno.
+            const placeholderPath = `${currentStoragePath}${folderName.trim()}/.placeholder`;
+            const placeholderRef = ref(storage, placeholderPath);
+
+            try {
+                await uploadBytes(placeholderRef, new Blob()); // Carica un file vuoto
+                await logActivity("folder_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: `${currentStoragePath}${folderName.trim()}` });
+                loadStorageItems(currentStoragePath); // Refresh list
+            } catch (error) {
+                console.error("Errore nella creazione della cartella:", error);
+                alert(`Impossibile creare la cartella: ${error.message}`);
+            }
+        };
+
+        const handleDownloadFile = async (fullPath, fileName) => {
+            try {
+                const url = await getDownloadURL(ref(storage, fullPath));
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank'; // Apre in una nuova scheda
+                link.download = fileName; // Suggerisce il nome del file per il salvataggio
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error("Errore nel download:", error);
+                alert(`Impossibile scaricare il file: ${error.message}`);
+            }
+        };
+
+        const handleDeleteItem = async (fullPath, isFolder) => {
+            const itemType = isFolder ? "cartella" : "file";
+            if (!confirm(`Sei sicuro di voler eliminare questo ${itemType}? L'azione è irreversibile.`)) return;
+
+            if (isFolder) {
+                // La cancellazione di cartelle non vuote non è supportata direttamente dal client SDK.
+                // Eliminiamo il placeholder per "cancellare" la cartella vuota.
+                // Per cartelle non vuote, mostriamo un avviso.
+                const listRef = ref(storage, fullPath);
+                const res = await listAll(listRef);
+                if (res.items.length > 1 || res.prefixes.length > 0) {
+                    alert("Impossibile eliminare cartelle non vuote dall'app. Si prega di svuotare prima la cartella.");
+                    return;
+                }
+                // Se è vuota (o contiene solo il placeholder), elimina il placeholder.
+                const placeholderPath = `${fullPath}/.placeholder`;
+                const placeholderRef = ref(storage, placeholderPath);
+                try {
+                    await deleteObject(placeholderRef);
+                    await logActivity("folder_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: fullPath });
+                    loadStorageItems(currentStoragePath);
+                } catch (error) {
+                    // Se il placeholder non esiste ma la cartella sì, potrebbe essere un residuo.
+                    // In questo caso, l'utente deve gestirlo dalla console Firebase.
+                    if (error.code === 'storage/object-not-found') {
+                         await logActivity("folder_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: fullPath });
+                         loadStorageItems(currentStoragePath); // Ricarica per rimuoverla dalla vista
+                    } else {
+                        console.error(`Errore eliminazione cartella:`, error);
+                        alert(`Impossibile eliminare la cartella: ${error.message}`);
+                    }
+                }
+            } else {
+                // Cancellazione di un file singolo
+                const fileRef = ref(storage, fullPath);
+                try {
+                    await deleteObject(fileRef);
+                    await logActivity("file_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: fullPath });
+                    loadStorageItems(currentStoragePath);
+                } catch (error) {
+                    console.error(`Errore eliminazione file:`, error);
+                    alert(`Impossibile eliminare il file: ${error.message}`);
+                }
+            }
+        };
+
         const updateNotificationUI = (count) => {
     const navBadge = document.getElementById("bacheca-notification-badge");
     const dashboardBadge = document.getElementById("dashboard-bacheca-badge");
@@ -6670,6 +7052,15 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         window.loadElencoCondomini = loadElencoCondomini;
         window.deleteUser = deleteUser;
         window.openUserEditModal = openUserEditModal;
+        window.handleFolderClick = handleFolderClick;
+        window.handleBreadcrumbClick = handleBreadcrumbClick;
+        window.handleFileUpload = handleFileUpload;
+        window.handleCreateFolder = handleCreateFolder;
+        window.handleDownloadFile = handleDownloadFile;
+        window.handleDeleteItem = handleDeleteItem;
+        window.openUploadModal = openUploadModal;
+        window.selectUploadPath = selectUploadPath;
+        window.handleRenameFolder = handleRenameFolder;
         const deletePoll = async (pollId) => {
             if (!confirm('Sei sicuro di voler eliminare questo sondaggio? L\'azione è irreversibile.')) {
                 return;
