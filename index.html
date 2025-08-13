@@ -855,21 +855,29 @@
                 return;
             }
 
+            // --- NUOVA LOGICA DI AUTORIZZAZIONE ROBUSTA ---
+            const supervisorePages = ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode'];
+            const admOnlyPages = ['abilitaServizi', 'cronologiaAttivita'];
+
+            // Se la pagina è riservata solo all'ADM, ma l'utente non è ADM, blocca e reindirizza.
+            if (admOnlyPages.includes(e) && userType !== 'adm') {
+                console.warn(`Accesso negato per il ruolo '${userType}' alla pagina '${e}'. Reindirizzamento.`);
+                navigateTo('dashboard'); // Reindirizza a una pagina sicura
+                return;
+            }
+
+            // Se la pagina è per Supervisore/ADM, ma l'utente non ha nessuno dei due ruoli, blocca e reindirizza.
+            if (supervisorePages.includes(e) && !['supervisore', 'adm'].includes(userType)) {
+                console.warn(`Accesso negato per il ruolo '${userType}' alla pagina '${e}'. Reindirizzamento.`);
+                navigateTo('dashboard'); // Reindirizza a una pagina sicura
+                return;
+            }
+            // --- FINE NUOVA LOGICA ---
+
             if (navigationHistory[navigationHistory.length - 1] !== e) {
                 navigationHistory.push(e);
             }
 
-            // Nota: La condizione per 'supervisore' è stata spostata in un blocco separato
-            if (userType === 'supervisore' && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode'].includes(e)) {
-                currentPage = e;
-                renderCurrentPage();
-                return;
-            }
-            if (userType === 'adm' && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode', 'abilitaServizi', 'cronologiaAttivita'].includes(e)) {
-                 currentPage = e;
-                 renderCurrentPage();
-                 return;
-            }
             if(userType==="custode"&&["dashboard","bacheca","sondaggi","sondaggi_crea","sondaggi_elenco","sondaggi_attivi","sondaggi_conclusi"].includes(e)){
                 navigateTo("segnalazioni");
             } else {
@@ -1081,23 +1089,29 @@
                     <p>Archivio</p>
                 </div>
             `);
-                        if (userProfile?.tipoUtente === 'adm') { // MODIFICA: Solo 'adm' può vedere i pulsanti avanzati
+                        if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
                         <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                            <svg fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                            </svg>
                         </div>
                         <p>${userProfile?.tipoUtente === 'adm' ? 'Funzioni Admin' : 'Funzioni Supervisore'}</p>
                     </div>
                 `);
-                dashboardItemsHtml.push(`
-                    <div onclick="navigateTo('cronologiaAttivita')" class="dashboard-item">
-                        <div class="dashboard-card">
-                           <svg fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                
+                // Aggiungi il pulsante Cronologia solo per l'utente 'adm'
+                if (userProfile?.tipoUtente === 'adm') {
+                    dashboardItemsHtml.push(`
+                        <div onclick="navigateTo('cronologiaAttivita')" class="dashboard-item">
+                            <div class="dashboard-card">
+                               <svg fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                            </div>
+                            <p>Cronologia Attività</p>
                         </div>
-                        <p>Cronologia Attività</p>
-                    </div>
-                `);
+                    `);
+                }
             }
 
             return `
@@ -2613,6 +2627,72 @@
             loadActivityHistory();
         };
 
+        const renderAbilitaServizi = () => {
+            const services = [
+                { id: 'all_services', name: 'Tutti i Servizi (Generale)' },
+                { id: 'bacheca', name: 'Bacheca' },
+                { id: 'segnalazioni', name: 'Segnalazioni' },
+                { id: 'sondaggi', name: 'Sondaggi' },
+                { id: 'numeri_utili', name: 'Numeri Utili' },
+                { id: 'report', name: 'Report' },
+            ];
+            
+            const roles = [
+                { id: 'tutti', name: 'Tutti i Ruoli' },
+                { id: 'condomino', name: 'Condomino' },
+                { id: 'amministratore', name: 'Amministratore' },
+                { id: 'custode', name: 'Custode' },
+                { id: 'consigliere', name: 'Consigliere' },
+                { id: 'supervisore', name: 'Supervisore' },
+            ];
+
+            const generateServiceRow = (service) => `
+                <div class="card" style="margin-bottom: 1.5rem; background-color: var(--surface-color-light);">
+                    <div class="flex items-center justify-between" style="padding-bottom: 1rem; border-bottom: 1px solid var(--surface-color);">
+                        <h4 class="card-title" style="margin: 0;">${service.name}</h4>
+                        <label class="flex items-center cursor-pointer">
+                            <div style="position: relative;">
+                                <input type="checkbox" id="toggle-${service.id}" class="hidden service-toggle">
+                                <div class="toggle-bg" style="width: 40px; height: 22px; background-color: var(--surface-color); border-radius: 99px;"></div>
+                                <div class="toggle-dot" style="position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.3s ease;"></div>
+                            </div>
+                        </label>
+                    </div>
+                    <div style="padding-top: 1rem;">
+                        <p class="form-label">Chi può vedere questo servizio?</p>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                            ${roles.map(role => `
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" class="role-checkbox" data-service="${service.id}" data-role="${role.id}" style="width: 18px; height: 18px; accent-color: var(--accent-color);">
+                                    <span>${role.name}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            return `
+                ${renderHeader('Abilita Servizi')}
+                <main>
+                    <div class="card" style="padding:0; background:none;">
+                        <h3 class="section-title">Gestione Visibilità Servizi</h3>
+                        <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
+                            Abilita o disabilita i singoli servizi e definisci quali ruoli di utenti possono visualizzarli.
+                        </p>
+                        <div id="service-permissions-message" class="message-box"></div>
+                        <form id="service-permissions-form">
+                            ${services.map(generateServiceRow).join('')}
+                            <div class="flex justify-end pt-2">
+                                <button type="submit" class="btn btn-primary">Salva Impostazioni</button>
+                            </div>
+                        </form>
+                    </div>
+                </main>
+                ${renderBottomNavigation()}
+            `;
+        };
+
         const setupAbilitaServiziHandlers = async () => {
             const form = document.getElementById('service-permissions-form');
             if (!form) return;
@@ -2660,28 +2740,26 @@
                 console.error("Error loading service permissions:", error);
             }
 
-            form.addEventListener('click', (e) => {
-                if (e.target.classList.contains('toggle-bg') || e.target.classList.contains('toggle-dot')) {
-                    e.preventDefault(); // <-- CORREZIONE: Impedisce il comportamento predefinito del label
-                    const checkbox = e.target.parentElement.parentElement.querySelector('.service-toggle');
-                    if(checkbox) {
-                        checkbox.checked = !checkbox.checked; // Ora questo è l'unico toggle che avviene
-                        updateToggleVisuals(checkbox);
+            form.addEventListener('change', (e) => {
+                // --- NUOVA LOGICA PER I TOGGLE DI ABILITAZIONE ---
+                if (e.target.classList.contains('service-toggle')) {
+                    const checkbox = e.target;
+                    updateToggleVisuals(checkbox);
 
-                        // Se il toggle modificato è "Tutti i servizi", aggiorna gli altri
-                        if (checkbox.id === 'toggle-all_services') {
-                            const isChecked = checkbox.checked;
-                            const allOtherToggles = form.querySelectorAll('.service-toggle:not(#toggle-all_services)');
-                            allOtherToggles.forEach(toggle => {
+                    // Se il toggle modificato è "Tutti i servizi", aggiorna gli altri
+                    if (checkbox.id === 'toggle-all_services') {
+                        const isChecked = checkbox.checked;
+                        const allOtherToggles = form.querySelectorAll('.service-toggle:not(#toggle-all_services)');
+                        allOtherToggles.forEach(toggle => {
+                            if (toggle.checked !== isChecked) { // Evita di scatenare eventi inutili
                                 toggle.checked = isChecked;
                                 updateToggleVisuals(toggle);
-                            });
-                        }
+                            }
+                        });
                     }
                 }
-            });
-
-            form.addEventListener('change', (e) => {
+                
+                // --- LOGICA ESISTENTE PER I RUOLI (corretta) ---
                 if (e.target.classList.contains('role-checkbox') && e.target.dataset.role === 'tutti') {
                     const serviceId = e.target.dataset.service;
                     const allCheckboxesForService = document.querySelectorAll(`.role-checkbox[data-service="${serviceId}"]`);
