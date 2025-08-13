@@ -690,6 +690,8 @@
         let userProfile = null;
         let currentPage = 'login';
         let communicationsListener = null;
+        let pollsListener = null; // NUOVA RIGA
+        let reportsListener = null; // NUOVA RIGA
         let navigationHistory = [];
         let servicePermissions = null;
         let currentStoragePath = '';
@@ -763,7 +765,32 @@
             }
         });
         
-        const logActivity=async(t,e,o,a={})=>{try{await addDoc(collection(db,"activities"),{type:t,userId:e,userName:o,details:a,timestamp:serverTimestamp(),createdAt:new Date})}catch(n){console.error("Errore nel logging:",n)}};
+        const logActivity = async (type, userId, userName, details = {}) => {
+            if (!userId || !userName) {
+                console.warn("Tentativo di logging senza userId o userName.", { type, details });
+                return;
+            }
+            try {
+                // Arricchiamo i dettagli con informazioni contestuali
+                const finalDetails = {
+                    ...details,
+                    page: currentPage, // Pagina corrente da cui parte l'azione
+                    userAgent: navigator.userAgent // User agent per debugging
+                };
+
+                await addDoc(collection(db, "activities"), {
+                    type: type, // es. "user_login", "report_created"
+                    userId: userId,
+                    userName: userName,
+                    userType: userProfile?.tipoUtente || 'N/D', // Tipo di utente che ha eseguito l'azione
+                    details: finalDetails, // Dettagli specifici dell'azione
+                    timestamp: serverTimestamp(), // Timestamp del server per coerenza
+                    createdAt: new Date() // Data JS per query complesse se necessario
+                });
+            } catch (error) {
+                console.error("Errore nel logging dell'attività:", error);
+            }
+        };
         const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
 
         const adminCreateUser = async (email, password, profileData) => {
@@ -832,7 +859,7 @@
                 navigationHistory.push(e);
             }
 
-            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode', 'abilitaServizi'].includes(e)) {
+            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode', 'abilitaServizi', 'cronologiaAttivita'].includes(e)) {
                  currentPage = e;
                  renderCurrentPage();
                  return;
@@ -974,8 +1001,16 @@
         <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
         <span>Bacheca</span>
     </a>` : ''}
-    ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_amministratore', 'segnalazioni_custode', 'segnalazioni_consiglieri'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg><span>Segnala</span></a>` : ''}
-    ${isServiceEnabledForCurrentUser('sondaggi') ? `<a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg><span>Sondaggi</span></a>` : ''}
+    ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_amministratore', 'segnalazioni_custode', 'segnalazioni_consiglieri', 'segnalazioni_ricevute'].includes(currentPage) ? 'active' : ''}">
+        <span id="segnalazioni-notification-badge" class="notification-badge hidden"></span>
+        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
+        <span>Segnala</span>
+    </a>` : ''}
+    ${isServiceEnabledForCurrentUser('sondaggi') ? `<a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}">
+        <span id="sondaggi-notification-badge" class="notification-badge hidden"></span>
+        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
+        <span>Sondaggi</span>
+    </a>` : ''}
     <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg><span>Profilo</span></a>
 `;
             return `<nav class="bottom-nav">${navItems}</nav>`;
@@ -998,7 +1033,10 @@
             if (isServiceEnabledForCurrentUser('segnalazioni')) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
-                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
+                        <div class="dashboard-card" style="position: relative;">
+                            <span id="dashboard-segnalazioni-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                        </div>
                         <p>Segnalazioni</p>
                     </div>
                 `);
@@ -1006,7 +1044,10 @@
             if (isServiceEnabledForCurrentUser('sondaggi')) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('sondaggi')" class="dashboard-item">
-                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg></div>
+                        <div class="dashboard-card" style="position: relative;">
+                            <span id="dashboard-sondaggi-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
+                        </div>
                         <p>Sondaggi</p>
                     </div>
                 `);
@@ -1034,15 +1075,21 @@
                     <p>Archivio</p>
                 </div>
             `);
-            if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
+                        if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
                         <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-                            </svg>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
                         </div>
                         <p>${userProfile?.tipoUtente === 'adm' ? 'Funzioni Admin' : 'Funzioni Supervisore'}</p>
+                    </div>
+                `);
+                dashboardItemsHtml.push(`
+                    <div onclick="navigateTo('cronologiaAttivita')" class="dashboard-item">
+                        <div class="dashboard-card">
+                           <svg fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                        </div>
+                        <p>Cronologia Attività</p>
                     </div>
                 `);
             }
@@ -1135,7 +1182,8 @@
                 <div class="dashboard-grid">
                     ${createPollButtonHtml}
                     <div onclick="navigateTo('sondaggi_elenco')" class="dashboard-item">
-                        <div class="dashboard-card">
+                        <div class="dashboard-card" style="position: relative;">
+                            <span id="sondaggi-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
                         </div>
                         <p>Elenco Sondaggi</p>
@@ -1272,7 +1320,8 @@
                 }
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_ricevute')" class="dashboard-item">
-                        <div class="dashboard-card">
+                        <div class="dashboard-card" style="position: relative;">
+                            <span id="segnalazioni-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89,3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M17,17H7V15H17V17M17,13H7V11H17V13M17,9H7V7H17V9Z"/></svg>
                         </div>
                         <p>Segnalazioni Ricevute</p>
@@ -2196,7 +2245,7 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="form-group"><label for="admin-nome" class="form-label">Nome</label><input id="admin-nome" type="text" required class="form-input"></div>
-                            <div class="form-group"><label for="admin-cognome" class="form-label">Cognome</label><input id="admin-cognome" type="text" required class="form-input"></div>
+                            <div class="form-group"><label for="admin-cognome" class="form-label">Cognome/Azienda</label><input id="admin-cognome" type="text" required class="form-input"></div>
                         </div>
                         <div class="form-group"><label for="admin-tipo-utente" class="form-label">Tipo di Utente</label>
                             <select id="admin-tipo-utente" required class="form-select">
@@ -2359,56 +2408,207 @@
     `;
 };
 
-        const renderAbilitaServizi = () => {
-            const services = [
-                { id: 'all_services', name: 'Tutti i Servizi' },
-                { id: 'bacheca', name: 'Bacheca' },
-                { id: 'segnalazioni', name: 'Segnalazioni' },
-                { id: 'sondaggi', name: 'Sondaggi' },
-                { id: 'numeri_utili', name: 'Numeri Utili' },
-                { id: 'report', name: 'Report' }
-            ];
-            const roles = ['Tutti', 'Amministratore', 'Custode', 'Fornitore', 'Condomino', 'Consigliere', 'Supervisore'];
-
-            const serviceControlsHtml = services.map(service => `
+                const renderCronologiaAttivita = () => `
+            ${renderHeader('Cronologia Attività')}
+            <main>
                 <div class="card" style="margin-bottom: 1.5rem;">
-                    <div class="flex items-center justify-between" style="margin-bottom: 1rem;">
-                        <h3 class="card-title" style="margin-bottom: 0;">${service.name}</h3>
-                        <label class="flex items-center gap-2 cursor-pointer" title="Abilita/Disabilita servizio">
-                            <div style="position: relative; width: 40px; height: 22px;">
-                                <input type="checkbox" id="toggle-${service.id}" data-service="${service.id}" class="service-toggle hidden">
-                                <div class="toggle-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--surface-color-light); transition: .4s; border-radius: 34px;"></div>
-                                <div class="toggle-dot" style="position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(0);"></div>
+                    <h3 class="card-title">Filtra Attività</h3>
+                    <form id="activity-filter-form" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="filter-user" class="form-label">Utente (Nome/Cognome)</label>
+                                <input type="text" id="filter-user" class="form-input" placeholder="Es. Mario Rossi">
                             </div>
-                        </label>
-                    </div>
-                    <div id="roles-${service.id}" class="form-group space-y-2">
-                        <label class="form-label">Visibile ai ruoli:</label>
-                        <div class="grid grid-cols-2 gap-2">
-                        ${roles.map(role => `
-                            <label class="flex items-center gap-3 p-3 rounded-md cursor-pointer" style="background-color: var(--surface-color-light);">
-                                <input type="checkbox" class="role-checkbox" data-service="${service.id}" data-role="${role.toLowerCase()}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">
-                                <span>${role}</span>
-                            </label>
-                        `).join('')}
+                            <div class="form-group">
+                                <label for="filter-type" class="form-label">Tipo Evento</label>
+                                <select id="filter-type" class="form-select">
+                                    <option value="">Tutti gli eventi</option>
+                                    <optgroup label="Utenti">
+                                        <option value="user_">Accessi e Registrazioni</option>
+                                        <option value="user_created_by_admin">Creazione Utenti (Admin)</option>
+                                        <option value="user_deleted">Eliminazione Utenti</option>
+                                        <option value="user_updated">Modifiche Profili</option>
+                                    </optgroup>
+                                    <optgroup label="Comunicazioni">
+                                        <option value="communication_posted">Pubblicazione Bacheca</option>
+                                    </optgroup>
+                                    <optgroup label="Segnalazioni">
+                                        <option value="report_created">Creazione Segnalazioni</option>
+                                        <option value="report_status_updated">Aggiornamento Stato</option>
+                                        <option value="report_reminder_sent">Invio Solleciti</option>
+                                        <option value="report_reassigned">Riassegnazione</option>
+                                        <option value="report_comment_added">Aggiunta Commenti</option>
+                                    </optgroup>
+                                    <optgroup label="Sondaggi">
+                                        <option value="poll_created">Creazione Sondaggi</option>
+                                        <option value="poll_voted">Votazioni</option>
+                                        <option value="poll_deleted">Eliminazione Sondaggi</option>
+                                    </optgroup>
+                                    <optgroup label="File e Archivio">
+                                        <option value="file_uploaded">Caricamento File</option>
+                                        <option value="file_deleted">Eliminazione File</option>
+                                        <option value="folder_created">Creazione Cartelle</option>
+                                        <option value="folder_deleted">Eliminazione Cartelle</option>
+                                    </optgroup>
+                                    <optgroup label="Impostazioni">
+                                        <option value="service_permissions_updated">Modifica Permessi Servizi</option>
+                                    </optgroup>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `).join('');
-
-            return `
-                ${renderHeader('Abilita Servizi')}
-                <main>
-                    <div id="service-permissions-message" class="message-box"></div>
-                    <form id="service-permissions-form">
-                        ${serviceControlsHtml}
-                        <div class="flex justify-end mt-4">
-                            <button type="submit" class="btn btn-primary w-full">Salva Impostazioni</button>
+                        <div class="form-group">
+                            <label for="filter-date" class="form-label">Mostra attività a partire da:</label>
+                            <input type="date" id="filter-date" class="form-input">
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="reset" id="reset-filters-btn" class="btn btn-secondary">Resetta</button>
+                            <button type="submit" class="btn btn-primary">Applica Filtri</button>
                         </div>
                     </form>
-                </main>
-                ${renderBottomNavigation()}
+                </div>
+
+                <div id="activity-log-container" class="list-container">
+                    <p style="color:var(--secondary-text);">Caricamento cronologia...</p>
+                </div>
+
+                <div class="flex justify-center mt-4">
+                    <button id="load-more-activities-btn" class="btn btn-secondary hidden">Carica Altri</button>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        let lastVisibleDoc = null; // Variabile per la paginazione
+
+        const formatActivityLog = (activity) => {
+            const { type, details } = activity;
+            const detailsText = (text) => text || 'N/D';
+
+            switch (type) {
+                case 'user_registered': return `si è registrato con il ruolo ${detailsText(details.userType)}.`;
+                case 'user_created_by_admin': return `ha creato l'utente ${detailsText(details.createdUserEmail)} (${detailsText(details.createdUserType)}).`;
+                case 'user_deleted': return `ha eliminato l'utente ${detailsText(details.deletedUserName)}.`;
+                case 'user_updated': return `ha aggiornato il profilo di un utente (ID: ${detailsText(details.updatedUserId)}).`;
+                case 'communication_posted': return `ha pubblicato la comunicazione "${detailsText(details.title)}" per il gruppo: ${detailsText(details.targetGroup)}.`;
+                case 'report_created': return `ha creato la segnalazione #${detailsText(details.reportId)}: "${detailsText(details.title)}" (Priorità: ${detailsText(details.priority)}).`;
+                case 'report_status_updated': return `ha aggiornato lo stato della segnalazione #${detailsText(details.reportId)} a "${detailsText(details.newStatus)}".`;
+                case 'report_reminder_sent': return `ha inviato un sollecito per la segnalazione #${detailsText(details.reportId)}.`;
+                case 'report_reassigned': return `ha riassegnato la segnalazione #${detailsText(details.reportId)} a: ${detailsText(details.newRecipient)}.`;
+                case 'report_comment_added': return `ha aggiunto un aggiornamento alla segnalazione #${detailsText(details.reportId)}.`;
+                case 'poll_created': return `ha creato il sondaggio: "${detailsText(details.title)}".`;
+                case 'poll_voted': return `ha votato per l'opzione "${detailsText(details.option)}" nel sondaggio "${detailsText(details.pollTitle)}".`;
+                case 'poll_deleted': return `ha eliminato un sondaggio.`;
+                case 'service_permissions_updated': return `ha modificato i permessi di visibilità dei servizi.`;
+                case 'file_uploaded': return `ha caricato il file nel percorso: ${detailsText(details.path)}.`;
+                case 'file_deleted': return `ha eliminato il file dal percorso: ${detailsText(details.path)}.`;
+                case 'folder_created': return `ha creato la cartella nel percorso: ${detailsText(details.path)}.`;
+                case 'folder_deleted': return `ha eliminato la cartella dal percorso: ${detailsText(details.path)}.`;
+                default: return `ha eseguito l'azione di tipo "${type}".`;
+            }
+        };
+
+        const renderActivityItemHTML = (activity) => {
+            const timestamp = activity.timestamp ? activity.timestamp.toDate().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium' }) : 'N/D';
+            const naturalLanguageLog = formatActivityLog(activity);
+
+            return `
+            <div class="list-item" style="background-color: var(--surface-color); flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                <div class="flex justify-between w-full">
+                    <div class="title" style="font-weight: 500;">
+                        <strong style="color: var(--accent-color);">${activity.userName}</strong> (${activity.userType})
+                    </div>
+                    <div class="subtitle" style="font-size: 0.8rem;">${timestamp}</div>
+                </div>
+                <div class="subtitle" style="font-weight: 400; font-size: 0.95rem;">
+                    ${naturalLanguageLog}
+                </div>
+            </div>
             `;
+        };
+
+        const loadActivityHistory = async (loadMore = false) => {
+            const container = document.getElementById('activity-log-container');
+            const loadMoreBtn = document.getElementById('load-more-activities-btn');
+            if (!container || !loadMoreBtn) return;
+
+            if (!loadMore) {
+                container.innerHTML = '<p style="color:var(--secondary-text);">Caricamento...</p>';
+                lastVisibleDoc = null;
+            }
+
+            try {
+                let constraints = [orderBy("timestamp", "desc"), limit(20)];
+
+                const filterDate = document.getElementById('filter-date')?.value;
+                if (filterDate) {
+                    const startDate = new Date(filterDate);
+                    startDate.setHours(0, 0, 0, 0); // Inizia dalla mezzanotte del giorno selezionato
+                    constraints.push(where("timestamp", ">=", startDate));
+                }
+
+                if (lastVisibleDoc && loadMore) {
+                    constraints.push(startAfter(lastVisibleDoc));
+                }
+
+                const q = query(collection(db, "activities"), ...constraints);
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty && !loadMore) {
+                    container.innerHTML = '<p style="color:var(--secondary-text);">Nessuna attività trovata con i filtri applicati.</p>';
+                    loadMoreBtn.classList.add('hidden');
+                    return;
+                }
+
+                let activities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Filtri testuali applicati post-query
+                const filterUser = document.getElementById('filter-user')?.value.trim().toLowerCase();
+                const filterTypePrefix = document.getElementById('filter-type')?.value; // Non serve toLowerCase()
+                
+                if (filterUser) {
+                    activities = activities.filter(act => act.userName.toLowerCase().includes(filterUser));
+                }
+                // Il nuovo filtro controlla se il tipo di evento INIZIA con il prefisso selezionato
+                if (filterTypePrefix) {
+                    activities = activities.filter(act => act.type.startsWith(filterTypePrefix));
+                }
+
+                const newHtml = activities.map(renderActivityItemHTML).join('');
+                if (loadMore) {
+                    container.innerHTML += newHtml;
+                } else {
+                    container.innerHTML = newHtml.length > 0 ? newHtml : '<p style="color:var(--secondary-text);">Nessuna attività corrisponde ai filtri.</p>';
+                }
+
+                lastVisibleDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+                loadMoreBtn.classList.toggle('hidden', querySnapshot.docs.length < 20);
+
+            } catch (error) {
+                console.error("Errore nel caricamento della cronologia:", error);
+                container.innerHTML = `<div class="message-box error" style="display:block;">Errore: ${error.message}</div>`;
+            }
+        };
+
+        const setupCronologiaAttivitaHandlers = () => {
+            const filterForm = document.getElementById('activity-filter-form');
+            const loadMoreBtn = document.getElementById('load-more-activities-btn');
+            const resetBtn = document.getElementById('reset-filters-btn');
+
+            filterForm?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                loadActivityHistory(false);
+            });
+
+            resetBtn?.addEventListener('click', () => {
+                filterForm.reset();
+                loadActivityHistory(false);
+            });
+
+            loadMoreBtn?.addEventListener('click', () => {
+                loadActivityHistory(true);
+            });
+            
+            loadActivityHistory();
         };
 
         const setupAbilitaServiziHandlers = async () => {
@@ -2717,6 +2917,10 @@
                     if (userProfile?.tipoUtente === 'adm') content = renderAbilitaServizi();
                     else navigateTo('dashboard');
                     break;
+                case 'cronologiaAttivita':
+                    if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) content = renderCronologiaAttivita();
+                    else navigateTo('dashboard');
+                    break;
                 default: content = renderLoginPage();
             }
 
@@ -2811,6 +3015,7 @@
                 case 'datiAmministratore_visualizza': if (userType === 'supervisore') { setupDatiAmministratoreVisualizzaHandlers(); } break;
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
                 case 'abilitaServizi': if (userProfile?.tipoUtente === 'adm') { setupAbilitaServiziHandlers(); } break;
+                case 'cronologiaAttivita': if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) { setupCronologiaAttivitaHandlers(); } break;
                 case 'archivio':
                 case 'gestione_archivio':
                     setupArchivioHandlers();
@@ -2819,6 +3024,8 @@
 
             if (currentPage !== 'login') {
                 checkForNewCommunications();
+                checkForNewPolls();
+                checkForNewReports();
             }
         };
 
@@ -4170,9 +4377,9 @@
                 clearSearchBtn.classList.remove('hidden');
                 addPropertyBtn.classList.add('hidden');
 
-                // Auto-compila e blocca nome e cognome secondo la nuova regola
-                cognomeInput.value = name;   // Il "Nominativo" della tabella va nel cognome
-                nomeInput.value = 'Sig.';     // Il nome è fisso a "Sig."
+                // Auto-compila e blocca nome e cognome/azienda secondo la nuova regola
+                cognomeInput.value = name;   // Il "Nominativo" della tabella va nel cognome/azienda
+                nomeInput.value = '-';       // Il nome è fisso a "-"
                 cognomeInput.readOnly = true;
                 nomeInput.readOnly = true;
 
@@ -5372,54 +5579,62 @@
         };
 
         const loadCommunications = () => {
-    const listEl = document.getElementById("communications-list");
-    if (!listEl) return;
+            const listEl = document.getElementById("communications-list");
+            if (!listEl) return;
 
-    const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
-    onSnapshot(q, snapshot => {
-        const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
-        const canSeeAll = ['adm', 'supervisore', 'amministratore'].includes(userProfile.tipoUtente);
+            const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
+            onSnapshot(q, snapshot => {
+                const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
+                const canSeeAll = ['adm', 'supervisore', 'amministratore'].includes(userProfile.tipoUtente);
 
-        const filteredDocs = snapshot.docs.filter(docSnap => {
-            const comm = docSnap.data();
-            if (canSeeAll) return true;
-            if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true;
-            return userGroups.includes(comm.targetGroup);
-        });
+                const filteredDocs = snapshot.docs.filter(docSnap => {
+                    const comm = docSnap.data();
+                    
+                    // Un utente vede una comunicazione se:
+                    // 1. Ha un ruolo che può vedere tutto ('canSeeAll').
+                    // 2. La comunicazione è per tutti (targetGroup è 'Tutti' o non è definito).
+                    // 3. La comunicazione è per un gruppo a cui l'utente appartiene.
+                    return canSeeAll || 
+                           !comm.targetGroup || 
+                           comm.targetGroup === 'Tutti' || 
+                           userGroups.includes(comm.targetGroup);
+                });
 
-        if (filteredDocs.length === 0) {
-            listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna comunicazione per te.</p>`;
-        } else {
-            listEl.innerHTML = filteredDocs.map(docSnap => {
-                const comm = docSnap.data();
-                if (!comm.createdAt) return "";
+                if (filteredDocs.length === 0) {
+                    listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna comunicazione per te.</p>`;
+                } else {
+                    listEl.innerHTML = filteredDocs.map(docSnap => {
+                        const comm = docSnap.data();
+                        if (!comm.createdAt) return "";
 
-                const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
-                const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
-                    ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
-                    : '';
+                        const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
+                        const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
+                            ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
+                            : '';
 
-                return `
-                <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
-                    <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
-                    <div class="list-item-content">
-                        <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                            <span style="white-space: normal;">${comm.title}</span>
-                            ${targetGroupHtml}
-                        </div>
-                        <div class="subtitle">${comm.content.substring(0, 50)}...</div>
-                        <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
-                    </div>
-                </div>`;
-            }).join("");
-        }
+                        return `
+                        <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
+                            <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
+                            <div class="list-item-content">
+                                <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                    <span style="white-space: normal;">${comm.title}</span>
+                                    ${targetGroupHtml}
+                                </div>
+                                <div class="subtitle">${comm.content.substring(0, 50)}...</div>
+                                <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
+                            </div>
+                        </div>`;
+                    }).join("");
+                }
 
-        if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
-            localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
-            updateNotificationUI(0);
-        }
-    });
-};
+                // Quando si visualizza la lista, si marcano come lette
+                if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
+                    const latestVisibleComm = filteredDocs.length > 0 ? filteredDocs[0].data().createdAt.toMillis() : snapshot.docs[0].data().createdAt.toMillis();
+                    localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestVisibleComm);
+                    updateNotificationUI(0);
+                }
+            });
+        };
         
         const isUserAllowedToVote = (userType, setting) => {
             // ADM can always vote
@@ -5497,6 +5712,16 @@
         };
 
         const loadPolls = (status = 'all') => {
+            // Logica di reset notifiche
+            if (currentPage === 'sondaggi_elenco') {
+                const q = query(collection(db, "polls"), orderBy("createdAt", "desc"), limit(1));
+                getDocs(q).then(snapshot => {
+                    if (!snapshot.empty) {
+                        localStorage.setItem(`lastSeenPoll_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
+                        updateNotificationUI('sondaggi', 0);
+                    }
+                });
+            }
             const container = document.getElementById("polls-container");
             if (!container) return;
             
@@ -5840,6 +6065,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         `;
 
         const loadReceivedReports = () => {
+            // Logica di reset notifiche
+            const q = query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(1));
+            getDocs(q).then(snapshot => {
+                if (!snapshot.empty) {
+                    localStorage.setItem(`lastSeenReport_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
+                    updateNotificationUI('segnalazioni', 0);
+                }
+            });
             const mainContainer = document.getElementById('reports-main-container');
             if (!mainContainer) return;
 
@@ -6992,23 +7225,56 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             }
         };
 
-        const updateNotificationUI = (count) => {
-    const navBadge = document.getElementById("bacheca-notification-badge");
-    const dashboardBadge = document.getElementById("dashboard-bacheca-badge");
-    const bachecaMenuBadge = document.getElementById("bacheca-menu-notification-badge");
-    const badges = [navBadge, dashboardBadge, bachecaMenuBadge];
+        const updateNotificationUI = (service, count) => {
+            const navBadge = document.getElementById(`${service}-notification-badge`);
+            const dashboardBadge = document.getElementById(`dashboard-${service}-badge`);
+            const menuBadge = document.getElementById(`${service}-menu-notification-badge`);
+            const badges = [navBadge, dashboardBadge, menuBadge];
 
-    badges.forEach(badge => {
-        if (badge) {
-            const shouldBeHidden = count === 0;
-            badge.classList.toggle("hidden", shouldBeHidden);
-            if (!shouldBeHidden) {
-                badge.textContent = count;
+            badges.forEach(badge => {
+                if (badge) {
+                    const shouldBeHidden = count === 0;
+                    badge.classList.toggle("hidden", shouldBeHidden);
+                    if (!shouldBeHidden) {
+                        badge.textContent = count > 9 ? '9+' : count;
+                    }
+                }
+            });
+        };
+                        const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,snapshot=>{const unreadCount = snapshot.docs.filter(docSnap => { const comm = docSnap.data(); const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || []; if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true; return userGroups.includes(comm.targetGroup); }).length; updateNotificationUI('bacheca', unreadCount)})};
+        
+        const checkForNewPolls = () => {
+            if (!currentUser || "custode" === userProfile?.tipoUtente) return;
+            pollsListener && pollsListener();
+            const lastSeen = parseInt(localStorage.getItem(`lastSeenPoll_${currentUser.uid}`), 10) || 0;
+            const lastSeenDate = new Date(lastSeen);
+            const q = query(collection(db, "polls"), where("createdAt", ">", lastSeenDate));
+            pollsListener = onSnapshot(q, snapshot => {
+                const unreadCount = snapshot.size; // Per i sondaggi, tutti i nuovi sono rilevanti
+                updateNotificationUI('sondaggi', unreadCount);
+            });
+        };
+
+        const checkForNewReports = () => {
+            if (!currentUser || !["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente)) return;
+            reportsListener && reportsListener();
+            const lastSeen = parseInt(localStorage.getItem(`lastSeenReport_${currentUser.uid}`), 10) || 0;
+            const lastSeenDate = new Date(lastSeen);
+            
+            let q;
+            if (['supervisore', 'adm'].includes(userProfile.tipoUtente)) {
+                // Supervisore e Admin vedono le notifiche per tutte le nuove segnalazioni
+                q = query(collection(db, "reports"), where("createdAt", ">", lastSeenDate));
+            } else {
+                // Gli altri ruoli manageriali vedono solo quelle a loro destinate
+                q = query(collection(db, "reports"), where("recipientType", "==", userProfile.tipoUtente), where("createdAt", ">", lastSeenDate));
             }
-        }
-    });
-};
-        const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,snapshot=>{const unreadCount = snapshot.size; updateNotificationUI(unreadCount)})};
+
+            reportsListener = onSnapshot(q, snapshot => {
+                const unreadCount = snapshot.size;
+                updateNotificationUI('segnalazioni', unreadCount);
+            });
+        };
         
                 window.navigateTo = navigateTo;
         window.navigateBack = navigateBack;
@@ -7128,6 +7394,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 if (communicationsListener) {
                     communicationsListener();
                     communicationsListener = null;
+                }
+                if (pollsListener) { // NUOVO BLOCCO
+                    pollsListener();
+                    pollsListener = null;
+                }
+                if (reportsListener) { // NUOVO BLOCCO
+                    reportsListener();
+                    reportsListener = null;
                 }
                 currentUser = null; 
                 userProfile = null;
