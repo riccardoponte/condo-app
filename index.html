@@ -859,7 +859,13 @@
                 navigationHistory.push(e);
             }
 
-            if (['supervisore', 'adm'].includes(userType) && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode', 'abilitaServizi', 'cronologiaAttivita'].includes(e)) {
+            // Nota: La condizione per 'supervisore' è stata spostata in un blocco separato
+            if (userType === 'supervisore' && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode'].includes(e)) {
+                currentPage = e;
+                renderCurrentPage();
+                return;
+            }
+            if (userType === 'adm' && ['userManagement', 'gestioneGruppi', 'importazione', 'orariCustode', 'abilitaServizi', 'cronologiaAttivita'].includes(e)) {
                  currentPage = e;
                  renderCurrentPage();
                  return;
@@ -1075,7 +1081,7 @@
                     <p>Archivio</p>
                 </div>
             `);
-                        if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
+                        if (userProfile?.tipoUtente === 'adm') { // MODIFICA: Solo 'adm' può vedere i pulsanti avanzati
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
                         <div class="dashboard-card">
@@ -2414,11 +2420,7 @@
                 <div class="card" style="margin-bottom: 1.5rem;">
                     <h3 class="card-title">Filtra Attività</h3>
                     <form id="activity-filter-form" class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group">
-                                <label for="filter-user" class="form-label">Utente (Nome/Cognome)</label>
-                                <input type="text" id="filter-user" class="form-input" placeholder="Es. Mario Rossi">
-                            </div>
+                        <div class="grid grid-cols-1 gap-4">
                             <div class="form-group">
                                 <label for="filter-type" class="form-label">Tipo Evento</label>
                                 <select id="filter-type" class="form-select">
@@ -2918,7 +2920,7 @@
                     else navigateTo('dashboard');
                     break;
                 case 'cronologiaAttivita':
-                    if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) content = renderCronologiaAttivita();
+                    if (userProfile?.tipoUtente === 'adm') content = renderCronologiaAttivita();
                     else navigateTo('dashboard');
                     break;
                 default: content = renderLoginPage();
@@ -3015,7 +3017,7 @@
                 case 'datiAmministratore_visualizza': if (userType === 'supervisore') { setupDatiAmministratoreVisualizzaHandlers(); } break;
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
                 case 'abilitaServizi': if (userProfile?.tipoUtente === 'adm') { setupAbilitaServiziHandlers(); } break;
-                case 'cronologiaAttivita': if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) { setupCronologiaAttivitaHandlers(); } break;
+                case 'cronologiaAttivita': if (userProfile?.tipoUtente === 'adm') { setupCronologiaAttivitaHandlers(); } break;
                 case 'archivio':
                 case 'gestione_archivio':
                     setupArchivioHandlers();
