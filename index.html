@@ -2151,6 +2151,12 @@
                         </div>
                     </div>
                     ` : ''}
+                    <div onclick="navigateTo('puliziaDati')" class="dashboard-item">
+                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M15 16h4v2h-4v-2zm0-8h7v2h-7V8zm0 4h6v2h-6v-2zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12V5z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Pulizia Dati</p>
+                        </div>
+                    </div>
                 </div>
             </main>
             ${renderBottomNavigation()}
@@ -2693,6 +2699,181 @@
             `;
         };
 
+        const renderPuliziaDati = () => `
+            ${renderHeader('Pulizia Dati')}
+            <main>
+                <div class="card">
+                    <h3 class="card-title">Pulizia Dati di Massa</h3>
+                    <p class="form-label" style="color:var(--secondary-text); margin-bottom: 1.5rem;">
+                        Seleziona una categoria di dati da visualizzare. Potrai selezionare ed eliminare più elementi contemporaneamente. <strong>Questa operazione è irreversibile.</strong>
+                    </p>
+                    <div id="cleanup-message-box" class="message-box"></div>
+                    <div class="filter-chips-container" style="margin-bottom: 1.5rem;">
+                        <div id="cleanup-chip-communications" class="chip" onclick="loadItemsForCleanup('communications')">Comunicazioni</div>
+                        <div id="cleanup-chip-reports" class="chip" onclick="loadItemsForCleanup('reports')">Segnalazioni</div>
+                        <div id="cleanup-chip-polls" class="chip" onclick="loadItemsForCleanup('polls')">Sondaggi</div>
+                    </div>
+                    <div id="cleanup-list-container" class="list-container" style="min-height: 200px; max-height: 60vh; overflow-y: auto;">
+                        <p style="color:var(--secondary-text);">Seleziona una categoria per iniziare.</p>
+                    </div>
+                    <div id="cleanup-actions-container" class="hidden" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--surface-color-light);">
+                        <!-- "Select All" Checkbox will be injected here by JS -->
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        const loadItemsForCleanup = async (type) => {
+            const listContainer = document.getElementById('cleanup-list-container');
+            const actionsContainer = document.getElementById('cleanup-actions-container');
+            const messageBox = document.getElementById('cleanup-message-box');
+            messageBox.style.display = 'none';
+
+            // Reset chips and set active
+            document.querySelectorAll('.filter-chips-container .chip').forEach(c => c.classList.remove('active'));
+            document.getElementById(`cleanup-chip-${type}`).classList.add('active');
+            
+            listContainer.innerHTML = '<p style="color:var(--secondary-text);">Caricamento dati...</p>';
+            actionsContainer.classList.add('hidden');
+
+            const typeMap = {
+                communications: { collection: 'communications', titleField: 'title', dateField: 'createdAt' },
+                reports: { collection: 'reports', titleField: 'title', dateField: 'createdAt' },
+                polls: { collection: 'polls', titleField: 'title', dateField: 'createdAt' }
+            };
+
+            if (!typeMap[type]) return;
+            const config = typeMap[type];
+
+            try {
+                const q = query(collection(db, config.collection), orderBy(config.dateField, "desc"));
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    listContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun elemento trovato in questa categoria.</p>`;
+                    return;
+                }
+
+                const itemsHtml = snapshot.docs.map(doc => {
+                    const item = doc.data();
+                    const title = item[config.titleField] || 'Senza titolo';
+                    const date = item[config.dateField]?.toDate()?.toLocaleDateString('it-IT') || 'Data non disponibile';
+                    
+                    return `
+                    <div class="list-item" style="background: var(--surface-color-light);">
+                        <label class="flex items-center gap-4 w-full cursor-pointer">
+                            <input type="checkbox" class="cleanup-item-checkbox" data-id="${doc.id}" data-type="${type}" onchange="handleCleanupSelectionChange('${type}')" style="width: 20px; height: 20px; accent-color: var(--accent-color); flex-shrink: 0;">
+                            <div class="list-item-content">
+                                <div class="title">${title}</div>
+                                <div class="subtitle">${date}</div>
+                            </div>
+                        </label>
+                    </div>
+                    `;
+                }).join('');
+
+                listContainer.innerHTML = itemsHtml;
+
+                actionsContainer.innerHTML = `
+                    <label class="flex items-center gap-3 p-3 rounded-md cursor-pointer" style="background-color: var(--surface-color-light); margin-bottom: 1rem;">
+                        <input type="checkbox" id="cleanup-select-all" onchange="toggleAllForCleanup(this, '${type}')" style="width: 20px; height: 20px; accent-color: var(--accent-color);">
+                        <span class="font-medium">Seleziona / Deseleziona Tutto</span>
+                    </label>
+                    <button id="cleanup-delete-btn" class="btn w-full" style="background-color: var(--danger); color: white;" onclick="handleBulkDelete('${type}')" disabled>Elimina Selezionati (0)</button>
+                `;
+                actionsContainer.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(`Error loading ${type} for cleanup:`, error);
+                listContainer.innerHTML = `<div class="message-box error" style="display:block">Errore nel caricamento: ${error.message}</div>`;
+            }
+        };
+
+        const toggleAllForCleanup = (source, type) => {
+            const checkboxes = document.querySelectorAll(`.cleanup-item-checkbox[data-type="${type}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = source.checked;
+            });
+            handleCleanupSelectionChange(type);
+        };
+
+        const handleCleanupSelectionChange = (type) => {
+            const selectedCheckboxes = document.querySelectorAll(`.cleanup-item-checkbox[data-type="${type}"]:checked`);
+            const deleteBtn = document.getElementById('cleanup-delete-btn');
+            const selectAllCheckbox = document.getElementById('cleanup-select-all');
+            
+            if (deleteBtn) {
+                deleteBtn.disabled = selectedCheckboxes.length === 0;
+                deleteBtn.textContent = `Elimina Selezionati (${selectedCheckboxes.length})`;
+            }
+
+            if(selectAllCheckbox) {
+                const totalCheckboxes = document.querySelectorAll(`.cleanup-item-checkbox[data-type="${type}"]`).length;
+                selectAllCheckbox.checked = selectedCheckboxes.length === totalCheckboxes && totalCheckboxes > 0;
+                selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < totalCheckboxes;
+            }
+        };
+
+        const handleBulkDelete = async (type) => {
+            const selectedCheckboxes = document.querySelectorAll(`.cleanup-item-checkbox[data-type="${type}"]:checked`);
+            const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+            const messageBox = document.getElementById('cleanup-message-box');
+
+            if (idsToDelete.length === 0) {
+                alert("Nessun elemento selezionato.");
+                return;
+            }
+
+            const typeName = {
+                communications: "comunicazioni",
+                reports: "segnalazioni",
+                polls: "sondaggi"
+            }[type];
+
+            if (!confirm(`Sei sicuro di voler eliminare definitivamente ${idsToDelete.length} ${typeName}?`)) {
+                return;
+            }
+
+            const confirmationText = prompt(`Questa azione è irreversibile. Per confermare, digita "ELIMINA" nel campo sottostante.`);
+            if (confirmationText !== 'ELIMINA') {
+                alert("Operazione annullata. La parola di conferma non è corretta.");
+                return;
+            }
+
+            const deleteBtn = document.getElementById('cleanup-delete-btn');
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Eliminazione in corso...';
+            
+            try {
+                const collectionName = { communications: 'communications', reports: 'reports', polls: 'polls' }[type];
+                const deletePromises = idsToDelete.map(id => deleteDoc(doc(db, collectionName, id)));
+                
+                await Promise.all(deletePromises);
+
+                await logActivity("bulk_delete", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    dataType: type,
+                    count: idsToDelete.length,
+                    deletedIds: idsToDelete
+                });
+
+                messageBox.className = 'message-box success';
+                messageBox.textContent = `${idsToDelete.length} ${typeName} eliminati con successo.`;
+                messageBox.style.display = 'block';
+
+                // Ricarica la lista per mostrare i cambiamenti
+                loadItemsForCleanup(type);
+
+            } catch (error) {
+                console.error(`Bulk delete error for ${type}:`, error);
+                messageBox.className = 'message-box error';
+                messageBox.textContent = `Errore durante l'eliminazione: ${error.message}`;
+                messageBox.style.display = 'block';
+                deleteBtn.disabled = false;
+                handleCleanupSelectionChange(type); // Ripristina il conteggio corretto
+            }
+        };
+
         const setupAbilitaServiziHandlers = async () => {
             const form = document.getElementById('service-permissions-form');
             if (!form) return;
@@ -3001,6 +3182,10 @@
                     if (userProfile?.tipoUtente === 'adm') content = renderCronologiaAttivita();
                     else navigateTo('dashboard');
                     break;
+                case 'puliziaDati':
+                    if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) content = renderPuliziaDati();
+                    else navigateTo('dashboard');
+                    break;
                 default: content = renderLoginPage();
             }
 
@@ -3096,6 +3281,7 @@
                 case 'impostazioniSondaggi': if (['supervisore', 'adm'].includes(userType)) { setupImpostazioniSondaggiHandlers(); } break;
                 case 'abilitaServizi': if (userProfile?.tipoUtente === 'adm') { setupAbilitaServiziHandlers(); } break;
                 case 'cronologiaAttivita': if (userProfile?.tipoUtente === 'adm') { setupCronologiaAttivitaHandlers(); } break;
+                case 'puliziaDati': /* No specific handlers needed as logic is in onclick */ break;
                 case 'archivio':
                 case 'gestione_archivio':
                     setupArchivioHandlers();
@@ -7407,6 +7593,11 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         window.openUploadModal = openUploadModal;
         window.selectUploadPath = selectUploadPath;
         window.handleRenameFolder = handleRenameFolder;
+        window.loadItemsForCleanup = loadItemsForCleanup;
+        window.toggleAllForCleanup = toggleAllForCleanup;
+        window.handleCleanupSelectionChange = handleCleanupSelectionChange;
+        window.handleBulkDelete = handleBulkDelete;
+
         const deletePoll = async (pollId) => {
             if (!confirm('Sei sicuro di voler eliminare questo sondaggio? L\'azione è irreversibile.')) {
                 return;
