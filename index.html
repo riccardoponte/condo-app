@@ -1033,7 +1033,7 @@
                 const renderDashboard = () => {
             const dashboardItemsHtml = [];
 
-            if (isServiceEnabledForCurrentUser('bacheca')) {
+            if (isServiceEnabledForCurrentUser('bacheca') && userProfile?.tipoUtente !== 'fornitore') {
     dashboardItemsHtml.push(`
         <div onclick="navigateTo('bacheca')" class="dashboard-item">
             <div class="dashboard-card" style="position: relative;">
@@ -1055,7 +1055,7 @@
                     </div>
                 `);
             }
-            if (isServiceEnabledForCurrentUser('sondaggi')) {
+            if (isServiceEnabledForCurrentUser('sondaggi') && userProfile?.tipoUtente !== 'fornitore') {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('sondaggi')" class="dashboard-item">
                         <div class="dashboard-card" style="position: relative;">
@@ -1066,7 +1066,7 @@
                     </div>
                 `);
             }
-            if (isServiceEnabledForCurrentUser('numeri_utili')) {
+            if (isServiceEnabledForCurrentUser('numeri_utili') && userProfile?.tipoUtente !== 'fornitore') {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('infoUtili')" class="dashboard-item">
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
@@ -1083,12 +1083,14 @@
                 `);
             }
             // Aggiunta pulsante Archivio
-            dashboardItemsHtml.push(`
-                <div onclick="navigateTo('archivio')" class="dashboard-item">
-                    <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></div>
-                    <p>Archivio</p>
-                </div>
-            `);
+            if (userProfile?.tipoUtente !== 'fornitore') {
+                dashboardItemsHtml.push(`
+                    <div onclick="navigateTo('archivio')" class="dashboard-item">
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></div>
+                        <p>Archivio</p>
+                    </div>
+                `);
+            }
                         if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
@@ -1350,26 +1352,30 @@
             }
 
             // 2. Pulsanti utente (visibili a tutti)
-            menuItemsHtml.push(`
-                <div onclick="navigateTo('segnalazioni_crea')" class="dashboard-item">
-                    <div class="dashboard-card">
-                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            if (userRole !== 'fornitore') {
+                menuItemsHtml.push(`
+                    <div onclick="navigateTo('segnalazioni_crea')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </div>
+                        <p>Crea Segnalazione</p>
                     </div>
-                    <p>Crea Segnalazione</p>
-                </div>
-            `);
-             menuItemsHtml.push(`
-                <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item">
-                    <div class="dashboard-card">
-                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
+                `);
+            }
+             if (userRole !== 'fornitore') {
+                 menuItemsHtml.push(`
+                    <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
+                        </div>
+                        <p>Mie Segnalazioni</p>
                     </div>
-                    <p>Mie Segnalazioni</p>
-                </div>
-            `);
+                `);
+            }
 
             // 3. Pulsanti di destinazione: logica aggiornata per nasconderli ai ruoli non pertinenti
-            // Mostra "Ad Amministratore" a tutti tranne all'amministratore e al custode
-            if (userRole !== 'amministratore' && userRole !== 'custode') {
+            // Mostra "Ad Amministratore" a tutti tranne all'amministratore, al custode e al fornitore
+            if (userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_amministratore')" class="dashboard-item">
                         <div class="dashboard-card">
@@ -1380,8 +1386,8 @@
                 `);
             }
             
-            // Mostra "Al Custode" a tutti tranne al custode e all'amministratore
-            if (userRole !== 'custode' && userRole !== 'amministratore') {
+            // Mostra "Al Custode" a tutti tranne al custode, all'amministratore e al fornitore
+            if (userRole !== 'custode' && userRole !== 'amministratore' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_custode')" class="dashboard-item">
                         <div class="dashboard-card">
@@ -1391,8 +1397,8 @@
                     </div>
                 `);
             }
-            // Mostra "Ai Consiglieri" a tutti tranne al consigliere, all'amministratore e al custode
-            if (userRole !== 'consigliere' && userRole !== 'amministratore' && userRole !== 'custode') {
+            // Mostra "Ai Consiglieri" a tutti tranne al consigliere, all'amministratore, al custode e al fornitore
+            if (userRole !== 'consigliere' && userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_consiglieri')" class="dashboard-item">
                         <div class="dashboard-card">
@@ -2649,6 +2655,7 @@
                 { id: 'amministratore', name: 'Amministratore' },
                 { id: 'custode', name: 'Custode' },
                 { id: 'consigliere', name: 'Consigliere' },
+                { id: 'fornitore', name: 'Fornitore' },
                 { id: 'supervisore', name: 'Supervisore' },
             ];
 
