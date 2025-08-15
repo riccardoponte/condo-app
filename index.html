@@ -647,8 +647,149 @@
             background-color: var(--accent-color);
             color: var(--bg-color);
         }
+
+                /* --- INIZIO: Stili per Tabella Responsiva (Visualizzazione a Card) --- */
+        @media screen and (max-width: 768px) {
+            .data-table-container {
+                overflow-x: hidden; /* Nascondiamo lo scroll orizzontale non più necessario */
+            }
+
+            .data-table {
+                border: none;
+                width: 100%;
+            }
+
+            .data-table thead {
+                display: none; /* Nascondiamo l'intestazione originale su mobile */
+            }
+
+            .data-table tr {
+                display: block;
+                margin-bottom: 1rem;
+                background: var(--surface-color);
+                border-radius: var(--radius-md);
+                padding: 1rem;
+                border: 1px solid var(--surface-color-light);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+            
+            .data-table tr:hover {
+                background-color: var(--surface-color); /* Disattiviamo l'hover su tutta la riga */
+            }
+
+            .data-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid var(--surface-color-light);
+                text-align: right; /* Allinea il valore a destra */
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .data-table tr td:last-child {
+                border-bottom: none;
+            }
+
+            /* La magia: creiamo un'etichetta usando l'attributo data-label */
+            .data-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--secondary-text);
+                text-align: left;
+                margin-right: 1rem;
+                flex-shrink: 0;
+            }
+            
+            /* Gestisce le colonne con rowspan che ora non hanno più senso */
+            .data-table td[rowspan] {
+                display: none; /* Nascondiamo le celle che contengono rowspan, i dati verranno mostrati nelle righe successive */
+            }
+            
+            /* Stile specifico per le celle che contengono solo azioni */
+            .data-table td .btn-icon, 
+            .data-table td .user-action-btn,
+            .data-table td .inline-edit-btn {
+                margin-left: auto; /* Allinea i pulsanti a destra quando sono l'unico contenuto */
+            }
+            
+            .data-table td .cell-content-wrapper {
+                justify-content: flex-end; /* Allinea il contenuto della cella a destra */
+            }
+        }
+        /* --- FINE: Stili per Tabella Responsiva --- */
         .custom-dropdown-item:not(:last-child) {
             border-bottom: 1px solid var(--surface-color);
+        }
+
+        /* --- Stili per Upload Allegati Segnalazioni --- */
+        .attachment-upload-container {
+            border: 2px dashed var(--surface-color-light);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            text-align: center; /* Mantenuto per fallback */
+            cursor: pointer;
+            transition: border-color 0.2s;
+            /* --- MODIFICHE PER CENTRATURA VERTICALE --- */
+            display: flex;
+            flex-direction: column;   /* Impila gli elementi verticalmente */
+            justify-content: center;  /* Allinea verticalmente al centro */
+            align-items: center;      /* Allinea orizzontalmente al centro */
+        }
+        .attachment-upload-container:hover {
+            border-color: var(--accent-color);
+        }
+        .attachment-previews {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1 / 1;
+        }
+        .preview-item img, .preview-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+        }
+        .preview-remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--danger);
+            color: white;
+            border: 2px solid var(--bg-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .report-attachments-gallery {
+            padding-left: 64px; /* Allineato con la descrizione */
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .gallery-item {
+            aspect-ratio: 1 / 1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -696,6 +837,7 @@
         let servicePermissions = null;
         let currentStoragePath = '';
         let selectedUploadPath = ''; // Nuova variabile per il percorso di upload scelto
+        let selectedReportFiles = []; // Array per i file della segnalazione
 
         // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
         let groupedProperties = {};
@@ -1473,7 +1615,20 @@
                             </div>
                             <div><label class="form-label">Ubicazione</label><input type="text" id="report-location" required class="form-input" placeholder="es. Scala A, Piano 2"></div>
                             ${formRecipientField}
-                            <div class="flex justify-end pt-4"><button type="submit" class="btn btn-primary">Invia Segnalazione</button></div>
+                            
+                            <!-- NUOVA SEZIONE PER UPLOAD ALLEGATI -->
+                            <div>
+                                <label class="form-label">Allegati (Foto/Video)</label>
+                                <div class="attachment-upload-container" onclick="document.getElementById('report-attachments').click()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="margin: 0 auto 0.5rem; color: var(--secondary-text);"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                                    Tocca per aggiungere file
+                                </div>
+                                <input type="file" id="report-attachments" class="hidden" multiple accept="image/*,video/*" onchange="handleReportFileSelection(event)">
+                                <div id="attachment-previews-container" class="attachment-previews"></div>
+                            </div>
+                            <!-- FINE NUOVA SEZIONE -->
+
+                            <div class="flex justify-end pt-4"><button type="submit" id="submit-report-btn" class="btn btn-primary">Invia Segnalazione</button></div>
                         </form>
                     </div>
                     <div class="mt-4"><h2 class="section-title">Segnalazioni Recenti</h2><div id="reports-secondary-container" class="list-container"></div></div>
@@ -1772,10 +1927,10 @@
                                 : 'N/D';
                             html += `
                                 <tr>
-                                    <td>${user.cognome} ${user.nome}</td>
-                                    <td>${user.email}</td>
-                                    <td>${propertiesHtml}</td>
-                                    <td style="text-align:right;">${(user.millesimiTotali || 0).toFixed(2).replace('.', ',')}</td>
+                                    <td data-label="Cognome e Nome">${user.cognome} ${user.nome}</td>
+                                    <td data-label="Email">${user.email}</td>
+                                    <td data-label="Proprietà">${propertiesHtml}</td>
+                                    <td data-label="Millesimi Tot." style="text-align:right;">${(user.millesimiTotali || 0).toFixed(2).replace('.', ',')}</td>
                                 </tr>
                             `;
                         });
@@ -1828,7 +1983,7 @@
                             const accountSubtotalMillesimi = group.users.reduce((sum, u) => sum + u.millesimi, 0);
                             grandTotalAccounts += group.users.length;
                             grandTotalAccountMillesimi += accountSubtotalMillesimi;
-                            html += `<div class="card" style="margin-bottom: 1.5rem;"><h3 class="card-title" style="text-transform: capitalize;">${groupName.toLowerCase()}</h3><div class="data-table-container"><table class="data-table"><thead><tr><th>Id U.I.</th><th>Proprietario Registrato</th><th style="text-align:right;">Millesimi</th></tr></thead><tbody>${group.users.length > 0 ? group.users.map(u => `<tr><td>${u.idUI}</td><td>${u.proprietario}</td><td style="text-align:right;">${u.millesimi.toFixed(2).replace('.', ',')}</td></tr>`).join('') : `<tr><td colspan="3" style="color:var(--secondary-text); text-align:center;">Nessun account registrato per questo gruppo.</td></tr>`}<tr style="font-weight:bold; background-color: var(--surface-color-light);"><td>Totale Account Registrati</td><td style="text-align:right;">${group.users.length}</td><td style="text-align:right;">${accountSubtotalMillesimi.toFixed(2).replace('.', ',')}</td></tr><tr style="font-weight:bold; background-color: var(--surface-color-light);"><td>Totale Unità da Import</td><td style="text-align:right;">${group.totalPropertiesImport}</td><td style="text-align:right;">${group.totalMillesimiImport.toFixed(2).replace('.', ',')}</td></tr></tbody></table></div></div>`;
+                            html += `<div class="card" style="margin-bottom: 1.5rem;"><h3 class="card-title" style="text-transform: capitalize;">${groupName.toLowerCase()}</h3><div class="data-table-container"><table class="data-table"><thead><tr><th>Id U.I.</th><th>Proprietario Registrato</th><th style="text-align:right;">Millesimi</th></tr></thead><tbody>${group.users.length > 0 ? group.users.map(u => `<tr><td data-label="Id U.I.">${u.idUI}</td><td data-label="Proprietario">${u.proprietario}</td><td data-label="Millesimi" style="text-align:right;">${u.millesimi.toFixed(2).replace('.', ',')}</td></tr>`).join('') : `<tr><td colspan="3" style="color:var(--secondary-text); text-align:center;">Nessun account registrato per questo gruppo.</td></tr>`}<tr style="font-weight:bold; background-color: var(--surface-color-light);"><td data-label="Riepilogo">Totale Account Registrati</td><td data-label="N. Account" style="text-align:right;">${group.users.length}</td><td data-label="Millesimi" style="text-align:right;">${accountSubtotalMillesimi.toFixed(2).replace('.', ',')}</td></tr><tr style="font-weight:bold; background-color: var(--surface-color-light);"><td data-label="Riepilogo">Totale Unità da Import</td><td data-label="N. Unità" style="text-align:right;">${group.totalPropertiesImport}</td><td data-label="Millesimi" style="text-align:right;">${group.totalMillesimiImport.toFixed(2).replace('.', ',')}</td></tr></tbody></table></div></div>`;
                         }
                         html += `<div class="card" style="margin-bottom: 1.5rem;"><h3 class="card-title">Riepilogo Complessivo Confronto</h3><div class="data-table-container"><table class="data-table"><tbody><tr style="font-weight:bold; background-color: var(--surface-color-light);"><td>Totale Account Registrati</td><td style="text-align:right;">${grandTotalAccounts}</td><td style="text-align:right;">${grandTotalAccountMillesimi.toFixed(2).replace('.', ',')}</td></tr><tr style="font-weight:bold; background-color: var(--surface-color-light);"><td>Totale Unità da Import</td><td style="text-align:right;">${grandTotalProperties}</td><td style="text-align:right;">${grandTotalAllMillesimi.toFixed(2).replace('.', ',')}</td></tr></tbody></table></div></div>`;
                     } else { // mode === 'complessiva'
@@ -1836,7 +1991,7 @@
                         for (const groupName in groupedData) {
                             const group = groupedData[groupName];
                             if (group.totalPropertiesImport === 0) continue;
-                            html += `<tr><td style="text-transform: capitalize;">${groupName.toLowerCase()}</td><td style="text-align:right;">${group.totalPropertiesImport}</td><td style="text-align:right;">${group.totalMillesimiImport.toFixed(2).replace('.', ',')}</td></tr>`;
+                            html += `<tr><td data-label="Gruppo / Scala" style="text-transform: capitalize;">${groupName.toLowerCase()}</td><td data-label="N. Unità" style="text-align:right;">${group.totalPropertiesImport}</td><td data-label="Somma Millesimi" style="text-align:right;">${group.totalMillesimiImport.toFixed(2).replace('.', ',')}</td></tr>`;
                         }
                         html += `<tr style="font-weight:bold; background-color: var(--surface-color-light);"><td>Totale Complessivo</td><td style="text-align:right;">${grandTotalProperties}</td><td style="text-align:right;">${grandTotalAllMillesimi.toFixed(2).replace('.', ',')}</td></tr></tbody></table></div></div>`;
                     }
@@ -3786,10 +3941,52 @@
                 }, 0);
             });
         };
+        const handleReportFileSelection = (event) => {
+            selectedReportFiles = [...selectedReportFiles, ...Array.from(event.target.files)];
+            renderFilePreviews();
+            event.target.value = ''; // Permette di selezionare lo stesso file di nuovo
+        };
+
+        const renderFilePreviews = () => {
+            const container = document.getElementById('attachment-previews-container');
+            if (!container) return;
+            container.innerHTML = selectedReportFiles.map((file, index) => {
+                const isVideo = file.type.startsWith('video/');
+                const objectURL = URL.createObjectURL(file);
+                return `
+                <div class="preview-item">
+                    ${isVideo
+                        ? `<video src="${objectURL}" preload="metadata"></video>`
+                        : `<img src="${objectURL}" alt="${file.name}">`
+                    }
+                    <button class="preview-remove-btn" onclick="removeReportFile(${index})">&times;</button>
+                </div>`;
+            }).join('');
+        };
+
+        const removeReportFile = (index) => {
+            selectedReportFiles.splice(index, 1);
+            renderFilePreviews();
+        };
+
+        const uploadReportFiles = (reportId, files) => {
+            const uploadPromises = files.map(file => {
+                const filePath = `reports/${reportId}/${Date.now()}_${file.name}`;
+                const fileRef = ref(storage, filePath);
+                // Usiamo uploadBytes perché è più semplice per questo caso d'uso
+                return uploadBytes(fileRef, file).then(() => getDownloadURL(fileRef));
+            });
+            return Promise.all(uploadPromises);
+        };
+
         const setupReportHandlers = () => {
             const form = document.getElementById("create-report-form");
             form?.addEventListener("submit", async (event) => {
                 event.preventDefault();
+                const submitBtn = document.getElementById("submit-report-btn");
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Invio in corso...';
+
                 const title = document.getElementById("report-title").value;
                 const description = document.getElementById("report-description").value;
                 const category = document.getElementById("report-category").value;
@@ -3798,20 +3995,36 @@
                 const recipient = document.getElementById("report-recipient").value;
 
                 if (!title || !description || !category || !priority || !location || !recipient) {
-                    return alert("Compila tutti i campi, incluso il destinatario.");
+                    alert("Compila tutti i campi, incluso il destinatario.");
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Invia Segnalazione';
+                    return;
                 }
 
                 try {
                     const counterRef = doc(db, "counters", "reportsCounter");
-                    let finalReportNumber; // Variabile per memorizzare il numero di segnalazione
+                    let finalReportNumber;
+                    let fileUrls = [];
 
-                    // Eseguiamo una transazione per garantire che il numero del ticket sia unico e progressivo
-                    const newReportRef = await runTransaction(db, async (transaction) => {
+                    // 1. Creiamo un riferimento al documento per ottenere un ID univoco
+                    const newReportDocRef = doc(collection(db, "reports"));
+                    const reportId = newReportDocRef.id;
+
+                    // 2. Se ci sono file, li carichiamo
+                    if (selectedReportFiles.length > 0) {
+                        submitBtn.textContent = 'Caricamento allegati...';
+                        fileUrls = await uploadReportFiles(reportId, selectedReportFiles);
+                    }
+                    
+                    submitBtn.textContent = 'Salvataggio dati...';
+
+                    // 3. Eseguiamo la transazione per creare il documento e aggiornare il contatore
+                    await runTransaction(db, async (transaction) => {
                         const counterDoc = await transaction.get(counterRef);
                         const newReportNumber = (counterDoc.exists() ? counterDoc.data().lastNumber : 0) + 1;
-                        finalReportNumber = newReportNumber; // Assegnamo il numero alla variabile esterna
+                        finalReportNumber = newReportNumber;
 
-                                                const reportData = {
+                        const reportData = {
                             reportNumber: newReportNumber,
                             title: title,
                             description: description,
@@ -3820,33 +4033,34 @@
                             location: location,
                             status: "aperta",
                             createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-                            createdByUserType: userProfile.tipoUtente, // RIGA AGGIUNTA: Salva il tipo di utente
+                            createdByUserType: userProfile.tipoUtente,
                             createdById: currentUser.uid,
                             createdAt: serverTimestamp(),
                             recipientType: recipient,
-                            updates: [], // Array per la cronologia degli aggiornamenti
-                            lastReminderAt: null, // Timestamp per l'ultimo sollecito
-                            reminderCount: 0 // Conteggio solleciti
+                            updates: [],
+                            lastReminderAt: null,
+                            reminderCount: 0,
+                            fileUrls: fileUrls // Aggiungiamo gli URL dei file
                         };
 
-                        // Aggiorniamo il contatore
                         transaction.set(counterRef, { lastNumber: newReportNumber });
-
-                        // Creiamo il nuovo documento di segnalazione
-                        const newDocRef = doc(collection(db, "reports"));
-                        transaction.set(newDocRef, reportData);
-
-                        return newDocRef;
+                        transaction.set(newReportDocRef, reportData);
                     });
 
-                    await logActivity("report_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: newReportRef.id, title: title, priority: priority, recipient: recipient });
+                    await logActivity("report_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId, title: title, attachments: fileUrls.length });
+                    
                     form.reset();
-                    // Usiamo la variabile che abbiamo salvato, senza rileggere il database
+                    selectedReportFiles = []; // Pulisce l'array dei file
+                    renderFilePreviews(); // Aggiorna l'UI
+                    
                     alert(`Segnalazione #${finalReportNumber} creata con successo!`);
 
                 } catch (error) {
                     console.error("Errore nella creazione della segnalazione:", error);
                     alert("Si è verificato un errore durante l'invio della segnalazione.");
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Invia Segnalazione';
                 }
             });
         };
@@ -6296,6 +6510,24 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 </div>
                 <p class="form-label" style="padding-left: 64px; color: var(--secondary-text); margin-top: 0.75rem;">Inviata da: <strong>${report.createdByUserType ? (report.createdByUserType.charAt(0).toUpperCase() + report.createdByUserType.slice(1)) : report.createdBy}</strong></p>
                 <p style="color: var(--secondary-text); margin-top: 0.5rem; padding-left: 64px;">${report.description}</p>
+                
+                <!-- NUOVA SEZIONE PER VISUALIZZARE ALLEGATI -->
+                ${report.fileUrls && report.fileUrls.length > 0 ? `
+                    <div class="report-attachments-gallery">
+                        ${report.fileUrls.map(url => {
+                            const isVideo = url.includes('.mp4') || url.includes('.mov') || url.includes('.webm');
+                            return `
+                            <a href="${url}" target="_blank" class="gallery-item">
+                                ${isVideo 
+                                    ? `<video src="${url}" preload="metadata"></video>` 
+                                    : `<img src="${url}" alt="Allegato segnalazione">`
+                                }
+                            </a>`;
+                        }).join('')}
+                    </div>
+                ` : ''}
+                <!-- FINE NUOVA SEZIONE -->
+
                 ${updatesHtml}
                 ${actionButtonsHtml ? `<div class="flex gap-4 mt-4">${actionButtonsHtml}</div>` : ''}
             </div>`;
@@ -6743,19 +6975,19 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     if (user.proprieta && user.proprieta.length > 0) {
                         user.proprieta.forEach((prop, index) => {
                             tableHtml += `<tr>
-                                ${index === 0 ? `<td rowspan="${user.proprieta.length}">${createCell(user.nome)}</td><td rowspan="${user.proprieta.length}">${createCell(user.cognome)}</td>` : ''}
-                                <td>${createCell(prop.interno || 'N/D')}</td>
-                                <td>${createCell(prop.gruppo || 'N/D')}</td>
-                                <td>${createCell((prop.millesimi || 0).toFixed(2))}</td>
+                                ${index === 0 ? `<td data-label="Nome" rowspan="${user.proprieta.length}">${createCell(user.nome)}</td><td data-label="Cognome" rowspan="${user.proprieta.length}">${createCell(user.cognome)}</td>` : ''}
+                                <td data-label="Proprietà">${createCell(prop.interno || 'N/D')}</td>
+                                <td data-label="Raggruppamento">${createCell(prop.gruppo || 'N/D')}</td>
+                                <td data-label="Millesimi">${createCell((prop.millesimi || 0).toFixed(2))}</td>
                             </tr>`;
                         });
                     } else {
                         tableHtml += `<tr>
-                            <td>${createCell(user.nome)}</td>
-                            <td>${createCell(user.cognome)}</td>
-                            <td>${createCell('Nessuna')}</td>
-                            <td>${createCell('N/D')}</td>
-                            <td>${createCell('0.00')}</td>
+                            <td data-label="Nome">${createCell(user.nome)}</td>
+                            <td data-label="Cognome">${createCell(user.cognome)}</td>
+                            <td data-label="Proprietà">${createCell('Nessuna')}</td>
+                            <td data-label="Raggruppamento">${createCell('N/D')}</td>
+                            <td data-label="Millesimi">${createCell('0.00')}</td>
                         </tr>`;
                     }
                 });
@@ -7607,6 +7839,8 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         window.loadElencoCondomini = loadElencoCondomini;
         window.deleteUser = deleteUser;
         window.openUserEditModal = openUserEditModal;
+        window.handleReportFileSelection = handleReportFileSelection;
+        window.removeReportFile = removeReportFile;
         window.handleFolderClick = handleFolderClick;
         window.handleBreadcrumbClick = handleBreadcrumbClick;
         window.handleFileUpload = handleFileUpload;
