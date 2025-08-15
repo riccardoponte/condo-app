@@ -670,7 +670,7 @@
         import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updateEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc, runTransaction, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getStorage, ref, listAll, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getStorage, ref, listAll, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable, getBlob } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrLAomryfk-0s5Inm2XOsBrJusgmMI87E",
@@ -1409,6 +1409,30 @@
                 `);
             }
 
+            // Mostra "Al Fornitore" a tutti tranne al fornitore, all'amministratore e al custode
+            if (userRole !== 'fornitore' && userRole !== 'amministratore' && userRole !== 'custode') {
+                 menuItemsHtml.push(`
+                    <div onclick="navigateTo('segnalazioni_fornitore')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
+                        </div>
+                        <p>Al Fornitore</p>
+                    </div>
+                `);
+            }
+
+            // Mostra "Allo Sviluppatore" a tutti tranne all'ADM
+            if (userRole !== 'adm') {
+                menuItemsHtml.push(`
+                    <div onclick="navigateTo('segnalazioni_sviluppatore')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,8H15V11H13V8H9V11H7V8H5C3.89,8 3,8.89 3,10V16C3,17.11 3.89,18 5,18H7V21H9V18H13V21H15V18H17C18.11,18 19,17.11 19,16V10C19,8.89 18.11,8 19,8M5,16V12H7V14H5M17,16H15V14H17V16M17,5H15V3H13V5H9V3H7V5H5C3.89,5 3,5.89 3,7V7.5H19V7C19,5.89 18.11,5 17,5Z" /></svg>
+                        </div>
+                        <p>Allo Sviluppatore</p>
+                    </div>
+                `);
+            }
+
             return `
             ${renderHeader('Segnalazioni')}
             <main>
@@ -1430,6 +1454,8 @@
                         <option value="amministratore">Amministratore</option>
                         <option value="custode">Custode</option>
                         <option value="consigliere">Consiglieri</option>
+                        <option value="fornitore">Fornitore</option>
+                        <option value="adm">Sviluppatore</option>
                     </select>
                 </div>`;
 
@@ -3086,6 +3112,8 @@
                 case 'segnalazioni_amministratore': content = renderSegnalazioniElenco('Segnalazioni ad Amministratore'); break;
                 case 'segnalazioni_custode': content = renderSegnalazioniElenco('Segnalazioni al Custode'); break;
                 case 'segnalazioni_consiglieri': content = renderSegnalazioniElenco('Segnalazioni ai Consiglieri'); break;
+                case 'segnalazioni_fornitore': content = renderSegnalazioniElenco('Segnalazioni al Fornitore'); break;
+                case 'segnalazioni_sviluppatore': content = renderSegnalazioniElenco('Segnalazioni allo Sviluppatore'); break;
                 case 'segnalazioni_ricevute': content = renderSegnalazioniRicevute(); break;
                 case 'segnalazioni_urgenti': content = renderSegnalazioniUrgenti(); break;
                 case 'segnalazioni_utente': content = renderSegnalazioniUtente(); break;
@@ -3237,6 +3265,8 @@
                 case 'segnalazioni_amministratore': loadFilteredReports('amministratore'); break;
                 case 'segnalazioni_custode': loadFilteredReports('custode'); break;
                 case 'segnalazioni_consiglieri': loadFilteredReports('consigliere'); break;
+                case 'segnalazioni_fornitore': loadFilteredReports('fornitore'); break;
+                case 'segnalazioni_sviluppatore': loadFilteredReports('adm'); break;
                 case 'segnalazioni_ricevute': loadReceivedReports(); break;
                 case 'segnalazioni_urgenti': loadUrgentReports(); break;
                 case 'segnalazioni_utente': loadUserReports(); break;
@@ -6379,7 +6409,13 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
 
                 // Se l'utente NON è un supervisore o admin, applichiamo un filtro post-query
                 if (userRole !== 'supervisore' && userRole !== 'adm') {
-                    docsToRender = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+                    if (userRole === 'amministratore') {
+                        // L'amministratore vede le sue segnalazioni E quelle per lo sviluppatore.
+                        docsToRender = snapshot.docs.filter(doc => ['amministratore', 'sviluppatore'].includes(doc.data().recipientType));
+                    } else {
+                        // Gli altri ruoli (custode, consigliere) vedono solo le proprie.
+                        docsToRender = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+                    }
                 }
 
                 // Renderizziamo i documenti (filtrati o meno)
@@ -7208,9 +7244,6 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 res.prefixes.forEach(folderRef => {
                     const managementActions = canManage ? `
                         <div class="list-item-action flex gap-2">
-                            <button onclick="event.stopPropagation(); handleRenameFolder('${folderRef.fullPath}')" class="btn-icon" title="Rinomina Cartella">
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M21.41 6.34l-3.75-3.75L3 17.25V21h3.75L21.41 6.34zM19.53 8.21L15.79 4.47l1.88-1.88 3.75 3.75-1.88 1.88z"/></svg>
-                            </button>
                             <button onclick="event.stopPropagation(); handleDeleteItem('${folderRef.fullPath}', true)" class="btn-icon" title="Elimina Cartella" style="background:var(--danger); color:white;">
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             </button>
@@ -7369,7 +7402,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             const parentPath = oldPath.substring(0, oldPath.lastIndexOf(oldName));
             const newPath = parentPath + newName.trim() + '/';
 
-            showModal('Ridenominazione in corso...', '<p>Questa operazione potrebbe richiedere alcuni istanti. Non chiudere la pagina.</p><div class="poll-option-bar"><div id="rename-progress-bar" class="poll-option-fill" style="background: var(--accent-color); width: 0%;"></div></div>');
+            showModal('Ridenominazione in corso...', '<p>Questa operazione potrebbe richiedere alcuni istanti. Non chiudere la pagina.</p>');
 
             try {
                 await moveFolderContents(oldPath, newPath);
@@ -7384,39 +7417,22 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         };
 
         const moveFolderContents = async (oldPath, newPath) => {
-            const listRef = ref(storage, oldPath);
-            const res = await listAll(listRef);
+    const listRef = ref(storage, oldPath);
+    const res = await listAll(listRef);
 
-            const moveFile = async (fileRef) => {
-                const newFileRef = ref(storage, newPath + fileRef.name);
-                const url = await getDownloadURL(fileRef);
-                const response = await fetch(url);
-                const blob = await response.blob();
-                await uploadBytes(newFileRef, blob);
-                await deleteObject(fileRef);
-            };
+    // 1. Sposta tutti i file dalla vecchia alla nuova posizione, uno alla volta (sequenziale).
+    for (const itemRef of res.items) {
+        const newFileRef = ref(storage, newPath + itemRef.name);
+        const blob = await getBlob(itemRef); // Usa getBlob per evitare problemi di CORS
+        await uploadBytes(newFileRef, blob);
+        await deleteObject(itemRef); // Elimina il vecchio file solo dopo la copia
+    }
 
-            const totalItems = res.items.length + res.prefixes.length;
-            let itemsProcessed = 0;
-            const progressBar = document.getElementById('rename-progress-bar');
-
-            const updateProgress = () => {
-                itemsProcessed++;
-                if (progressBar) {
-                    progressBar.style.width = `${(itemsProcessed / totalItems) * 100}%`;
-                }
-            };
-
-            for (const itemRef of res.items) {
-                await moveFile(itemRef);
-                updateProgress();
-            }
-
-            for (const folderRef of res.prefixes) {
-                await moveFolderContents(folderRef.fullPath, newPath + folderRef.name + '/');
-                updateProgress();
-            }
-        };
+    // 2. Esegui la stessa operazione ricorsivamente per tutte le sottocartelle.
+    for (const folderRef of res.prefixes) {
+        await moveFolderContents(folderRef.fullPath, newPath + folderRef.name + '/');
+    }
+};
 
         const handleCreateFolder = async () => {
             const folderName = prompt("Inserisci il nome della nuova cartella:");
