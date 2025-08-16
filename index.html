@@ -1213,7 +1213,7 @@
     <script type="module">
         import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updateEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc, runTransaction, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, where, getDocs, deleteDoc, runTransaction, arrayUnion, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, listAll, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable, getBlob } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         const firebaseConfig = {
@@ -3327,9 +3327,15 @@
                             <label for="filter-date" class="form-label">Mostra attività a partire da:</label>
                             <input type="date" id="filter-date" class="form-input">
                         </div>
-                        <div class="flex justify-end gap-2">
-                            <button type="reset" id="reset-filters-btn" class="btn btn-secondary">Resetta</button>
-                            <button type="submit" class="btn btn-primary">Applica Filtri</button>
+                        <div class="flex justify-between items-center gap-2">
+                            <div>
+                                <button type="button" onclick="clearActivityHistory()" class="btn" style="background-color: var(--danger); color: white;">Svuota Cronologia</button>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="loadActivityHistory(false)" class="btn btn-secondary">Ricarica</button>
+                                <button type="reset" id="reset-filters-btn" class="btn btn-secondary">Resetta</button>
+                                <button type="submit" class="btn btn-primary">Applica Filtri</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -3717,6 +3723,59 @@
                 messageBox.style.display = 'block';
                 deleteBtn.disabled = false;
                 handleCleanupSelectionChange(type); // Ripristina il conteggio corretto
+            }
+        };
+
+        const clearActivityHistory = async () => {
+            if (!confirm("Sei assolutamente sicuro di voler eliminare TUTTA la cronologia delle attività? Questa azione è irreversibile.")) {
+                return;
+            }
+
+            const confirmationText = prompt('Per confermare, digita "SVUOTA CRONOLOGIA" nel campo sottostante.');
+            if (confirmationText !== 'SVUOTA CRONOLOGIA') {
+                alert("Operazione annullata. La parola di conferma non è corretta.");
+                return;
+            }
+
+            const container = document.getElementById('activity-log-container');
+            container.innerHTML = '<p style="color:var(--secondary-text);">Eliminazione della cronologia in corso...</p>';
+
+            try {
+                const activitiesCollection = collection(db, "activities");
+                const snapshot = await getDocs(activitiesCollection);
+
+                if (snapshot.empty) {
+                    alert("La cronologia è già vuota.");
+                    loadActivityHistory(false);
+                    return;
+                }
+
+                // Firestore limits batch writes to 500 operations. We process in chunks.
+                const batchSize = 499; // A bit less than 500 for safety
+                const batches = [];
+                for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+                    const batch = writeBatch(db);
+                    snapshot.docs.slice(i, i + batchSize).forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    batches.push(batch.commit());
+                }
+
+                await Promise.all(batches);
+
+                // Log this important action
+                await logActivity("history_cleared", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    clearedCount: snapshot.size
+                });
+
+                alert(`Cronologia eliminata con successo. ${snapshot.size} record rimossi.`);
+
+            } catch (error) {
+                console.error("Errore durante la pulizia della cronologia:", error);
+                alert(`Si è verificato un errore: ${error.message}`);
+            } finally {
+                // Refresh the view
+                loadActivityHistory(false);
             }
         };
 
@@ -8685,6 +8744,7 @@
         window.toggleAllForCleanup = toggleAllForCleanup;
         window.handleCleanupSelectionChange = handleCleanupSelectionChange;
         window.handleBulkDelete = handleBulkDelete;
+        window.clearActivityHistory = clearActivityHistory;
 
         const deletePoll = async (pollId) => {
             if (!confirm('Sei sicuro di voler eliminare questo sondaggio? L\'azione è irreversibile.')) {
