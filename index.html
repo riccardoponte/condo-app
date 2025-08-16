@@ -174,6 +174,8 @@
         #theme-toggle-btn {
             min-width: 44px;
             min-height: 44px;
+            width: 44px;
+            height: 44px;
             -webkit-tap-highlight-color: transparent;
             background: var(--accent-color) !important;
             color: white !important;
@@ -193,10 +195,12 @@
             transform: scale(1.05);
         }
 
-        /* Refresh button styling to match theme toggle button width */
+        /* Refresh button styling to match theme toggle button dimensions exactly */
         button[onclick="refreshApplication()"] {
             min-width: 44px;
             min-height: 44px;
+            width: 44px;
+            height: 44px;
         }
 
         @media (hover: none) and (pointer: coarse) {
@@ -1840,7 +1844,7 @@
             if (isServiceEnabledForCurrentUser('report')) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('reportPage')" class="dashboard-item">
-                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2m6-8H4v2h16V9m-4 4H4v2h12v-2M22 4H2v16h20V4z"/></svg></div>
+                        <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.13,5.12L18.88,8.87M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"/></svg></div>
                         <p>Report</p>
                     </div>
                 `);
@@ -1859,7 +1863,7 @@
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19-.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                                <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M10,22C9.75,22 9.54,21.82 9.5,21.58L9.13,18.93C8.5,18.68 7.96,18.34 7.44,17.94L4.95,18.95C4.73,19.03 4.46,18.95 4.34,18.73L2.34,15.27C2.21,15.05 2.27,14.78 2.46,14.63L4.57,12.97L4.5,12L4.57,11.03L2.46,9.37C2.27,9.22 2.21,8.95 2.34,8.73L4.34,5.27C4.46,5.05 4.73,4.96 4.95,5.05L7.44,6.05C7.96,5.66 8.5,5.32 9.13,5.07L9.5,2.42C9.54,2.18 9.75,2 10,2H14C14.25,2 14.46,2.18 14.5,2.42L14.87,5.07C15.5,5.32 16.04,5.66 16.56,6.05L19.05,5.05C19.27,4.96 19.54,5.05 19.66,5.27L21.66,8.73C21.79,8.95 21.73,9.22 21.54,9.37L19.43,11.03L19.5,12L19.43,12.97L21.54,14.63C21.73,14.78 21.79,15.05 21.66,15.27L19.66,18.73C19.54,18.95 19.27,19.04 19.05,18.95L16.56,17.95C16.04,18.34 15.5,18.68 14.87,18.93L14.5,21.58C14.46,21.82 14.25,22 14,22H10M11.25,4L10.88,6.61C9.68,6.86 8.62,7.5 7.85,8.39L5.44,7.35L4.69,8.65L6.8,10.2C6.4,11.37 6.4,12.64 6.8,13.8L4.68,15.36L5.43,16.66L7.86,15.62C8.63,16.5 9.68,17.14 10.87,17.38L11.24,20H12.76L13.13,17.39C14.32,17.14 15.37,16.5 16.14,15.62L18.57,16.66L19.32,15.36L17.2,13.81C17.6,12.64 17.6,11.37 17.2,10.2L19.31,8.65L18.56,7.35L16.15,8.39C15.38,7.5 14.32,6.86 13.12,6.62L12.75,4H11.25Z"/>
                             </svg>
                         </div>
                         <p>${userProfile?.tipoUtente === 'adm' ? 'Funzioni Admin' : 'Funzioni Supervisore'}</p>
@@ -2142,7 +2146,7 @@
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_amministratore')" class="dashboard-item">
                         <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2M12,4.5L11.5,7.5L8.5,8L11.5,8.5L12,11.5L12.5,8.5L15.5,8L12.5,7.5L12,4.5M5,16L6.5,21L12,19L17.5,21L19,16H5Z"/></svg>
                         </div>
                         <p>Ad Amministratore</p>
                     </div>
@@ -2154,7 +2158,7 @@
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_custode')" class="dashboard-item">
                         <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M7,2A5,5 0 0,1 12,7A5,5 0 0,1 10.68,10.27L22,21.55L20.45,23.1L9.17,11.82C8.5,11.95 7.77,11.95 7.1,11.82L2,16.92L0.45,15.37L5.55,10.27A5,5 0 0,1 2,7A5,5 0 0,1 7,2M7,4A3,3 0 0,0 4,7A3,3 0 0,0 7,10A3,3 0 0,0 10,7A3,3 0 0,0 7,4Z"/></svg>
                         </div>
                         <p>Al Custode</p>
                     </div>
@@ -2189,7 +2193,7 @@
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_sviluppatore')" class="dashboard-item">
                         <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,8H15V11H13V8H9V11H7V8H5C3.89,8 3,8.89 3,10V16C3,17.11 3.89,18 5,18H7V21H9V18H13V21H15V18H17C18.11,18 19,17.11 19,16V10C19,8.89 18.11,8 19,8M5,16V12H7V14H5M17,16H15V14H17V16M17,5H15V3H13V5H9V3H7V5H5C3.89,5 3,5.89 3,7V7.5H19V7C19,5.89 18.11,5 17,5Z" /></svg>
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z"/></svg>
                         </div>
                         <p>Allo Sviluppatore</p>
                     </div>
@@ -2339,12 +2343,12 @@
                             <p>Rubrica Fornitori</p>
                         </div>
                         <div onclick="navigateTo('numeriUtiliCustode')" class="dashboard-item">
-                            <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg></div>
+                            <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M7,2A5,5 0 0,1 12,7A5,5 0 0,1 10.68,10.27L22,21.55L20.45,23.1L9.17,11.82C8.5,11.95 7.77,11.95 7.1,11.82L2,16.92L0.45,15.37L5.55,10.27A5,5 0 0,1 2,7A5,5 0 0,1 7,2M7,4A3,3 0 0,0 4,7A3,3 0 0,0 7,10A3,3 0 0,0 10,7A3,3 0 0,0 7,4Z"/></svg></div>
                             <p>Custode</p>
                         </div>
                         <div onclick="navigateTo('infoUtili_amministratore')" class="dashboard-item">
                             <div class="dashboard-card">
-                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
+                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2M12,4.5L11.5,7.5L8.5,8L11.5,8.5L12,11.5L12.5,8.5L15.5,8L12.5,7.5L12,4.5M5,16L6.5,21L12,19L17.5,21L19,16H5Z"/></svg>
                             </div>
                             <p>Amministratore</p>
                         </div>
