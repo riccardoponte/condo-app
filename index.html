@@ -68,6 +68,8 @@
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            background-attachment: fixed;
+            overflow-x: hidden;
         }
 
         #app {
@@ -118,6 +120,7 @@
             font-size: 1.75rem;
             font-weight: 800;
             line-height: 1.2;
+            word-break: break-word;
         }
 
         .page-subtitle {
@@ -328,6 +331,10 @@
         /* Survey Search and Filter */
         .flex {
             display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
         }
 
         .items-center {
@@ -656,6 +663,7 @@
             font-weight: 600;
             text-align: left;
             padding-left: 0.5rem;
+            word-break: break-word;
         }
 
         /* NUOVO: Stile per i pulsanti nei menu a lista (es. Funzioni Admin) */
@@ -1760,7 +1768,7 @@
             const isCustodian = userProfile?.tipoUtente === 'custode';
 
             const navItems = isCustodian
-    ? `
+                ? `
         <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
             <span>Segnala</span>
@@ -3327,15 +3335,11 @@
                             <label for="filter-date" class="form-label">Mostra attività a partire da:</label>
                             <input type="date" id="filter-date" class="form-input">
                         </div>
-                        <div class="flex justify-between items-center gap-2">
-                            <div>
-                                <button type="button" onclick="clearActivityHistory()" class="btn" style="background-color: var(--danger); color: white;">Svuota Cronologia</button>
-                            </div>
-                            <div class="flex gap-2">
-                                <button type="button" onclick="loadActivityHistory(false)" class="btn btn-secondary">Ricarica</button>
-                                <button type="reset" id="reset-filters-btn" class="btn btn-secondary">Resetta</button>
-                                <button type="submit" class="btn btn-primary">Applica Filtri</button>
-                            </div>
+                        <div class="flex flex-col gap-2">
+                            <button type="submit" class="btn btn-primary">Applica Filtri</button>
+                            <button type="button" onclick="loadActivityHistory(false)" class="btn btn-secondary">Ricarica</button>
+                            <button type="reset" id="reset-filters-btn" class="btn btn-secondary">Resetta</button>
+                            <button type="button" onclick="clearActivityHistory()" class="btn" style="background-color: var(--danger); color: white;">Svuota Cronologia</button>
                         </div>
                     </form>
                 </div>
@@ -7295,11 +7299,11 @@
                 }
                 if (userProfile?.tipoUtente === 'amministratore' && (report.status === 'aperta' || report.status === 'in-corso')) {
                     actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
+                }
+                if (userProfile?.tipoUtente === 'custode' && (report.status === 'aperta' || report.status === 'in-corso')) {
+                    actionButtonsHtml += `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--accent-color-dark); color: white;">Inoltra ad Amministratore</button>`;
+                }
             }
-            if (userProfile?.tipoUtente === 'custode' && (report.status === 'aperta' || report.status === 'in-corso')) {
-                actionButtonsHtml += `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--accent-color-dark); color: white;">Inoltra ad Amministratore</button>`;
-            }
-        }
 
             // Logica pulsanti per il creatore (solo se è un "condomino")
             if (isCreator && userProfile?.tipoUtente === 'condomino') {
@@ -8199,15 +8203,15 @@
         };
 
         const confirmReportResolution = async (reportId, isResolved) => {
-        if (isResolved) {
-            await updateReportStatus(reportId, 'chiusa', 'Utente ha confermato la risoluzione.');
-        } else {
-            openJustificationModal(reportId);
-        }
-    };
+            if (isResolved) {
+                await updateReportStatus(reportId, 'chiusa', 'Utente ha confermato la risoluzione.');
+            } else {
+                openJustificationModal(reportId);
+            }
+        };
 
         const openJustificationModal = (reportId) => {
-        const modalContent = `
+            const modalContent = `
             <form id="justification-form" class="space-y-4">
                 <p class="form-label" style="color:var(--secondary-text);">Per favore, descrivi perché ritieni che il problema non sia stato risolto. Questo aiuterà a gestirlo più rapidamente.</p>
                 <div>
@@ -8220,22 +8224,22 @@
                 </div>
             </form>
         `;
-        showModal('Problema Non Risolto', modalContent);
+            showModal('Problema Non Risolto', modalContent);
 
-        document.getElementById('justification-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const justification = document.getElementById('justification-text').value.trim();
-            if (!justification) {
-                alert('Per favore, fornisci una motivazione.');
-                return;
-            }
-            const updateText = `Utente ha riaperto il ticket. Motivazione: "${justification}"`;
-            await updateReportStatus(reportId, 'aperta', updateText);
-            hideModal();
-        });
-    };
+            document.getElementById('justification-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const justification = document.getElementById('justification-text').value.trim();
+                if (!justification) {
+                    alert('Per favore, fornisci una motivazione.');
+                    return;
+                }
+                const updateText = `Utente ha riaperto il ticket. Motivazione: "${justification}"`;
+                await updateReportStatus(reportId, 'aperta', updateText);
+                hideModal();
+            });
+        };
 
-    const openReassignmentModal = (reportId) => {
+        const openReassignmentModal = (reportId) => {
             const modalContent = `
                 <form id="report-reassignment-form" class="space-y-4">
                     <input type="hidden" id="reassign-report-id" value="${reportId}">
@@ -8299,43 +8303,43 @@
                 alert(`Segnalazione riassegnata con successo a: ${newRecipient}.`);
 
             } catch (error) {
-            console.error("Errore durante la riassegnazione:", error);
-            alert("Si è verificato un errore durante la riassegnazione.");
-        }
-    };
+                console.error("Errore durante la riassegnazione:", error);
+                alert("Si è verificato un errore durante la riassegnazione.");
+            }
+        };
 
-    const forwardReportToAdmin = async (reportId) => {
-        if (!confirm("Sei sicuro di voler inoltrare questa segnalazione all'amministratore?")) {
-            return;
-        }
+        const forwardReportToAdmin = async (reportId) => {
+            if (!confirm("Sei sicuro di voler inoltrare questa segnalazione all'amministratore?")) {
+                return;
+            }
 
-        try {
-            const reportRef = doc(db, "reports", reportId);
-            const newUpdate = {
-                text: `Inoltrato all'Amministratore dal Custode.`,
-                by: `${userProfile.nome} ${userProfile.cognome}`,
-                at: new Date()
-            };
+            try {
+                const reportRef = doc(db, "reports", reportId);
+                const newUpdate = {
+                    text: `Inoltrato all'Amministratore dal Custode.`,
+                    by: `${userProfile.nome} ${userProfile.cognome}`,
+                    at: new Date()
+                };
 
-            await updateDoc(reportRef, {
-                recipientType: 'amministratore',
-                status: 'aperta',
-                updates: arrayUnion(newUpdate),
-                updatedAt: serverTimestamp()
-            });
+                await updateDoc(reportRef, {
+                    recipientType: 'amministratore',
+                    status: 'aperta',
+                    updates: arrayUnion(newUpdate),
+                    updatedAt: serverTimestamp()
+                });
 
-            await logActivity("report_forwarded", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
-                reportId: reportId,
-                newRecipient: 'amministratore'
-            });
+                await logActivity("report_forwarded", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    reportId: reportId,
+                    newRecipient: 'amministratore'
+                });
 
-            alert('Segnalazione inoltrata con successo.');
+                alert('Segnalazione inoltrata con successo.');
 
-        } catch (error) {
-            console.error("Errore durante l'inoltro della segnalazione:", error);
-            alert("Si è verificato un errore durante l'inoltro.");
-        }
-    };
+            } catch (error) {
+                console.error("Errore durante l'inoltro della segnalazione:", error);
+                alert("Si è verificato un errore durante l'inoltro.");
+            }
+        };
         const loadStorageItems = async (path) => {
             const container = document.getElementById('storage-list-container');
             const breadcrumbsContainer = document.getElementById('storage-breadcrumbs');
@@ -8694,9 +8698,9 @@
         window.sendReportReminder = sendReportReminder;
         window.confirmReportResolution = confirmReportResolution;
         window.openReassignmentModal = openReassignmentModal;
-    window.forwardReportToAdmin = forwardReportToAdmin;
-    window.openJustificationModal = openJustificationModal;
-    window.showCommunicationDetail = showCommunicationDetail;
+        window.forwardReportToAdmin = forwardReportToAdmin;
+        window.openJustificationModal = openJustificationModal;
+        window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
         window.hideModal = hideModal;
         window.deletePartialCondo = deletePartialCondo;
