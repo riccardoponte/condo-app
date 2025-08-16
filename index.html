@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Con-bridge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         /* --- NUOVO DESIGN SYSTEM v4 (Stile App Nativa) --- */
 
@@ -48,13 +50,19 @@
         #app {
             padding: 1rem 1rem 100px 1rem;
         }
-        
-        body::-webkit-scrollbar { display: none; }
-        body { -ms-overflow-style: none; scrollbar-width: none; }
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
 
         /* 2. Componenti UI Ridisegnati */
-        
+
         /* Header */
         .page-header {
             display: flex;
@@ -63,6 +71,7 @@
             margin-bottom: 2rem;
             padding: 1rem 0;
         }
+
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -76,11 +85,13 @@
             color: var(--bg-color);
             flex-shrink: 0;
         }
+
         .page-title {
             font-size: 1.75rem;
             font-weight: 800;
             line-height: 1.2;
         }
+
         .page-subtitle {
             font-size: 0.9rem;
             font-weight: 500;
@@ -101,6 +112,7 @@
             border-radius: var(--radius-md);
             padding: 1.5rem;
         }
+
         .card-title {
             font-size: 1.1rem;
             font-weight: 600;
@@ -120,10 +132,12 @@
             background: var(--surface-color-light);
             color: var(--primary-text);
         }
+
         .btn-icon:hover {
             background: var(--accent-color);
             transform: scale(1.05);
         }
+
         .btn-icon:active {
             transform: scale(0.95);
         }
@@ -132,9 +146,11 @@
         .flex {
             display: flex;
         }
+
         .items-center {
             align-items: center;
         }
+
         .gap-4 {
             gap: 1rem;
         }
@@ -172,24 +188,34 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+
         .btn:active {
             transform: scale(0.97);
         }
+
         .btn-primary {
             background-color: var(--accent-color);
             color: var(--bg-color);
         }
+
         .btn-primary:hover {
             background-color: var(--accent-color-dark);
         }
+
         .btn-secondary {
             background-color: var(--surface-color-light);
             color: var(--primary-text);
         }
-        .btn.w-full { width: 100%; }
+
+        .btn.w-full {
+            width: 100%;
+        }
 
         /* Form */
-        .form-group { margin-bottom: 1rem; }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
         .form-label {
             display: block;
             margin-bottom: 0.5rem;
@@ -197,7 +223,10 @@
             font-weight: 500;
             color: var(--secondary-text);
         }
-        .form-input, .form-select, .form-textarea {
+
+        .form-input,
+        .form-select,
+        .form-textarea {
             width: 100%;
             background: var(--surface-color-light);
             border: 1px solid var(--surface-color-light);
@@ -208,22 +237,34 @@
             color: var(--primary-text);
             transition: border-color 0.2s ease;
         }
-        .form-input::placeholder { color: var(--secondary-text); }
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
+
+        .form-input::placeholder {
+            color: var(--secondary-text);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
             outline: none;
             border-color: var(--secondary-text);
         }
-        .form-textarea { resize: vertical; min-height: 100px; }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
 
         /* Stile per pulsante mostra/nascondi password */
         .password-toggle-container {
             position: relative;
         }
+
         .password-toggle-btn {
             position: absolute;
             right: 0.2rem;
             top: 50%;
-            transform: translateY(calc(-50% + 0.75rem)); /* CORREZIONE APPLICATA QUI */
+            transform: translateY(calc(-50% + 0.75rem));
+            /* CORREZIONE APPLICATA QUI */
             background: none;
             border: none;
             cursor: pointer;
@@ -233,6 +274,7 @@
             align-items: center;
             justify-content: center;
         }
+
         .password-toggle-btn svg {
             width: 22px;
             height: 22px;
@@ -247,6 +289,7 @@
             padding: 0.75rem;
             border-radius: var(--radius-sm);
         }
+
         .property-selection-item label {
             flex-grow: 1;
             display: flex;
@@ -255,12 +298,14 @@
             cursor: pointer;
             font-weight: 500;
         }
+
         .property-selection-item .group-select {
             flex-basis: 160px;
             flex-shrink: 0;
             font-size: 0.9rem;
             padding: 0.6rem 0.8rem;
         }
+
         /* --- MODIFICA FINE --- */
 
         /* Messaggi di notifica */
@@ -271,9 +316,17 @@
             margin-bottom: 1.5rem;
             display: none;
         }
-        .message-box.success { background-color: rgba(29, 185, 84, 0.2); color: var(--accent-color); }
-        .message-box.error { background-color: rgba(231, 76, 60, 0.2); color: var(--danger); }
-        
+
+        .message-box.success {
+            background-color: rgba(29, 185, 84, 0.2);
+            color: var(--accent-color);
+        }
+
+        .message-box.error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+        }
+
         /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
@@ -284,48 +337,55 @@
             border-top: 1px solid var(--surface-color);
             display: flex;
             justify-content: space-around;
-            padding: 0.5rem 0 1rem 0; /* Aggiunto padding-bottom per schermi con notch */
+            padding: 0.5rem 0 1rem 0;
+            /* Aggiunto padding-bottom per schermi con notch */
             z-index: 1000;
         }
+
         .nav-item {
-    position: relative; /* <-- AGGIUNTA CHIAVE */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: var(--secondary-text);
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
+            position: relative;
+            /* <-- AGGIUNTA CHIAVE */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--secondary-text);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
         .nav-item svg {
             width: 1.75rem;
             height: 1.75rem;
             margin-bottom: 0.25rem;
         }
+
         .nav-item span {
             font-size: 0.75rem;
             font-weight: 500;
         }
+
         .nav-item.active {
             color: var(--accent-color);
         }
+
         .notification-badge {
-    position: absolute;
-    top: -2px;
-    right: 10px;
-    min-width: 20px;
-    height: 20px;
-    background-color: var(--danger);
-    color: var(--primary-text);
-    border-radius: 10px;
-    border: 2px solid var(--bg-color);
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4px;
-    line-height: 1;
-}
+            position: absolute;
+            top: -2px;
+            right: 10px;
+            min-width: 20px;
+            height: 20px;
+            background-color: var(--danger);
+            color: var(--primary-text);
+            border-radius: 10px;
+            border: 2px solid var(--bg-color);
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            line-height: 1;
+        }
 
         /* Dashboard (Home Page) */
         .dashboard-grid {
@@ -333,9 +393,11 @@
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
         }
+
         .dashboard-item {
             cursor: pointer;
         }
+
         .dashboard-card {
             background-color: var(--surface-color);
             aspect-ratio: 1 / 1;
@@ -346,14 +408,17 @@
             margin-bottom: 0.5rem;
             transition: background-color 0.2s ease;
         }
+
         .dashboard-item:hover .dashboard-card {
-             background-color: var(--surface-color-light);
+            background-color: var(--surface-color-light);
         }
+
         .dashboard-card svg {
             width: 40%;
             height: 40%;
             color: var(--primary-text);
         }
+
         .dashboard-item p {
             font-weight: 600;
             text-align: left;
@@ -366,6 +431,7 @@
             flex-direction: column;
             gap: 0.5rem;
         }
+
         .list-item {
             display: flex;
             align-items: center;
@@ -375,9 +441,11 @@
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
+
         .list-item:hover {
             background-color: var(--surface-color);
         }
+
         .list-item-icon {
             width: 48px;
             height: 48px;
@@ -388,15 +456,19 @@
             justify-content: center;
             flex-shrink: 0;
         }
+
         .list-item-icon svg {
             width: 24px;
             height: 24px;
             color: var(--secondary-text);
         }
+
         .list-item-content {
             flex-grow: 1;
-            min-width: 0; /* Fix per flexbox overflow */
+            min-width: 0;
+            /* Fix per flexbox overflow */
         }
+
         .list-item-content .title {
             font-weight: 600;
             color: var(--primary-text);
@@ -404,6 +476,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .list-item-content .subtitle {
             font-size: 0.85rem;
             color: var(--secondary-text);
@@ -411,6 +484,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .list-item-action {
             color: var(--accent-color);
             flex-shrink: 0;
@@ -424,10 +498,17 @@
             padding-bottom: 1rem;
             margin-bottom: 1rem;
         }
+
         /* Nasconde la scrollbar */
-        .filter-chips-container::-webkit-scrollbar { display: none; }
-        .filter-chips-container { -ms-overflow-style: none; scrollbar-width: none; }
-        
+        .filter-chips-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chips-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         .chip {
             padding: 0.5rem 1rem;
             border-radius: 99px;
@@ -437,11 +518,12 @@
             cursor: pointer;
             white-space: nowrap;
         }
+
         .chip.active {
             background-color: var(--primary-text);
             color: var(--bg-color);
         }
-        
+
         /* Badge */
         .badge {
             padding: 0.25rem 0.6rem;
@@ -451,13 +533,37 @@
             text-transform: capitalize;
             display: inline-block;
         }
-        .badge.priority-alta { background-color: #922b21; color: #f5b7b1; }
-        .badge.priority-media { background-color: #9c640c; color: #fdebd0; }
-        .badge.priority-bassa { background-color: #145a32; color: #a9dfbf; }
-        .badge.status-aperta { background-color: #1b4f72; color: #a9cce3; }
-        .badge.status-in-corso { background-color: #9c640c; color: #fdebd0; }
-        .badge.status-chiusa { background-color: #145a32; color: #a9dfbf; }
-        
+
+        .badge.priority-alta {
+            background-color: #922b21;
+            color: #f5b7b1;
+        }
+
+        .badge.priority-media {
+            background-color: #9c640c;
+            color: #fdebd0;
+        }
+
+        .badge.priority-bassa {
+            background-color: #145a32;
+            color: #a9dfbf;
+        }
+
+        .badge.status-aperta {
+            background-color: #1b4f72;
+            color: #a9cce3;
+        }
+
+        .badge.status-in-corso {
+            background-color: #9c640c;
+            color: #fdebd0;
+        }
+
+        .badge.status-chiusa {
+            background-color: #145a32;
+            color: #a9dfbf;
+        }
+
         /* Poll Bar */
         .poll-option-bar {
             width: 100%;
@@ -467,6 +573,7 @@
             margin-top: 0.5rem;
             overflow: hidden;
         }
+
         .poll-option-fill {
             height: 100%;
             background: var(--secondary-text);
@@ -477,7 +584,10 @@
         /* Stili per il Modal */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(0, 0, 0, 0.7);
             display: flex;
             align-items: center;
@@ -486,6 +596,7 @@
             padding: 1rem;
             cursor: pointer;
         }
+
         .modal-content {
             background: var(--surface-color);
             padding: 1.5rem;
@@ -496,16 +607,19 @@
             overflow-y: auto;
             cursor: default;
         }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
+
         .modal-title {
             font-size: 1.2rem;
             font-weight: 700;
         }
+
         .modal-close-btn {
             background: none;
             border: none;
@@ -513,32 +627,69 @@
             font-size: 1.5rem;
             cursor: pointer;
         }
+
         .modal-body p {
             line-height: 1.6;
-            white-space: pre-wrap; /* Mantiene la formattazione del testo */
+            white-space: pre-wrap;
+            /* Mantiene la formattazione del testo */
         }
+
         .modal-body .voter-item {
             display: flex;
             justify-content: space-between;
             padding: 0.75rem 0;
             border-bottom: 1px solid var(--surface-color-light);
         }
+
         .modal-body .voter-item:last-child {
             border-bottom: none;
         }
-        
+
         /* Utilities */
-        .hidden { display: none !important; }
-        .space-y-4 > * + * { margin-top: 1rem; }
-        .flex { display: flex; }
-        .gap-2 { gap: 0.5rem; }
-        .gap-4 { gap: 1rem; }
-        .items-center { align-items: center; }
-        .justify-end { justify-content: flex-end; }
-        .w-full { width: 100%; }
-        .grid { display: grid; }
-        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .mt-4 { margin-top: 1rem; }
+        .hidden {
+            display: none !important;
+        }
+
+        .space-y-4>*+* {
+            margin-top: 1rem;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-end {
+            justify-content: flex-end;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
         .user-action-btn {
             background: var(--surface-color-light);
             border: none;
@@ -553,6 +704,7 @@
             height: 36px;
             transition: background-color 0.2s, color 0.2s;
         }
+
         .user-action-btn:hover {
             background-color: var(--accent-color);
             color: var(--bg-color);
@@ -560,30 +712,38 @@
 
         /* Stili per Tabella Dati */
         .data-table-container {
-            overflow-x: auto; /* Per responsività su schermi piccoli */
+            overflow-x: auto;
+            /* Per responsività su schermi piccoli */
         }
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
         }
-        .data-table th, .data-table td {
+
+        .data-table th,
+        .data-table td {
             padding: 0.75rem 1rem;
             text-align: left;
             border-bottom: 1px solid var(--surface-color-light);
             white-space: nowrap;
         }
+
         .data-table th {
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--secondary-text);
             text-transform: uppercase;
         }
+
         .data-table td {
             font-size: 0.95rem;
         }
+
         .data-table tr:hover {
             background-color: var(--surface-color-light);
         }
+
         .data-table tr:last-child td {
             border-bottom: none;
         }
@@ -596,6 +756,7 @@
             gap: 0.5rem;
             width: 100%;
         }
+
         .inline-edit-btn {
             background: none;
             border: none;
@@ -605,14 +766,18 @@
             align-items: center;
             justify-content: center;
             color: var(--secondary-text);
-            opacity: 0.7; /* Visibile di default */
+            opacity: 0.7;
+            /* Visibile di default */
             transition: opacity 0.2s, color 0.2s;
         }
+
         /* La regola .data-table tr:hover .inline-edit-btn è stata rimossa */
         .inline-edit-btn:hover {
             opacity: 1;
-            color: var(--accent-color); /* Evidenzia l'icona al passaggio del mouse */
+            color: var(--accent-color);
+            /* Evidenzia l'icona al passaggio del mouse */
         }
+
         .inline-edit-btn svg {
             width: 16px;
             height: 16px;
@@ -622,6 +787,7 @@
         .custom-dropdown-container {
             position: relative;
         }
+
         .custom-dropdown-list {
             position: absolute;
             top: calc(100% + 4px);
@@ -632,10 +798,18 @@
             border-radius: var(--radius-sm);
             max-height: 200px;
             overflow-y: auto;
-            z-index: 1100; /* Sopra altri elementi del form */
+            z-index: 1100;
+            /* Sopra altri elementi del form */
         }
-        .custom-dropdown-list::-webkit-scrollbar { display: none; }
-        .custom-dropdown-list { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .custom-dropdown-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .custom-dropdown-list {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
         .custom-dropdown-item {
             padding: 0.8rem 1rem;
@@ -643,12 +817,14 @@
             color: var(--primary-text);
             transition: background-color 0.2s ease;
         }
-        .custom-dropdown-item:hover, .custom-dropdown-item.highlighted {
+
+        .custom-dropdown-item:hover,
+        .custom-dropdown-item.highlighted {
             background-color: var(--accent-color);
             color: var(--bg-color);
         }
 
-        
+
         .custom-dropdown-item:not(:last-child) {
             border-bottom: 1px solid var(--surface-color);
         }
@@ -658,34 +834,44 @@
             border: 2px dashed var(--surface-color-light);
             border-radius: var(--radius-sm);
             padding: 1.5rem;
-            text-align: center; /* Mantenuto per fallback */
+            text-align: center;
+            /* Mantenuto per fallback */
             cursor: pointer;
             transition: border-color 0.2s;
             /* --- MODIFICHE PER CENTRATURA VERTICALE --- */
             display: flex;
-            flex-direction: column;   /* Impila gli elementi verticalmente */
-            justify-content: center;  /* Allinea verticalmente al centro */
-            align-items: center;      /* Allinea orizzontalmente al centro */
+            flex-direction: column;
+            /* Impila gli elementi verticalmente */
+            justify-content: center;
+            /* Allinea verticalmente al centro */
+            align-items: center;
+            /* Allinea orizzontalmente al centro */
         }
+
         .attachment-upload-container:hover {
             border-color: var(--accent-color);
         }
+
         .attachment-previews {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             gap: 0.75rem;
             margin-top: 1rem;
         }
+
         .preview-item {
             position: relative;
             aspect-ratio: 1 / 1;
         }
-        .preview-item img, .preview-item video {
+
+        .preview-item img,
+        .preview-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             border-radius: var(--radius-sm);
         }
+
         .preview-remove-btn {
             position: absolute;
             top: -5px;
@@ -703,29 +889,35 @@
             font-weight: bold;
             line-height: 1;
         }
+
         .report-attachments-gallery {
-            padding-left: 64px; /* Allineato con la descrizione */
+            padding-left: 64px;
+            /* Allineato con la descrizione */
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
             gap: 0.5rem;
             margin-top: 1rem;
         }
+
         .gallery-item {
             aspect-ratio: 1 / 1;
             border-radius: var(--radius-sm);
             overflow: hidden;
         }
-        .gallery-item img, .gallery-item video {
+
+        .gallery-item img,
+        .gallery-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             cursor: pointer;
         }
-        
+
         @keyframes spin {
             from {
                 transform: rotate(0deg);
             }
+
             to {
                 transform: rotate(360deg);
             }
@@ -733,6 +925,7 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
+
 <body>
     <div id="app"></div>
 
@@ -845,7 +1038,7 @@
                 hideModal();
             }
         });
-        
+
         const logActivity = async (type, userId, userName, details = {}) => {
             if (!userId || !userName) {
                 console.warn("Tentativo di logging senza userId o userName.", { type, details });
@@ -872,7 +1065,7 @@
                 console.error("Errore nel logging dell'attività:", error);
             }
         };
-        const register=async(t,e,o)=>{const a=await createUserWithEmailAndPassword(auth,t,e);const totalMillesimi=o.proprieta.reduce(((sum,prop)=>sum+(parseFloat(prop.millesimi)||0)),0);return await setDoc(doc(db,"users",a.user.uid),{nome:o.nome,cognome:o.cognome,email:t,tipoUtente:o.tipoUtente,proprieta:o.proprieta||[],telefono:o.telefono||"",millesimiTotali:totalMillesimi,createdAt:(new Date).toISOString()}),await logActivity("user_registered",a.user.uid,`${o.nome} ${o.cognome}`,{userType:o.tipoUtente}),a};
+        const register = async (t, e, o) => { const a = await createUserWithEmailAndPassword(auth, t, e); const totalMillesimi = o.proprieta.reduce(((sum, prop) => sum + (parseFloat(prop.millesimi) || 0)), 0); return await setDoc(doc(db, "users", a.user.uid), { nome: o.nome, cognome: o.cognome, email: t, tipoUtente: o.tipoUtente, proprieta: o.proprieta || [], telefono: o.telefono || "", millesimiTotali: totalMillesimi, createdAt: (new Date).toISOString() }), await logActivity("user_registered", a.user.uid, `${o.nome} ${o.cognome}`, { userType: o.tipoUtente }), a };
 
         const adminCreateUser = async (email, password, profileData) => {
             const tempAppName = `user-creation-${Date.now()}`;
@@ -906,19 +1099,19 @@
                 await deleteApp(secondaryApp);
             }
         };
-        const login=async(t,e)=>await signInWithEmailAndPassword(auth,t,e);
-        
+        const login = async (t, e) => await signInWithEmailAndPassword(auth, t, e);
+
         // --- FUNZIONE LOGOUT CORRETTA ---
-        const logout=async()=>{
-            communicationsListener&&(communicationsListener(),communicationsListener=null);
+        const logout = async () => {
+            communicationsListener && (communicationsListener(), communicationsListener = null);
             // Si limita a chiamare signOut. Sarà onAuthStateChanged a gestire il resto.
             await signOut(auth);
         };
 
-        const resetPassword=async t=>await sendPasswordResetEmail(auth,t);
-        const loadUserProfile=async t=>{if(t){const e=await getDoc(doc(db,"users",t.uid));e.exists()&&(userProfile=e.data())}};
-        
-        const navigateTo=(e)=>{
+        const resetPassword = async t => await sendPasswordResetEmail(auth, t);
+        const loadUserProfile = async t => { if (t) { const e = await getDoc(doc(db, "users", t.uid)); e.exists() && (userProfile = e.data()) } };
+
+        const navigateTo = (e) => {
             const userType = userProfile?.tipoUtente;
 
             // Service permission check
@@ -959,10 +1152,10 @@
                 navigationHistory.push(e);
             }
 
-            if(userType==="custode"&&["dashboard","bacheca","sondaggi","sondaggi_crea","sondaggi_elenco","sondaggi_attivi","sondaggi_conclusi"].includes(e)){
+            if (userType === "custode" && ["dashboard", "bacheca", "sondaggi", "sondaggi_crea", "sondaggi_elenco", "sondaggi_attivi", "sondaggi_conclusi"].includes(e)) {
                 navigateTo("segnalazioni");
             } else {
-                currentPage=e,renderCurrentPage();
+                currentPage = e, renderCurrentPage();
             }
         };
 
@@ -974,10 +1167,99 @@
             }
             // Non fa nulla se non c'è una pagina precedente
         };
-        
-        const getPriorityColor=t=>({alta:"priority-alta",media:"priority-media",bassa:"priority-bassa"}[t]||"priority-bassa");
-        const getStatusColor=t=>({aperta:"status-aperta","in-corso":"status-in-corso",risolta:"status-in-corso",chiusa:"status-chiusa"}[t]||"status-aperta");
-        
+
+        const refreshApplication = async () => {
+            const refreshBtn = document.querySelector('button[onclick="refreshApplication()"]');
+            if (refreshBtn) {
+                // Add spinning animation to the refresh icon
+                const icon = refreshBtn.querySelector('svg');
+                if (icon) {
+                    icon.style.animation = 'spin 1s linear infinite';
+                }
+                refreshBtn.disabled = true;
+            }
+
+            try {
+                // Show a brief loading message
+                const tempMessage = document.createElement('div');
+                tempMessage.className = 'message-box success';
+                tempMessage.textContent = 'Aggiornamento in corso...';
+                tempMessage.style.position = 'fixed';
+                tempMessage.style.top = '80px';
+                tempMessage.style.left = '1rem';
+                tempMessage.style.right = '1rem';
+                tempMessage.style.zIndex = '1500';
+                tempMessage.style.display = 'block';
+                document.body.appendChild(tempMessage);
+
+                // Reload user profile to get latest data
+                if (currentUser) {
+                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    if (userDoc.exists()) {
+                        userProfile = userDoc.data();
+                    }
+                }
+
+                // Reload service permissions
+                await loadServicePermissions();
+
+                // Restart real-time listeners for fresh data
+                if (typeof checkForNewCommunications === 'function') {
+                    checkForNewCommunications();
+                }
+                if (typeof checkForNewPolls === 'function') {
+                    checkForNewPolls();
+                }
+                if (typeof checkForNewReports === 'function') {
+                    checkForNewReports();
+                }
+
+                // Re-render the current page to show latest data
+                renderCurrentPage();
+
+                // Show success message
+                tempMessage.textContent = 'Applicazione aggiornata con successo!';
+                setTimeout(() => {
+                    if (tempMessage.parentNode) {
+                        tempMessage.parentNode.removeChild(tempMessage);
+                    }
+                }, 2000);
+
+            } catch (error) {
+                console.error('Errore durante l\'aggiornamento:', error);
+                
+                // Show error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message-box error';
+                errorMessage.textContent = 'Errore durante l\'aggiornamento. Riprova.';
+                errorMessage.style.position = 'fixed';
+                errorMessage.style.top = '80px';
+                errorMessage.style.left = '1rem';
+                errorMessage.style.right = '1rem';
+                errorMessage.style.zIndex = '1500';
+                errorMessage.style.display = 'block';
+                document.body.appendChild(errorMessage);
+
+                setTimeout(() => {
+                    if (errorMessage.parentNode) {
+                        errorMessage.parentNode.removeChild(errorMessage);
+                    }
+                }, 3000);
+            } finally {
+                // Remove spinning animation and re-enable button
+                if (refreshBtn) {
+                    const icon = refreshBtn.querySelector('svg');
+                    if (icon) {
+                        icon.style.animation = '';
+                    }
+                    refreshBtn.disabled = false;
+                }
+            }
+        };
+
+        const getPriorityColor = t => ({ alta: "priority-alta", media: "priority-media", bassa: "priority-bassa" }[t] || "priority-bassa");
+        const getStatusColor = t => ({ aperta: "status-aperta", "in-corso": "status-in-corso", risolta: "status-in-corso", chiusa: "status-chiusa" }[t] || "status-aperta");
+
         const renderHeader = (title) => {
             const userInitial = userProfile?.nome ? userProfile.nome.charAt(0).toUpperCase() : 'U';
             const userType = userProfile?.tipoUtente || '';
@@ -988,6 +1270,14 @@
                 </button>
             ` : '';
 
+            const refreshButtonHtml = `
+                <button onclick="refreshApplication()" class="btn-icon" title="Aggiorna per ricevere gli ultimi aggiornamenti" style="margin-left: auto;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                </button>
+            `;
+
             return `
             <header class="page-header">
                 ${backButtonHtml}
@@ -996,6 +1286,7 @@
                     <h1 class="page-title">${title}</h1>
                     <p class="page-subtitle">${userType}</p>
                 </div>
+                ${refreshButtonHtml}
             </header>`;
         }
 
@@ -1089,7 +1380,7 @@
                     </a>
                 `
                 // --- SOSTITUISCI CON QUESTO BLOCCO ---
-: `
+                : `
     <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
     ${isServiceEnabledForCurrentUser('bacheca') ? `<a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
         <span id="bacheca-notification-badge" class="notification-badge hidden"></span>
@@ -1110,12 +1401,12 @@
 `;
             return `<nav class="bottom-nav">${navItems}</nav>`;
         };
-        
-                const renderDashboard = () => {
+
+        const renderDashboard = () => {
             const dashboardItemsHtml = [];
 
             if (isServiceEnabledForCurrentUser('bacheca') && userProfile?.tipoUtente !== 'fornitore') {
-    dashboardItemsHtml.push(`
+                dashboardItemsHtml.push(`
         <div onclick="navigateTo('bacheca')" class="dashboard-item">
             <div class="dashboard-card" style="position: relative;">
                 <span id="dashboard-bacheca-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
@@ -1124,7 +1415,7 @@
             <p>Bacheca</p>
         </div>
     `);
-}
+            }
             if (isServiceEnabledForCurrentUser('segnalazioni')) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
@@ -1172,7 +1463,7 @@
                     </div>
                 `);
             }
-                        if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
+            if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('gestioneGruppi')" class="dashboard-item">
                         <div class="dashboard-card">
@@ -1183,7 +1474,7 @@
                         <p>${userProfile?.tipoUtente === 'adm' ? 'Funzioni Admin' : 'Funzioni Supervisore'}</p>
                     </div>
                 `);
-                
+
                 // Aggiungi il pulsante Cronologia solo per l'utente 'adm'
                 if (userProfile?.tipoUtente === 'adm') {
                     dashboardItemsHtml.push(`
@@ -1403,15 +1694,15 @@
             ${renderBottomNavigation()}
         `;
 
-                        const renderSegnalazioniMenu = () => {
+        const renderSegnalazioniMenu = () => {
             const userRole = userProfile?.tipoUtente;
             const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userRole);
-            
+
             let menuItemsHtml = [];
 
             // 1. Pulsanti gestionali
             if (isManager) {
-                 if (['supervisore', 'adm', 'amministratore'].includes(userRole)) {
+                if (['supervisore', 'adm', 'amministratore'].includes(userRole)) {
                     menuItemsHtml.push(`
                         <div onclick="navigateTo('segnalazioni_urgenti')" class="dashboard-item">
                             <div class="dashboard-card" style="border: 2px solid var(--danger);">
@@ -1443,8 +1734,8 @@
                     </div>
                 `);
             }
-             if (userRole !== 'fornitore') {
-                 menuItemsHtml.push(`
+            if (userRole !== 'fornitore') {
+                menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
@@ -1466,7 +1757,7 @@
                     </div>
                 `);
             }
-            
+
             // Mostra "Al Custode" a tutti tranne al custode, all'amministratore e al fornitore
             if (userRole !== 'custode' && userRole !== 'amministratore' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
@@ -1492,7 +1783,7 @@
 
             // Mostra "Al Fornitore" a tutti tranne al fornitore, all'amministratore e al custode
             if (userRole !== 'fornitore' && userRole !== 'amministratore' && userRole !== 'custode') {
-                 menuItemsHtml.push(`
+                menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_fornitore')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
@@ -1526,8 +1817,8 @@
         };
 
         const renderSegnalazioniCrea = () => {
-             // Il campo destinatario è ora universale per tutti gli utenti che creano una segnalazione.
-             const formRecipientField = `
+            // Il campo destinatario è ora universale per tutti gli utenti che creano una segnalazione.
+            const formRecipientField = `
                 <div>
                     <label class="form-label">Destinatario</label>
                     <select id="report-recipient" required class="form-select">
@@ -1540,7 +1831,7 @@
                     </select>
                 </div>`;
 
-             return `
+            return `
                 ${renderHeader('Crea Segnalazione')}
                 <main>
                     <div class="card" style="margin-bottom:2rem;">
@@ -1601,11 +1892,11 @@
                             <label class="form-label">Le Tue Proprietà</label>
                             <div style="background: var(--surface-color-light); padding: 1rem; border-radius: var(--radius-sm);">
                                 ${userProfile?.proprieta && userProfile.proprieta.length > 0
-                                    ? `<ul>${userProfile.proprieta.map(p => `<li style="list-style-type: disc; margin-left: 20px;">${p.interno} (${(p.millesimi || 0).toFixed(2)} ‰) ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')}</ul>
+                ? `<ul>${userProfile.proprieta.map(p => `<li style="list-style-type: disc; margin-left: 20px;">${p.interno} (${(p.millesimi || 0).toFixed(2)} ‰) ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')}</ul>
                                        <hr style="border-color: var(--surface-color); margin: 0.75rem 0;">
                                        <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Millesimi Totali:</span><span>${(userProfile.millesimiTotali || 0).toFixed(2)} ‰</span></div>`
-                                    : '<p style="color:var(--secondary-text);">Nessuna proprietà associata.</p>'
-                                }
+                : '<p style="color:var(--secondary-text);">Nessuna proprietà associata.</p>'
+            }
                             </div>
                         </div>
                         <div><label class="form-label">Tipo Utente</label><input type="text" value="${userProfile?.tipoUtente || ''}" class="form-input" disabled></div>
@@ -1618,10 +1909,10 @@
             </main>
             ${renderBottomNavigation()}
         `;
-        
-                const renderInfoUtili = () => {
+
+        const renderInfoUtili = () => {
             const isSupervisore = userProfile?.tipoUtente === 'supervisore';
-            
+
             if (isSupervisore) {
                 // La visualizzazione per il Supervisore rimane invariata
                 return `
@@ -1675,7 +1966,7 @@
 
         const renderNumeriUtiliImportati = () => {
             const canImport = userProfile?.tipoUtente === 'supervisore';
-            
+
             if (!canImport) {
                 return `
                 ${renderHeader('Accesso Negato')}
@@ -1694,7 +1985,7 @@
                 ${renderBottomNavigation()}
                 `;
             }
-            
+
             const importSectionHtml = `
                 <div class="flex gap-4 mt-4">
                     <button id="trigger-phone-import-btn" class="btn btn-primary flex-grow">Importa Nuovo File</button>
@@ -1723,7 +2014,7 @@
 
         const renderNumeriUtiliManuali = () => {
             const canManage = userProfile?.tipoUtente === 'supervisore';
-            
+
             if (!canManage) {
                 return `
                 ${renderHeader('Accesso Negato')}
@@ -1742,7 +2033,7 @@
                 ${renderBottomNavigation()}
                 `;
             }
-            
+
             const addFormHtml = `
                 <form id="add-useful-number-form" class="space-y-4" style="margin-bottom: 2rem;">
                     <div><label for="nu-title" class="form-label">INTERVENTO RICHIESTO</label><input type="text" id="nu-title" required class="form-input" placeholder="Es. Idraulico, Elettricista..."></div>
@@ -1944,7 +2235,7 @@
             }
         };
 
-                const renderImportazione = () => `
+        const renderImportazione = () => `
             ${renderHeader('Importa Anagrafica e Millesimi')}
             <main>
                 <!-- SEZIONE UNICA: IMPORTAZIONE MILLESIMI / ANAGRAFICA -->
@@ -2157,6 +2448,20 @@
                             <label for="admin-data-email" class="form-label">Email</label>
                             <input type="email" id="admin-data-email" class="form-input" placeholder="Indirizzo email">
                         </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="admin-data-orari" class="form-label">Orari</label>
+                                <input type="text" id="admin-data-orari" class="form-input" placeholder="Es. 9:00-18:00">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-data-giorni-lavorativi" class="form-label">Giorni Lavorativi</label>
+                                <input type="text" id="admin-data-giorni-lavorativi" class="form-input" placeholder="Es. Lun-Ven">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-data-ruolo" class="form-label">Ruolo</label>
+                            <input type="text" id="admin-data-ruolo" class="form-input" placeholder="Es. Amministratore di condominio">
+                        </div>
                         <div class="flex justify-end">
                             <button type="submit" class="btn btn-primary">Aggiungi Voce</button>
                         </div>
@@ -2230,7 +2535,7 @@
             </main>
             ${renderBottomNavigation()}
         `;
-        
+
         const renderGestioneGruppiMenu = () => `
             ${renderHeader(userProfile?.tipoUtente === 'adm' ? 'Funzioni Admin' : 'Funzioni Supervisore')}
             <main>
@@ -2527,26 +2832,26 @@
         };
 
         const renderImpostazioniSondaggi = () => {
-    const userRole = userProfile?.tipoUtente;
+            const userRole = userProfile?.tipoUtente;
 
-    // Definiamo le opzioni come oggetti per gestirle più facilmente
-    const optionTutti = { value: 'option2', label: 'Tutti (Supervisore, Amministratore, Consiglieri, Condomini)' };
-    const optionSac = { value: 'option1', label: 'Solo Supervisore, Amministratore e Consiglieri' };
-    const optionSc = { value: 'option3', label: 'Solo Supervisore e Consiglieri' };
+            // Definiamo le opzioni come oggetti per gestirle più facilmente
+            const optionTutti = { value: 'option2', label: 'Tutti (Supervisore, Amministratore, Consiglieri, Condomini)' };
+            const optionSac = { value: 'option1', label: 'Solo Supervisore, Amministratore e Consiglieri' };
+            const optionSc = { value: 'option3', label: 'Solo Supervisore e Consiglieri' };
 
-    let orderedOptions;
+            let orderedOptions;
 
-    // Controlliamo il ruolo dell'utente per determinare l'ordine
-    if (['supervisore', 'adm'].includes(userRole)) {
-        // Ordine speciale per supervisore e adm: DAL PIÙ AL MENO RISTRETTO
-        orderedOptions = [optionSc, optionSac, optionTutti]; // <-- UNICA RIGA MODIFICATA
-    } else {
-        // Ordine di default per tutti gli altri ruoli
-        orderedOptions = [optionSac, optionTutti, optionSc];
-    }
+            // Controlliamo il ruolo dell'utente per determinare l'ordine
+            if (['supervisore', 'adm'].includes(userRole)) {
+                // Ordine speciale per supervisore e adm: DAL PIÙ AL MENO RISTRETTO
+                orderedOptions = [optionSc, optionSac, optionTutti]; // <-- UNICA RIGA MODIFICATA
+            } else {
+                // Ordine di default per tutti gli altri ruoli
+                orderedOptions = [optionSac, optionTutti, optionSc];
+            }
 
-    // Generiamo l'HTML delle opzioni basandoci sull'array ordinato
-    const optionsHtml = orderedOptions.map(option => `
+            // Generiamo l'HTML delle opzioni basandoci sull'array ordinato
+            const optionsHtml = orderedOptions.map(option => `
         <div class="form-group">
             <label class="property-selection-item" style="background-color: var(--surface-color-light); cursor: pointer;">
                 <input type="radio" name="pollAuth" value="${option.value}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">
@@ -2555,8 +2860,8 @@
         </div>
     `).join('');
 
-    // Componiamo il template finale della pagina
-    return `
+            // Componiamo il template finale della pagina
+            return `
         ${renderHeader('Impostazione Sondaggi')}
         <main>
             <div class="card">
@@ -2572,9 +2877,9 @@
         </main>
         ${renderBottomNavigation()}
     `;
-};
+        };
 
-                const renderCronologiaAttivita = () => `
+        const renderCronologiaAttivita = () => `
             ${renderHeader('Cronologia Attività')}
             <main>
                 <div class="card" style="margin-bottom: 1.5rem;">
@@ -2714,7 +3019,7 @@
 
                 const q = query(collection(db, "activities"), ...constraints);
                 const querySnapshot = await getDocs(q);
-                
+
                 if (querySnapshot.empty && !loadMore) {
                     container.innerHTML = '<p style="color:var(--secondary-text);">Nessuna attività trovata con i filtri applicati.</p>';
                     loadMoreBtn.classList.add('hidden');
@@ -2726,7 +3031,7 @@
                 // Filtri testuali applicati post-query
                 const filterUser = document.getElementById('filter-user')?.value.trim().toLowerCase();
                 const filterTypePrefix = document.getElementById('filter-type')?.value; // Non serve toLowerCase()
-                
+
                 if (filterUser) {
                     activities = activities.filter(act => act.userName.toLowerCase().includes(filterUser));
                 }
@@ -2769,7 +3074,7 @@
             loadMoreBtn?.addEventListener('click', () => {
                 loadActivityHistory(true);
             });
-            
+
             loadActivityHistory();
         };
 
@@ -2782,7 +3087,7 @@
                 { id: 'numeri_utili', name: 'Numeri Utili' },
                 { id: 'report', name: 'Report' },
             ];
-            
+
             const roles = [
                 { id: 'tutti', name: 'Tutti i Ruoli' },
                 { id: 'condomino', name: 'Condomino' },
@@ -2874,7 +3179,7 @@
             // Reset chips and set active
             document.querySelectorAll('.filter-chips-container .chip').forEach(c => c.classList.remove('active'));
             document.getElementById(`cleanup-chip-${type}`).classList.add('active');
-            
+
             listContainer.innerHTML = '<p style="color:var(--secondary-text);">Caricamento dati...</p>';
             actionsContainer.classList.add('hidden');
 
@@ -2900,7 +3205,7 @@
                     const item = doc.data();
                     const title = item[config.titleField] || 'Senza titolo';
                     const date = item[config.dateField]?.toDate()?.toLocaleDateString('it-IT') || 'Data non disponibile';
-                    
+
                     return `
                     <div class="list-item" style="background: var(--surface-color-light);">
                         <label class="flex items-center gap-4 w-full cursor-pointer">
@@ -2943,13 +3248,13 @@
             const selectedCheckboxes = document.querySelectorAll(`.cleanup-item-checkbox[data-type="${type}"]:checked`);
             const deleteBtn = document.getElementById('cleanup-delete-btn');
             const selectAllCheckbox = document.getElementById('cleanup-select-all');
-            
+
             if (deleteBtn) {
                 deleteBtn.disabled = selectedCheckboxes.length === 0;
                 deleteBtn.textContent = `Elimina Selezionati (${selectedCheckboxes.length})`;
             }
 
-            if(selectAllCheckbox) {
+            if (selectAllCheckbox) {
                 const totalCheckboxes = document.querySelectorAll(`.cleanup-item-checkbox[data-type="${type}"]`).length;
                 selectAllCheckbox.checked = selectedCheckboxes.length === totalCheckboxes && totalCheckboxes > 0;
                 selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < totalCheckboxes;
@@ -2985,11 +3290,11 @@
             const deleteBtn = document.getElementById('cleanup-delete-btn');
             deleteBtn.disabled = true;
             deleteBtn.textContent = 'Eliminazione in corso...';
-            
+
             try {
                 const collectionName = { communications: 'communications', reports: 'reports', polls: 'polls' }[type];
                 const deletePromises = idsToDelete.map(id => deleteDoc(doc(db, collectionName, id)));
-                
+
                 await Promise.all(deletePromises);
 
                 await logActivity("bulk_delete", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
@@ -3048,7 +3353,7 @@
                             serviceToggle.checked = serviceConfig.enabled;
                             updateToggleVisuals(serviceToggle);
                         }
-                        
+
                         const roleCheckboxes = document.querySelectorAll(`.role-checkbox[data-service="${serviceId}"]`);
                         roleCheckboxes.forEach(cb => {
                             const role = cb.dataset.role;
@@ -3080,7 +3385,7 @@
                         });
                     }
                 }
-                
+
                 // --- LOGICA ESISTENTE PER I RUOLI (corretta) ---
                 if (e.target.classList.contains('role-checkbox') && e.target.dataset.role === 'tutti') {
                     const serviceId = e.target.dataset.service;
@@ -3108,7 +3413,7 @@
                 services.forEach(serviceId => {
                     const serviceToggle = document.getElementById(`toggle-${serviceId}`);
                     const enabled = serviceToggle ? serviceToggle.checked : false;
-                    
+
                     const allowedRoles = [];
                     const roleCheckboxes = document.querySelectorAll(`.role-checkbox[data-service="${serviceId}"]:checked`);
                     roleCheckboxes.forEach(cb => {
@@ -3121,7 +3426,7 @@
                 try {
                     await setDoc(settingsRef, newPermissions);
                     await logActivity("service_permissions_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`);
-                    
+
                     messageBox.className = 'message-box success';
                     messageBox.textContent = 'Impostazioni salvate con successo!';
                     messageBox.style.display = 'block';
@@ -3169,7 +3474,7 @@
                 e.preventDefault();
                 const formData = new FormData(form);
                 const selectedOption = formData.get('pollAuth');
-                
+
                 if (!selectedOption) {
                     alert('Seleziona un\'opzione.');
                     return;
@@ -3178,7 +3483,7 @@
                 try {
                     await setDoc(settingsRef, { setting: selectedOption });
                     await logActivity("poll_voting_settings_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { newSetting: selectedOption });
-                    
+
                     messageBox.className = 'message-box success';
                     messageBox.textContent = 'Impostazioni salvate con successo!';
                     messageBox.style.display = 'block';
@@ -3201,7 +3506,7 @@
             }
             app.innerHTML = `<div style="padding:1rem;">Caricamento...</div>`;
             const userType = userProfile?.tipoUtente;
-            
+
             if (userType === 'custode' && currentPage === 'dashboard') currentPage = 'segnalazioni';
 
             let content = '';
@@ -3227,12 +3532,12 @@
                 case 'segnalazioni_utente': content = renderSegnalazioniUtente(); break;
                 case 'profilo': content = renderProfilo(); break;
                 case 'infoUtili': content = renderInfoUtili(); break;
-                case 'numeriUtiliImportati': 
-                    if (userType === 'supervisore') content = renderNumeriUtiliImportati(); 
+                case 'numeriUtiliImportati':
+                    if (userType === 'supervisore') content = renderNumeriUtiliImportati();
                     else navigateTo('dashboard');
                     break;
-                case 'numeriUtiliManuali': 
-                    if (userType === 'supervisore') content = renderNumeriUtiliManuali(); 
+                case 'numeriUtiliManuali':
+                    if (userType === 'supervisore') content = renderNumeriUtiliManuali();
                     else navigateTo('dashboard');
                     break;
                 case 'numeriUtiliRubrica': content = renderNumeriUtiliRubrica(); break;
@@ -3341,32 +3646,32 @@
                 case 'bacheca_crea': setupBachecaHandlers(); break;
                 case 'sondaggi': /* No handlers needed for the menu page */ break;
                 case 'sondaggi_crea': if (userType !== 'custode') { setupPollHandlers(); } break;
-                case 'sondaggi_elenco': 
-                    if (userType !== 'custode') { 
-                        loadPolls('all'); 
+                case 'sondaggi_elenco':
+                    if (userType !== 'custode') {
+                        loadPolls('all');
                         const searchInput = document.getElementById('poll-search');
                         const typeFilter = document.getElementById('poll-type-filter');
                         searchInput?.addEventListener('input', () => loadPolls('all'));
                         typeFilter?.addEventListener('change', () => loadPolls('all'));
-                    } 
+                    }
                     break;
-                case 'sondaggi_attivi': 
-                    if (userType !== 'custode') { 
-                        loadPolls('active'); 
+                case 'sondaggi_attivi':
+                    if (userType !== 'custode') {
+                        loadPolls('active');
                         const searchInput = document.getElementById('poll-search');
                         const typeFilter = document.getElementById('poll-type-filter');
                         searchInput?.addEventListener('input', () => loadPolls('active'));
                         typeFilter?.addEventListener('change', () => loadPolls('active'));
-                    } 
+                    }
                     break;
-                case 'sondaggi_conclusi': 
-                    if (userType !== 'custode') { 
-                        loadPolls('closed'); 
+                case 'sondaggi_conclusi':
+                    if (userType !== 'custode') {
+                        loadPolls('closed');
                         const searchInput = document.getElementById('poll-search');
                         const typeFilter = document.getElementById('poll-type-filter');
                         searchInput?.addEventListener('input', () => loadPolls('closed'));
                         typeFilter?.addEventListener('change', () => loadPolls('closed'));
-                    } 
+                    }
                     break;
                 case 'segnalazioni': /* No handlers needed for the menu page */ break;
                 case 'segnalazioni_crea': loadMyReports(); setupReportHandlers(); break;
@@ -3383,8 +3688,8 @@
                 case 'numeriUtiliImportati':
                 case 'numeriUtiliManuali':
                     if (userType === 'supervisore') {
-                        loadUsefulNumbers(); 
-                        setupInfoUtiliHandlers(); 
+                        loadUsefulNumbers();
+                        setupInfoUtiliHandlers();
                     }
                     break;
                 case 'numeriUtiliRubrica':
@@ -3399,17 +3704,17 @@
 
                 case 'userManagement': /* No handlers needed for the menu page */ break;
                 case 'userManagement_create': if (['supervisore', 'adm'].includes(userType)) { setupAdminUserCreationHandler(); } break;
-                case 'userManagement_list': 
-                    if (['supervisore', 'adm'].includes(userType)) { 
-                        loadUserListTable(); 
+                case 'userManagement_list':
+                    if (['supervisore', 'adm'].includes(userType)) {
+                        loadUserListTable();
                         document.getElementById('user-list-search')?.addEventListener('input', loadUserListTable);
-                    } 
+                    }
                     break;
-                case 'userManagement_edit': 
-                    if (['supervisore', 'adm'].includes(userType)) { 
-                        loadUsers(); 
+                case 'userManagement_edit':
+                    if (['supervisore', 'adm'].includes(userType)) {
+                        loadUsers();
                         document.getElementById('user-edit-search')?.addEventListener('input', loadUsers);
-                    } 
+                    }
                     break;
                 case 'gestioneGruppi': /* No handlers needed for the menu page */ break;
                 case 'gestioneGruppi_lista': if (['supervisore', 'adm'].includes(userType)) { loadPartialCondos(); setupUserManagementHandlers(); } break;
@@ -3499,7 +3804,7 @@
                     const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
                     const querySnapshot = await getDocs(q);
                     if (querySnapshot.empty) return;
-                    
+
                     const tableData = querySnapshot.docs[0].data().tableData || [];
                     if (tableData.length === 0) return;
 
@@ -3511,7 +3816,7 @@
                     if (!nominativoHeader || !apartmentHeader || !millesimiHeader) {
                         console.error("Intestazioni non trovate!"); return;
                     }
-                    
+
                     localGroupedProperties = {}; // Assicura che lo stato sia pulito
                     tableData.forEach(item => {
                         const nominativo = item[nominativoHeader];
@@ -3532,7 +3837,7 @@
                 if (filteredNames.length === 0) {
                     optionsContainer.innerHTML = `<div class="custom-dropdown-item" style="cursor:default;">Nessun risultato</div>`;
                 } else {
-                    optionsContainer.innerHTML = filteredNames.map(name => 
+                    optionsContainer.innerHTML = filteredNames.map(name =>
                         `<div class="custom-dropdown-item" data-value="${name}">${name}</div>`
                     ).join('');
                 }
@@ -3663,7 +3968,7 @@
                                 throw new Error(`Una delle unità immobiliari selezionate è già registrata.`);
                             }
                         }
-                        
+
                         await register(o, n, { nome: i, cognome: s, tipoUtente: a, telefono: l, proprieta: propertiesForUser });
                         r.textContent = "Registrazione completata! Ora puoi accedere."; r.style.display = "block"; authForm.reset();
                         propertyItemsContainer.innerHTML = '';
@@ -3672,7 +3977,7 @@
                     } else { await login(o, n); }
                 } catch (p) { d.textContent = p.message; d.style.display = "block"; }
             });
-            
+
             forgotPasswordBtn?.addEventListener("click", async t => {
                 t.preventDefault(); const e = document.getElementById("email").value, o = document.getElementById("error-message"), n = document.getElementById("success-message");
                 if (!e) { o.textContent = "Inserisci la tua email per reimpostare la password"; o.style.display = "block"; return; }
@@ -3689,73 +3994,73 @@
         };
 
         const setupBachecaHandlers = () => {
-    const form = document.getElementById("create-communication-form");
+            const form = document.getElementById("create-communication-form");
 
-    const populateGroupDropdown = async () => {
-        const targetSelect = document.getElementById('comm-target-group');
-        if (!targetSelect) return;
-        try {
-            const q = query(collection(db, "partialCondos"), orderBy("name"));
-            const querySnapshot = await getDocs(q);
-            querySnapshot.forEach(doc => {
-                const group = doc.data();
-                const option = document.createElement('option');
-                option.value = group.name;
-                option.textContent = group.name;
-                targetSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error("Error populating group dropdown:", error);
-        }
-    };
+            const populateGroupDropdown = async () => {
+                const targetSelect = document.getElementById('comm-target-group');
+                if (!targetSelect) return;
+                try {
+                    const q = query(collection(db, "partialCondos"), orderBy("name"));
+                    const querySnapshot = await getDocs(q);
+                    querySnapshot.forEach(doc => {
+                        const group = doc.data();
+                        const option = document.createElement('option');
+                        option.value = group.name;
+                        option.textContent = group.name;
+                        targetSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error("Error populating group dropdown:", error);
+                }
+            };
 
-    if (form) {
-        populateGroupDropdown();
+            if (form) {
+                populateGroupDropdown();
 
-        form.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            const titleInput = document.getElementById("comm-title");
-            const contentInput = document.getElementById("comm-content");
-            const targetGroupInput = document.getElementById("comm-target-group");
-            const publishBtn = document.getElementById("publish-comm-btn");
+                form.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const titleInput = document.getElementById("comm-title");
+                    const contentInput = document.getElementById("comm-content");
+                    const targetGroupInput = document.getElementById("comm-target-group");
+                    const publishBtn = document.getElementById("publish-comm-btn");
 
-            const title = titleInput.value.trim();
-            const content = contentInput.value.trim();
-            const targetGroup = targetGroupInput.value;
+                    const title = titleInput.value.trim();
+                    const content = contentInput.value.trim();
+                    const targetGroup = targetGroupInput.value;
 
-            if (!title || !content) return alert("Compila titolo e messaggio.");
+                    if (!title || !content) return alert("Compila titolo e messaggio.");
 
-            publishBtn.disabled = true;
-            publishBtn.textContent = "...";
+                    publishBtn.disabled = true;
+                    publishBtn.textContent = "...";
 
-            try {
-                await addDoc(collection(db, "communications"), {
-                    title: title,
-                    content: content,
-                    targetGroup: targetGroup, // <-- FIELD ADDED
-                    createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-                    createdById: currentUser.uid,
-                    createdAt: serverTimestamp()
+                    try {
+                        await addDoc(collection(db, "communications"), {
+                            title: title,
+                            content: content,
+                            targetGroup: targetGroup, // <-- FIELD ADDED
+                            createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                            createdById: currentUser.uid,
+                            createdAt: serverTimestamp()
+                        });
+                        await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup });
+                        form.reset();
+                    } catch (error) {
+                        console.error("Errore:", error);
+                        alert("Si è verificato un errore.");
+                    } finally {
+                        publishBtn.disabled = false;
+                        publishBtn.textContent = "Pubblica";
+                    }
                 });
-                await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup });
-                form.reset();
-            } catch (error) {
-                console.error("Errore:", error);
-                alert("Si è verificato un errore.");
-            } finally {
-                publishBtn.disabled = false;
-                publishBtn.textContent = "Pubblica";
             }
-        });
-    }
-};
+        };
         const setupPollHandlers = () => {
             const form = document.getElementById("create-poll-form");
             if (!form) return;
             const optionsList = document.getElementById("poll-options-list");
             const addOptionBtn = document.getElementById("add-poll-option");
 
-                // I gestori per la ricerca e il filtro dei sondaggi sono stati spostati nella logica della pagina 'sondaggi_elenco'.
+            // I gestori per la ricerca e il filtro dei sondaggi sono stati spostati nella logica della pagina 'sondaggi_elenco'.
 
             function addOptionInput(value = "") {
                 const div = document.createElement("div");
@@ -3864,15 +4169,15 @@
                     };
 
                     await addDoc(collection(db, "polls"), pollData);
-                    
+
                     // WEBHOOK TRIGGER: Call the new function after successfully creating the poll.
                     // This is a non-blocking "fire-and-forget" call to avoid delaying the UI.
                     triggerMakeWebhookForNewPoll(pollData);
 
                     await logActivity("poll_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title });
-                    
+
                     form.reset();
-                    
+
                     messageBox.className = 'message-box success';
                     messageBox.textContent = 'Sondaggio creato con successo!';
                     messageBox.style.display = 'block';
@@ -3968,7 +4273,7 @@
                         submitBtn.textContent = 'Caricamento allegati...';
                         fileUrls = await uploadReportFiles(reportId, selectedReportFiles);
                     }
-                    
+
                     submitBtn.textContent = 'Salvataggio dati...';
 
                     // 3. Eseguiamo la transazione per creare il documento e aggiornare il contatore
@@ -4001,11 +4306,11 @@
                     });
 
                     await logActivity("report_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId, title: title, attachments: fileUrls.length });
-                    
+
                     form.reset();
                     selectedReportFiles = []; // Pulisce l'array dei file
                     renderFilePreviews(); // Aggiorna l'UI
-                    
+
                     alert(`Segnalazione #${finalReportNumber} creata con successo!`);
 
                 } catch (error) {
@@ -4070,13 +4375,13 @@
             if (manualForm) {
                 manualForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    
+
                     // Controllo accesso: solo supervisore può aggiungere contatti
                     if (userProfile?.tipoUtente !== 'supervisore') {
                         alert('Non hai i permessi per aggiungere contatti. Solo i supervisori possono eseguire questa operazione.');
                         return;
                     }
-                    
+
                     const title = document.getElementById('nu-title').value.trim();
                     const company = document.getElementById('nu-company').value.trim();
                     const number = document.getElementById('nu-number').value.trim();
@@ -4105,14 +4410,14 @@
                 fileInput.addEventListener('change', (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
-                    
+
                     // Controllo accesso: solo supervisore può importare file
                     if (userProfile?.tipoUtente !== 'supervisore') {
                         alert('Non hai i permessi per importare file. Solo i supervisori possono eseguire questa operazione.');
                         fileInput.value = '';
                         return;
                     }
-                    
+
                     messageBox.className = 'message-box';
                     messageBox.textContent = 'Lettura del file in corso...';
                     messageBox.style.display = 'block';
@@ -4351,7 +4656,7 @@
 
             const generateTableHTML = (data) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
-                
+
                 const originalHeaders = Object.keys(data[0]);
                 const desiredOrderKeywords = ['nominativo', 'lun - ven', 'sabato', 'ruolo', 'telefono'];
                 let headers = [];
@@ -4364,7 +4669,7 @@
                         remainingHeaders = remainingHeaders.filter(h => h !== foundHeader);
                     }
                 });
-                
+
                 headers = [...headers, ...remainingHeaders];
 
                 let tableHTML = `<table class="data-table"><thead><tr>`;
@@ -4408,7 +4713,7 @@
 
         const setupOrariCustodeManualeHandlers = async () => {
             const addForm = document.getElementById('add-custodian-form');
-            
+
             if (addForm) {
                 addForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -4436,18 +4741,18 @@
                         }
 
                         const findKey = (keywords, fallback) => headers.find(h => keywords.some(k => h.toLowerCase().includes(k))) || fallback;
-                        
+
                         const nominativo = document.getElementById('custodian-nominativo').value.trim();
                         const lunVen = document.getElementById('custodian-lun-ven').value.trim();
                         const sabato = document.getElementById('custodian-sabato').value.trim();
                         const ruolo = document.getElementById('custodian-ruolo').value.trim();
                         const telefono = document.getElementById('custodian-telefono').value.trim();
-                        
+
                         // Validazione dei campi obbligatori
                         if (!nominativo) {
                             throw new Error('Il campo Nominativo è obbligatorio.');
                         }
-                        
+
                         const newEntry = {
                             [findKey(['nominativo'], 'Nominativo')]: nominativo,
                             [findKey(['lun - ven', 'lun-ven'], 'Lun - Ven')]: lunVen,
@@ -4470,7 +4775,7 @@
                         }
 
                         await logActivity("custode_schedule_entry_added", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { entry: newEntry });
-                        
+
                         messageBox.className = 'message-box success';
                         messageBox.textContent = 'Voce aggiunta con successo!';
                         messageBox.style.display = 'block';
@@ -4502,7 +4807,7 @@
 
             const generateTableHTML = (data) => {
                 if (!data || data.length === 0) return '<p style="color:var(--secondary-text);">Nessun dato da visualizzare.</p>';
-                
+
                 const headers = Object.keys(data[0]);
                 let tableHTML = `<table class="data-table"><thead><tr>`;
                 headers.forEach(header => {
@@ -4562,12 +4867,15 @@
                         }
 
                         const findKey = (keywords, fallback) => headers.find(h => keywords.some(k => h.toLowerCase().includes(k))) || fallback;
-                        
+
                         const newEntry = {
                             [findKey(['nominativo'], 'Nominativo')]: document.getElementById('admin-data-nominativo').value,
                             [findKey(['referente'], 'Referente')]: document.getElementById('admin-data-referente').value,
                             [findKey(['telefono'], 'Telefono')]: document.getElementById('admin-data-telefono').value,
                             [findKey(['email'], 'Email')]: document.getElementById('admin-data-email').value,
+                            [findKey(['orari'], 'Orari')]: document.getElementById('admin-data-orari').value,
+                            [findKey(['giorni', 'lavorativi'], 'Giorni Lavorativi')]: document.getElementById('admin-data-giorni-lavorativi').value,
+                            [findKey(['ruolo'], 'Ruolo')]: document.getElementById('admin-data-ruolo').value,
                         };
 
                         tableData.push(newEntry);
@@ -4711,12 +5019,12 @@
                 orariCustodeDataToSave = null;
                 saveBtnContainerOrariCustode.classList.add('hidden');
                 messageBoxOrariCustode.style.display = 'none';
-                
-                if (!file) { 
+
+                if (!file) {
                     tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
-                    return; 
+                    return;
                 }
-                
+
                 // Validazione del file
                 const allowedTypes = ['.xlsx', '.xls'];
                 const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
@@ -4727,7 +5035,7 @@
                     tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                     return;
                 }
-                
+
                 // Validazione dimensione file (max 10MB)
                 const maxSize = 10 * 1024 * 1024; // 10MB
                 if (file.size > maxSize) {
@@ -4737,41 +5045,41 @@
                     tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                     return;
                 }
-                
+
                 orariCustodeFileName = file.name;
                 tableContainerOrariCustode.innerHTML = '<p>Caricamento anteprima...</p>';
-                
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
-                        
+
                         if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
                             throw new Error("Il file Excel non contiene fogli di lavoro.");
                         }
-                        
+
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                         if (jsonData.length === 0) {
                             throw new Error("Il file è vuoto o non contiene dati validi.");
                         }
-                        
+
                         // Validazione dei dati
                         const firstRow = jsonData[0];
                         if (!firstRow || Object.keys(firstRow).length === 0) {
                             throw new Error("Il file non contiene colonne valide.");
                         }
-                        
+
                         orariCustodeDataToSave = jsonData;
                         tableContainerOrariCustode.innerHTML = generateTableHTML(jsonData);
                         saveBtnContainerOrariCustode.classList.remove('hidden');
-                        
+
                         // Mostra messaggio di successo
                         messageBoxOrariCustode.className = 'message-box success';
                         messageBoxOrariCustode.textContent = `File caricato con successo! Trovate ${jsonData.length} righe di dati.`;
                         messageBoxOrariCustode.style.display = 'block';
                         setTimeout(() => { messageBoxOrariCustode.style.display = 'none'; }, 3000);
-                        
+
                     } catch (err) {
                         console.error("Errore nel caricamento del file Excel:", err);
                         messageBoxOrariCustode.className = 'message-box error';
@@ -4780,14 +5088,14 @@
                         tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                     }
                 };
-                
+
                 reader.onerror = () => {
                     messageBoxOrariCustode.className = 'message-box error';
                     messageBoxOrariCustode.textContent = 'Errore nella lettura del file. Riprova.';
                     messageBoxOrariCustode.style.display = 'block';
                     tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                 };
-                
+
                 reader.readAsArrayBuffer(file);
             });
 
@@ -4798,24 +5106,24 @@
                     messageBoxOrariCustode.style.display = 'block';
                     return;
                 }
-                
+
                 if (!confirm('Sei sicuro di voler sostituire tutti i dati degli orari esistenti? Questa azione è irreversibile.')) {
                     return;
                 }
-                
+
                 const saveBtnText = document.getElementById('save-btn-text');
                 const saveBtnLoading = document.getElementById('save-btn-loading');
-                
+
                 saveBtnOrariCustode.disabled = true;
                 saveBtnText.classList.add('hidden');
                 saveBtnLoading.classList.remove('hidden');
-                
+
                 try {
                     // Prima elimina tutti i documenti esistenti
                     const existingDocs = await getDocs(collection(db, "importedCustodeSchedule"));
                     const deletePromises = existingDocs.docs.map(doc => deleteDoc(doc.ref));
                     await Promise.all(deletePromises);
-                    
+
                     // Poi aggiungi il nuovo documento
                     await addDoc(collection(db, "importedCustodeSchedule"), {
                         fileName: orariCustodeFileName,
@@ -4823,28 +5131,28 @@
                         uploadedBy: currentUser.uid,
                         uploadedAt: serverTimestamp()
                     });
-                    
-                    await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { 
+
+                    await logActivity("custode_schedule_imported", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
                         fileName: orariCustodeFileName,
-                        rowsImported: orariCustodeDataToSave.length 
+                        rowsImported: orariCustodeDataToSave.length
                     });
-                    
+
                     // Salva il numero di righe prima del reset
                     const rowsImported = orariCustodeDataToSave.length;
-                    
+
                     // Reset del form
                     fileInputOrariCustode.value = '';
                     saveBtnContainerOrariCustode.classList.add('hidden');
                     tableContainerOrariCustode.innerHTML = '<p style="color:var(--secondary-text);">Nessun file selezionato.</p>';
                     orariCustodeFileName = '';
                     orariCustodeDataToSave = null;
-                    
+
                     // Messaggio di successo
                     messageBoxOrariCustode.className = 'message-box success';
                     messageBoxOrariCustode.textContent = `Orari importati con successo! ${rowsImported} righe salvate.`;
                     messageBoxOrariCustode.style.display = 'block';
                     setTimeout(() => { messageBoxOrariCustode.style.display = 'none'; }, 5000);
-                    
+
                 } catch (error) {
                     console.error("Errore durante il salvataggio degli orari:", error);
                     messageBoxOrariCustode.className = 'message-box error';
@@ -4889,11 +5197,11 @@
                 try {
                     const qGroups = query(collection(db, "partialCondos"), orderBy("name"));
                     const qData = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
-                    
+
                     const [groupsSnapshot, dataSnapshot] = await Promise.all([getDocs(qGroups), getDocs(qData)]);
 
                     availableGroups = groupsSnapshot.docs.map(doc => doc.data());
-                    
+
                     if (!dataSnapshot.empty) {
                         const tableData = dataSnapshot.docs[0].data().tableData || [];
                         const headers = tableData.length > 0 ? Object.keys(tableData[0]) : [];
@@ -4968,7 +5276,7 @@
                 searchInput.value = '';
                 clearSearchBtn.classList.add('hidden');
                 addPropertyBtn.classList.remove('hidden');
-                
+
                 // Svuota e sblocca nome e cognome
                 cognomeInput.value = '';
                 nomeInput.value = '';
@@ -4997,7 +5305,7 @@
                     const propertiesForUser = [];
                     let totalMillesimi = 0;
                     const propertyRows = form.querySelectorAll('.property-edit-row');
-                    
+
                     propertyRows.forEach(row => {
                         const internoInput = row.querySelector('input[data-field="interno"]');
                         const millesimiInput = row.querySelector('input[data-field="millesimi"]');
@@ -5007,7 +5315,7 @@
                         const interno = internoInput.value.trim();
                         const millesimi = parseFloat(millesimiInput.value) || 0;
                         const gruppo = gruppoSelect ? gruppoSelect.value : (gruppoInput ? gruppoInput.value.trim() : '');
-                        
+
                         if (interno) {
                             propertiesForUser.push({ interno, millesimi, gruppo });
                             totalMillesimi += millesimi;
@@ -5026,9 +5334,9 @@
                     if (!profileData.nome || !profileData.cognome || !profileData.tipoUtente) {
                         throw new Error('Nome, Cognome e Tipo Utente sono obbligatori.');
                     }
-                    
+
                     await adminCreateUser(document.getElementById('admin-email').value, document.getElementById('admin-password').value, profileData);
-                    
+
                     messageBox.className = 'message-box success';
                     messageBox.textContent = `Utente ${profileData.cognome} creato con successo!`;
                     messageBox.style.display = 'block';
@@ -5042,7 +5350,7 @@
                 }
             });
         };
-        
+
         const loadPartialCondos = () => {
             const listEl = document.getElementById('partial-condos-list');
             if (!listEl) return;
@@ -5303,7 +5611,7 @@
                 alert('Non hai i permessi per eliminare contatti. Solo i supervisori possono eseguire questa operazione.');
                 return;
             }
-            
+
             if (!confirm('Sei sicuro di voler eliminare questo numero?')) {
                 return;
             }
@@ -5399,11 +5707,11 @@
             const bulkActions = document.getElementById('bulk-actions');
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox:checked');
             const selectAllCheckbox = document.getElementById('select-all-contacts');
-            
+
             if (bulkActions) {
                 bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
             }
-            
+
             if (selectAllCheckbox) {
                 selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox').length;
                 selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox').length;
@@ -5413,12 +5721,12 @@
         const deleteSelectedContacts = () => {
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox:checked');
             const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-            
+
             if (selectedIds.length === 0) {
                 alert('Nessun contatto selezionato.');
                 return;
             }
-            
+
             deleteMultipleUsefulNumbers(selectedIds);
         };
 
@@ -5433,11 +5741,11 @@
             const bulkActions = document.getElementById('bulk-actions-rubrica');
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica:checked');
             const selectAllCheckbox = document.getElementById('select-all-contacts-rubrica');
-            
+
             if (bulkActions) {
                 bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
             }
-            
+
             if (selectAllCheckbox) {
                 selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox-rubrica').length;
                 selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox-rubrica').length;
@@ -5447,12 +5755,12 @@
         const deleteSelectedContactsRubrica = () => {
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica:checked');
             const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-            
+
             if (selectedIds.length === 0) {
                 alert('Nessun contatto selezionato.');
                 return;
             }
-            
+
             deleteMultipleUsefulNumbers(selectedIds);
         };
 
@@ -5467,11 +5775,11 @@
             const bulkActions = document.getElementById('bulk-actions-imported');
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-imported:checked');
             const selectAllCheckbox = document.getElementById('select-all-contacts-imported');
-            
+
             if (bulkActions) {
                 bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
             }
-            
+
             if (selectAllCheckbox) {
                 selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox-imported').length;
                 selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox-imported').length;
@@ -5481,12 +5789,12 @@
         const deleteSelectedContactsImported = () => {
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-imported:checked');
             const selectedIndices = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
-            
+
             if (selectedIndices.length === 0) {
                 alert('Nessun contatto selezionato.');
                 return;
             }
-            
+
             deleteMultipleImportedContacts(selectedIndices);
         };
 
@@ -5525,28 +5833,28 @@
                     try {
                         const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
                         const snapshot = await getDocs(qImported);
-                        
+
                         if (snapshot.empty) {
                             alert("Impossibile trovare i dati importati.");
                             return;
                         }
-                        
+
                         const docRef = snapshot.docs[0].ref;
                         const docData = snapshot.docs[0].data();
                         const allImportedData = [...docData.tableData];
-                        
+
                         const updatedRow = { ...allImportedData[index] };
-                        
+
                         form.querySelectorAll('input[data-key]').forEach(input => {
                             const key = input.dataset.key;
                             updatedRow[key] = input.value.trim();
                         });
 
                         allImportedData[index] = updatedRow;
-                        
+
                         await updateDoc(docRef, { tableData: allImportedData });
                         await logActivity("imported_contact_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedIndex: index });
-                        
+
                         hideModal();
                     } catch (error) {
                         console.error("Errore durante l'aggiornamento del contatto importato:", error);
@@ -5570,19 +5878,19 @@
             try {
                 const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
                 const snapshot = await getDocs(qImported);
-                
+
                 if (snapshot.empty) {
                     alert("Impossibile trovare i dati importati.");
                     return;
                 }
-                
+
                 const docRef = snapshot.docs[0].ref;
                 const docData = snapshot.docs[0].data();
                 const updatedData = docData.tableData.filter((_, i) => i !== index);
-                
+
                 await updateDoc(docRef, { tableData: updatedData });
                 await logActivity("imported_contact_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
-                
+
                 alert("Contatto eliminato con successo.");
             } catch (error) {
                 console.error("Errore durante l'eliminazione del contatto importato:", error);
@@ -5604,19 +5912,19 @@
             try {
                 const qImported = query(collection(db, "importedPhoneNumbers"), orderBy("uploadedAt", "desc"), limit(1));
                 const snapshot = await getDocs(qImported);
-                
+
                 if (snapshot.empty) {
                     alert("Impossibile trovare i dati importati.");
                     return;
                 }
-                
+
                 const docRef = snapshot.docs[0].ref;
                 const docData = snapshot.docs[0].data();
                 const updatedData = docData.tableData.filter((_, i) => !indices.includes(i));
-                
+
                 await updateDoc(docRef, { tableData: updatedData });
                 await logActivity("imported_contacts_bulk_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedCount: indices.length });
-                
+
                 alert(`${indices.length} contatti eliminati con successo.`);
             } catch (error) {
                 console.error("Errore durante l'eliminazione multipla dei contatti importati:", error);
@@ -5646,7 +5954,7 @@
                     const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
                     const snapshot = await getDocs(qSchedule);
                     if (snapshot.empty) throw new Error("Dati orario non trovati.");
-                    
+
                     const docRef = snapshot.docs[0].ref;
                     const allScheduleData = [...snapshot.docs[0].data().tableData];
                     const updatedRow = { ...allScheduleData[index] };
@@ -5677,10 +5985,10 @@
                 const qSchedule = query(collection(db, "importedCustodeSchedule"), orderBy("uploadedAt", "desc"), limit(1));
                 const snapshot = await getDocs(qSchedule);
                 if (snapshot.empty) throw new Error("Dati orario non trovati.");
-                
+
                 const docRef = snapshot.docs[0].ref;
                 const updatedData = snapshot.docs[0].data().tableData.filter((_, i) => i !== index);
-                
+
                 await updateDoc(docRef, { tableData: updatedData });
                 await logActivity("custode_schedule_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { deletedIndex: index });
             } catch (error) {
@@ -5745,11 +6053,11 @@
             const bulkActions = document.getElementById('bulk-actions-rubrica-imported');
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica-imported:checked');
             const selectAllCheckbox = document.getElementById('select-all-contacts-rubrica-imported');
-            
+
             if (bulkActions) {
                 bulkActions.style.display = selectedCheckboxes.length > 0 ? 'flex' : 'none';
             }
-            
+
             if (selectAllCheckbox) {
                 selectAllCheckbox.checked = selectedCheckboxes.length > 0 && selectedCheckboxes.length === document.querySelectorAll('.contact-checkbox-rubrica-imported').length;
                 selectAllCheckbox.indeterminate = selectedCheckboxes.length > 0 && selectedCheckboxes.length < document.querySelectorAll('.contact-checkbox-rubrica-imported').length;
@@ -5759,21 +6067,21 @@
         const deleteSelectedContactsRubricaImported = () => {
             const selectedCheckboxes = document.querySelectorAll('.contact-checkbox-rubrica-imported:checked');
             const selectedIndices = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
-            
+
             if (selectedIndices.length === 0) {
                 alert('Nessun contatto selezionato.');
                 return;
             }
-            
+
             deleteMultipleImportedContacts(selectedIndices);
         };
 
         const renderNumeriUtiliRubrica = () => {
             const isSupervisore = userProfile?.tipoUtente === 'supervisore';
-            const descriptionText = isSupervisore 
+            const descriptionText = isSupervisore
                 ? 'Visualizzazione unificata di tutti i contatti, sia quelli importati automaticamente che quelli inseriti manualmente.'
                 : 'Contatti fornitori condominiali - SOLO IN CASO DI EMERGENZA';
-            
+
             return `
             ${renderHeader('Rubrica Completa')}
             <main>
@@ -5811,16 +6119,16 @@
                     }
                     const data = snapshot.docs[0].data().tableData;
                     if (!data || data.length === 0) {
-                         importedContainer.innerHTML = `<p style="color:var(--secondary-text);">Il file importato è vuoto.</p>`;
-                         return;
+                        importedContainer.innerHTML = `<p style="color:var(--secondary-text);">Il file importato è vuoto.</p>`;
+                        return;
                     }
                     const headers = Object.keys(data[0]);
                     const { headers: orderedHeaders, data: orderedData } = reorderColumns(data, headers);
-                    
+
                     const canManage = userProfile?.tipoUtente === 'supervisore';
-                    
+
                     // Aggiungi header per checkbox e azioni se l'utente può gestire
-                    const headerRow = canManage ? 
+                    const headerRow = canManage ?
                         `<tr>
                             <th style="width: 40px;">
                                 <input type="checkbox" id="select-all-contacts-rubrica-imported" onchange="toggleAllContactsRubricaImported(this)">
@@ -5829,16 +6137,16 @@
                             <th style="text-align:right;">AZIONI</th>
                         </tr>` :
                         `<tr>${orderedHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
-                    
+
                     let tableHTML = '<table class="data-table"><thead>' + headerRow + '</thead><tbody>';
-                    
+
                     orderedData.forEach((row, index) => {
                         tableHTML += '<tr>';
                         if (canManage) {
                             tableHTML += `<td><input type="checkbox" class="contact-checkbox-rubrica-imported" value="${index}" onchange="updateBulkActionsRubricaImported()"></td>`;
                         }
                         orderedHeaders.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
-                        
+
                         if (canManage) {
                             const editIcon = `<button onclick="editImportedContact(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;">
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -5855,9 +6163,9 @@
                         tableHTML += '</tr>';
                     });
                     tableHTML += '</tbody></table>';
-                    
+
                     importedContainer.innerHTML = tableHTML;
-                    
+
                     // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
                     if (canManage) {
                         const bulkActionsHtml = `<div class="flex gap-2 mt-4" id="bulk-actions-rubrica-imported" style="display: none;">
@@ -5878,11 +6186,11 @@
                         manualContainer.innerHTML = `<p style="color:var(--secondary-text);">Nessun contatto inserito manualmente.</p>`;
                         return;
                     }
-                    
+
                     const canManage = userProfile?.tipoUtente === 'supervisore';
-                    
+
                     // Aggiungi header per checkbox e azioni se l'utente può gestire
-                    const headerRow = canManage ? 
+                    const headerRow = canManage ?
                         `<tr>
                             <th style="width: 40px;">
                                 <input type="checkbox" id="select-all-contacts-rubrica" onchange="toggleAllContactsRubrica(this)">
@@ -5899,11 +6207,11 @@
                             <th>1 NUM. TELEFONICO</th>
                             <th>2 NUM. TELEFONICO</th>
                         </tr>`;
-                    
+
                     let tableHTML = `<table class="data-table">
                         <thead>${headerRow}</thead>
                         <tbody>`;
-                    
+
                     tableHTML += snapshot.docs.map(docSnap => {
                         const contact = docSnap.data();
                         if (canManage) {
@@ -5917,7 +6225,7 @@
                                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                                 </svg>
                             </button>`;
-                            
+
                             return `<tr>
                                 <td><input type="checkbox" class="contact-checkbox-rubrica" value="${docSnap.id}" onchange="updateBulkActionsRubrica()"></td>
                                 <td>${contact.title}</td>
@@ -5935,11 +6243,11 @@
                             </tr>`;
                         }
                     }).join('');
-                    
+
                     tableHTML += '</tbody></table>';
-                    
+
                     manualContainer.innerHTML = tableHTML;
-                    
+
                     // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
                     if (canManage) {
                         const bulkActionsHtml = `<div class="flex gap-2 mt-4" id="bulk-actions-rubrica" style="display: none;">
@@ -5973,7 +6281,7 @@
 
 
 
-                        const loadCustodeSchedule = () => {
+        const loadCustodeSchedule = () => {
             const scheduleContainer = document.getElementById('custode-schedule-container');
             if (!scheduleContainer) return;
 
@@ -6001,7 +6309,7 @@
                             remainingHeaders = remainingHeaders.filter(h => h !== foundHeader);
                         }
                     });
-                    
+
                     headers = [...headers, ...remainingHeaders];
                     // --- FINE LOGICA DI ORDINAMENTO ---
 
@@ -6107,7 +6415,7 @@
                 await runTransaction(db, async (transaction) => {
                     const docSnap = await transaction.get(docRef);
                     if (!docSnap.exists()) throw new Error("Documento degli orari non trovato.");
-                    
+
                     const tableData = docSnap.data().tableData;
                     const updatedData = tableData.filter((_, i) => i !== index);
                     transaction.update(docRef, { tableData: updatedData });
@@ -6122,8 +6430,8 @@
 
 
 
-        const showProfileMessage=(e,t)=>{const o=document.getElementById("profile-message");o&&(o.className=`message-box ${e}`,o.textContent=t,o.style.display="block",setTimeout(()=>{o.style.display="none"},5e3))};
-        
+        const showProfileMessage = (e, t) => { const o = document.getElementById("profile-message"); o && (o.className = `message-box ${e}`, o.textContent = t, o.style.display = "block", setTimeout(() => { o.style.display = "none" }, 5e3)) };
+
         const showCommunicationDetail = async (commId) => {
             try {
                 const commDoc = await getDoc(doc(db, "communications", commId));
@@ -6158,15 +6466,15 @@
 
                 const filteredDocs = snapshot.docs.filter(docSnap => {
                     const comm = docSnap.data();
-                    
+
                     // Un utente vede una comunicazione se:
                     // 1. Ha un ruolo che può vedere tutto ('canSeeAll').
                     // 2. La comunicazione è per tutti (targetGroup è 'Tutti' o non è definito).
                     // 3. La comunicazione è per un gruppo a cui l'utente appartiene.
-                    return canSeeAll || 
-                           !comm.targetGroup || 
-                           comm.targetGroup === 'Tutti' || 
-                           userGroups.includes(comm.targetGroup);
+                    return canSeeAll ||
+                        !comm.targetGroup ||
+                        comm.targetGroup === 'Tutti' ||
+                        userGroups.includes(comm.targetGroup);
                 });
 
                 if (filteredDocs.length === 0) {
@@ -6204,42 +6512,42 @@
                 }
             });
         };
-        
+
         const isUserAllowedToVote = (userType, setting) => {
             // ADM can always vote
             if (userType === 'adm') return true;
-            
+
             const allowedRoles = {
                 option1: ['supervisore', 'amministratore', 'consigliere'],
                 option2: ['supervisore', 'amministratore', 'consigliere', 'condomino'],
                 option3: ['supervisore', 'consigliere']
             };
             const roles = allowedRoles[setting] || allowedRoles['option2'];
-            
+
             // Check if user is a condomino (including condomino2, condomino3, etc.)
             if (userType.startsWith('condomino') && roles.includes('condomino')) {
                 return true;
             }
-            
+
             return roles.includes(userType);
         };
 
         const isUserAllowedToCreatePolls = async () => {
-    if (!userProfile) return false;
+            if (!userProfile) return false;
 
-    const userType = userProfile.tipoUtente;
-    
-    // Definiamo una lista fissa di ruoli che possono CREARE sondaggi.
-    const creatorRoles = [
-        'adm', 
-        'supervisore', 
-        'amministratore', 
-        'consigliere'
-    ];
+            const userType = userProfile.tipoUtente;
 
-    // La funzione ora si limita a controllare se il ruolo dell'utente è in questa lista.
-    return creatorRoles.includes(userType);
-};
+            // Definiamo una lista fissa di ruoli che possono CREARE sondaggi.
+            const creatorRoles = [
+                'adm',
+                'supervisore',
+                'amministratore',
+                'consigliere'
+            ];
+
+            // La funzione ora si limita a controllare se il ruolo dell'utente è in questa lista.
+            return creatorRoles.includes(userType);
+        };
 
         const showPollVoters = async (pollId) => {
             try {
@@ -6293,7 +6601,7 @@
             }
             const container = document.getElementById("polls-container");
             if (!container) return;
-            
+
             const settingsRef = doc(db, "settings", "pollCreationAuthorization");
             getDoc(settingsRef).then(settingsSnap => {
                 const pollSetting = settingsSnap.exists() ? settingsSnap.data().setting : 'option2';
@@ -6310,38 +6618,38 @@
                         container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p></div>`;
                         return;
                     }
-                    
+
                     // Get search and filter values
                     const searchTerm = document.getElementById('poll-search')?.value?.toLowerCase() || '';
                     const typeFilter = document.getElementById('poll-type-filter')?.value || '';
-                    
+
                     // Filter polls based on search, type, status, and user role
                     let filteredPolls = snapshot.docs.filter(docSnap => {
                         const poll = docSnap.data();
-                        
-                        // --- NUOVA LOGICA DI FILTRAGGIO (PIÙ CHIARA E CORRETTA) ---
-const userRole = userProfile.tipoUtente;
-const pollType = poll.pollType;
 
-if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervisore') {
-    // Questi ruoli possono vedere tutti i tipi di sondaggi.
-    // Non facciamo nulla e proseguiamo con gli altri filtri (status, ricerca, etc.)
-} else if (userRole === 'consigliere') {
-    // Il consigliere può vedere sia i sondaggi per 'condomini' che quelli per 'supervisor-consiglieri'.
-    if (pollType !== 'condomini' && pollType !== 'supervisor-consiglieri') {
-        return false; // Nascondi tutti gli altri tipi di sondaggi
-    }
-} else if (userRole.startsWith('condomino')) {
-    // Il condomino può vedere solo i sondaggi per 'condomini'.
-    if (pollType !== 'condomini') {
-        return false; // Nascondi tutti gli altri tipi di sondaggi
-    }
-} else {
-    // Tutti gli altri ruoli (es. custode, fornitore) non vedono nessun sondaggio.
-    return false;
-}
-// --- FINE DELLA NUOVA LOGICA ---
-                        
+                        // --- NUOVA LOGICA DI FILTRAGGIO (PIÙ CHIARA E CORRETTA) ---
+                        const userRole = userProfile.tipoUtente;
+                        const pollType = poll.pollType;
+
+                        if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervisore') {
+                            // Questi ruoli possono vedere tutti i tipi di sondaggi.
+                            // Non facciamo nulla e proseguiamo con gli altri filtri (status, ricerca, etc.)
+                        } else if (userRole === 'consigliere') {
+                            // Il consigliere può vedere sia i sondaggi per 'condomini' che quelli per 'supervisor-consiglieri'.
+                            if (pollType !== 'condomini' && pollType !== 'supervisor-consiglieri') {
+                                return false; // Nascondi tutti gli altri tipi di sondaggi
+                            }
+                        } else if (userRole.startsWith('condomino')) {
+                            // Il condomino può vedere solo i sondaggi per 'condomini'.
+                            if (pollType !== 'condomini') {
+                                return false; // Nascondi tutti gli altri tipi di sondaggi
+                            }
+                        } else {
+                            // Tutti gli altri ruoli (es. custode, fornitore) non vedono nessun sondaggio.
+                            return false;
+                        }
+                        // --- FINE DELLA NUOVA LOGICA ---
+
                         // Filter by status (active/closed)
                         if (status !== 'all') {
                             if (!poll.deadline) {
@@ -6354,12 +6662,12 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                                 if (status === 'closed' && !isExpired) return false;
                             }
                         }
-                        
+
                         // Filter by type if specified
                         if (typeFilter && poll.pollType !== typeFilter) {
                             return false;
                         }
-                        
+
                         // Filter by search term
                         if (searchTerm) {
                             const searchableText = `${poll.title} ${poll.description || ''}`.toLowerCase();
@@ -6367,10 +6675,10 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                                 return false;
                             }
                         }
-                        
+
                         return true;
                     });
-                    
+
                     if (filteredPolls.length === 0) {
                         let message = 'Nessun sondaggio trovato con i criteri di ricerca.';
                         if (status === 'active') {
@@ -6381,14 +6689,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                         container.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p></div>`;
                         return;
                     }
-                    
+
                     // Sort by poll number for numbered display
                     filteredPolls.sort((a, b) => {
                         const pollA = a.data();
                         const pollB = b.data();
                         return (pollA.pollNumber || 0) - (pollB.pollNumber || 0);
                     });
-                    
+
                     container.innerHTML = filteredPolls.map((docSnap, index) => {
                         const poll = docSnap.data();
                         const deadline = poll.deadline ? poll.deadline.toDate() : null;
@@ -6396,7 +6704,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                         const hasVoted = poll.voters && poll.voters.some(v => v.uid === currentUser.uid);
                         const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
                         const showVoteUI = !isExpired && canUserVote;
-                        
+
                         const pollTypeLabel = poll.pollType === 'supervisor-consiglieri' ? 'Supervisor e Consiglieri' : 'Condomini';
                         const pollTitle = poll.pollNumber ? `Sondaggio N. ${poll.pollNumber}: ${poll.title}` : poll.title;
                         const buttonText = hasVoted ? 'Cambia Voto' : 'Invia Voto';
@@ -6473,14 +6781,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
 
                         const actionButtons = [];
                         actionButtons.push(`<button onclick="showPollVoters('${docSnap.id}')" class="btn btn-secondary" style="flex-grow:1;">Mostra Votanti</button>`);
-                        
+
                         if (poll.createdById === currentUser.uid && !isExpired) {
                             actionButtons.push(`<button onclick="deletePoll('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; flex-grow:1;">Elimina</button>`);
                         }
                         const actionButtonsHtml = actionButtons.length > 0 ? `<div class="flex gap-4 mt-4">${actionButtons.join('')}</div>` : '';
 
                         const typeBadge = `<span class="badge" style="background: var(--accent-color); color: white; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.5rem; display: inline-block;">${pollTypeLabel}</span>`;
-                        
+
                         return `
                         <div class="card" style="padding:1rem; margin-bottom:1rem;">
                             <div class="list-item" style="padding:0; margin-bottom:1rem; cursor:default;">
@@ -6502,9 +6810,9 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             });
         };
 
-                const renderReportCardHTML = (report, reportId) => {
+        const renderReportCardHTML = (report, reportId) => {
             if (!report.createdAt) return "";
-            
+
             const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente);
             const isCreator = report.createdById === currentUser.uid;
             const canManageThisReport = isManager && (report.recipientType === userProfile.tipoUtente || (report.recipientType === 'consigliere' && userProfile.tipoUtente === 'consigliere') || userProfile.tipoUtente === 'supervisore' || userProfile.tipoUtente === 'adm');
@@ -6520,7 +6828,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
                 }
                 if (report.status !== 'chiusa') {
-                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Aggiorna</button>`;
+                    actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Aggiorna</button>`;
                 }
                 if (userProfile?.tipoUtente === 'amministratore' && (report.status === 'aperta' || report.status === 'in-corso')) {
                     actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
@@ -6542,7 +6850,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--surface-color-light);">
                     <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Cronologia Aggiornamenti:</h4>
                     <ul style="font-size: 0.85rem; color: var(--secondary-text); list-style-type: disc; padding-left: 20px;">
-                        ${report.updates.map(upd => `<li><strong>${upd.at.toDate().toLocaleString('it-IT', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</strong> (${upd.by}): ${upd.text}</li>`).join('')}
+                        ${report.updates.map(upd => `<li><strong>${upd.at.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</strong> (${upd.by}): ${upd.text}</li>`).join('')}
                     </ul>
                 </div>
             ` : '';
@@ -6567,15 +6875,15 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 ${report.fileUrls && report.fileUrls.length > 0 ? `
                     <div class="report-attachments-gallery">
                         ${report.fileUrls.map(url => {
-                            const isVideo = url.includes('.mp4') || url.includes('.mov') || url.includes('.webm');
-                            return `
+                const isVideo = url.includes('.mp4') || url.includes('.mov') || url.includes('.webm');
+                return `
                             <a href="${url}" target="_blank" class="gallery-item">
-                                ${isVideo 
-                                    ? `<video src="${url}" preload="metadata"></video>` 
-                                    : `<img src="${url}" alt="Allegato segnalazione">`
-                                }
+                                ${isVideo
+                        ? `<video src="${url}" preload="metadata"></video>`
+                        : `<img src="${url}" alt="Allegato segnalazione">`
+                    }
                             </a>`;
-                        }).join('')}
+            }).join('')}
                     </div>
                 ` : ''}
                 <!-- FINE NUOVA SEZIONE -->
@@ -6588,13 +6896,13 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         const loadMyReports = () => {
             const secondaryContainer = document.getElementById('reports-secondary-container');
             if (!secondaryContainer) return;
-            
-            const renderSnapshot=(e,t,o)=>{if(t.empty)return void(e.innerHTML=`<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`);const a=t.docs.sort((e,t)=>{const o=e.data().createdAt?.toMillis()||0,n=t.data().createdAt?.toMillis()||0;return n-o});e.innerHTML=a.map(e=>renderReportCardHTML(e.data(),e.id)).join("")};
-            
-            const userId=currentUser.uid,qSent=query(collection(db,"reports"),where("createdById","==",userId));onSnapshot(qSent,s=>renderSnapshot(secondaryContainer,s,"Non hai inviato segnalazioni."));
+
+            const renderSnapshot = (e, t, o) => { if (t.empty) return void (e.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`); const a = t.docs.sort((e, t) => { const o = e.data().createdAt?.toMillis() || 0, n = t.data().createdAt?.toMillis() || 0; return n - o }); e.innerHTML = a.map(e => renderReportCardHTML(e.data(), e.id)).join("") };
+
+            const userId = currentUser.uid, qSent = query(collection(db, "reports"), where("createdById", "==", userId)); onSnapshot(qSent, s => renderSnapshot(secondaryContainer, s, "Non hai inviato segnalazioni."));
         };
 
-                const loadFilteredReports = (filterType) => {
+        const loadFilteredReports = (filterType) => {
             const mainContainer = document.getElementById('reports-main-container');
             if (!mainContainer) return;
 
@@ -6678,7 +6986,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             };
 
             const userRole = userProfile?.tipoUtente;
-            
+
             // Protezione per ruoli non autorizzati
             if (!userRole || !["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userRole)) {
                 mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Accesso non consentito.</p></div>`;
@@ -6815,7 +7123,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             const userId = form.querySelector('#edit-user-id').value;
             const submitButton = form.querySelector('button[type="submit"]');
             const messageBox = form.querySelector('#edit-user-message');
-            
+
             submitButton.disabled = true;
             submitButton.textContent = 'Salvataggio...';
             messageBox.style.display = 'none';
@@ -6824,12 +7132,12 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 const updatedProperties = [];
                 let totalMillesimi = 0;
                 const propertyRows = form.querySelectorAll('.property-edit-row');
-                
+
                 propertyRows.forEach(row => {
                     const interno = row.querySelector('input[data-field="interno"]').value.trim();
                     const millesimi = parseFloat(row.querySelector('input[data-field="millesimi"]').value) || 0;
                     const gruppo = row.querySelector('select[data-field="gruppo"]').value; // <-- MODIFICA QUI
-                    
+
                     if (interno) {
                         updatedProperties.push({ interno, millesimi, gruppo });
                         totalMillesimi += millesimi;
@@ -6847,7 +7155,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
 
                 await updateDoc(doc(db, "users", userId), updatedData);
                 await logActivity("user_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { updatedUserId: userId, changes: updatedData });
-                
+
                 hideModal();
                 if (currentPage === 'userManagement_edit') {
                     loadUsers();
@@ -6878,14 +7186,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 allRoles.push("adm");
             }
             const rolesOptions = allRoles.map(role => {
-                const capitalizedRole = role === 'adm' 
-                    ? 'Admin (ADM)' 
+                const capitalizedRole = role === 'adm'
+                    ? 'Admin (ADM)'
                     : role.charAt(0).toUpperCase() + role.slice(1);
                 return `<option value="${role}" ${user.tipoUtente === role ? 'selected' : ''}>${capitalizedRole}</option>`
             }).join('');
 
             const propertiesHtml = (user.proprieta || []).map((prop) => {
-                const groupOptionsHtml = availableGroups.map(group => 
+                const groupOptionsHtml = availableGroups.map(group =>
                     `<option value="${group.name}" ${prop.gruppo === group.name ? 'selected' : ''}>${group.name}</option>`
                 ).join('');
 
@@ -6958,7 +7266,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                         const propertiesHtml = user.proprieta && user.proprieta.length > 0
                             ? user.proprieta.map(p => `<li>${p.interno}: ${(p.millesimi || 0).toFixed(2)} ‰ ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')
                             : '<li>Nessuna proprietà</li>';
-                        
+
                         const userObjectString = JSON.stringify({ id: userId, ...user }).replace(/'/g, "&apos;");
 
                         return `
@@ -7056,7 +7364,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         // Funzione helper per riordinare le colonne secondo la sequenza richiesta
         const reorderColumns = (data, headers) => {
             const desiredOrder = ['INTERVENTO RICHIESTO', 'IMPRESA', '1 NUM. TELEFONICO', '2 NUM. TELEFONICO', 'AZIONE'];
-            
+
             // Mappa per convertire i nomi delle colonne esistenti
             const columnMapping = {
                 'Intervento richiesto': 'INTERVENTO RICHIESTO',
@@ -7067,11 +7375,11 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 '2 num. Telefonico': '2 NUM. TELEFONICO',
                 'Azione': 'AZIONE'
             };
-            
+
             // Trova le colonne corrispondenti nell'ordine desiderato
             const orderedHeaders = [];
             const orderedData = [];
-            
+
             desiredOrder.forEach(desiredCol => {
                 const foundHeader = headers.find(h => {
                     const normalizedH = h.trim();
@@ -7086,7 +7394,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     });
                 }
             });
-            
+
             // Aggiungi le colonne rimanenti che non sono nell'ordine desiderato
             headers.forEach(h => {
                 if (!orderedHeaders.includes(h) && !Object.values(columnMapping).includes(h)) {
@@ -7097,7 +7405,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     });
                 }
             });
-            
+
             return { headers: orderedHeaders, data: orderedData };
         };
 
@@ -7105,7 +7413,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             const manualTableBody = document.getElementById('useful-numbers-table-body');
             const importedTableContainer = document.getElementById('imported-numbers-table-container');
             const canManage = userProfile?.tipoUtente === 'supervisore';
-            
+
             if (manualTableBody) {
                 const qManual = query(collection(db, "usefulNumbers"), orderBy("createdAt", "desc"));
                 onSnapshot(qManual, (snapshot) => {
@@ -7113,9 +7421,9 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                         manualTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--secondary-text);">Nessun contatto inserito.</td></tr>`;
                         return;
                     }
-                    
+
                     // Aggiungi header per checkbox e azioni se l'utente può gestire
-                    const headerRow = canManage ? 
+                    const headerRow = canManage ?
                         `<tr>
                             <th style="width: 40px;">
                                 <input type="checkbox" id="select-all-contacts" onchange="toggleAllContacts(this)">
@@ -7132,17 +7440,17 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                             <th>1 NUM. TELEFONICO</th>
                             <th>2 NUM. TELEFONICO</th>
                         </tr>`;
-                    
+
                     const tableHeader = `<thead>${headerRow}</thead>`;
-                    
+
                     // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
-                    const bulkActionsHtml = canManage ? 
+                    const bulkActionsHtml = canManage ?
                         `<div class="flex gap-2 mt-4" id="bulk-actions" style="display: none;">
                             <button onclick="deleteSelectedContacts()" class="btn" style="background:var(--danger); color:white;">
                                 Elimina Selezionati
                             </button>
                         </div>` : '';
-                    
+
                     // Inserisci le azioni bulk prima della tabella
                     const tableContainer = manualTableBody.closest('.data-table-container');
                     if (tableContainer && canManage) {
@@ -7151,7 +7459,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                             tableContainer.insertAdjacentHTML('afterbegin', bulkActionsHtml);
                         }
                     }
-                    
+
                     const rowsHtml = snapshot.docs.map(docSnap => {
                         const contact = docSnap.data();
                         if (canManage) {
@@ -7165,7 +7473,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                                 </svg>
                             </button>`;
-                            
+
                             return `<tr>
                                 <td><input type="checkbox" class="contact-checkbox" value="${docSnap.id}" onchange="updateBulkActions()"></td>
                                 <td>${contact.title}</td>
@@ -7183,7 +7491,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                             </tr>`;
                         }
                     }).join('');
-                    
+
                     manualTableBody.innerHTML = tableHeader + `<tbody>${rowsHtml}</tbody>`;
                 });
             }
@@ -7196,14 +7504,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     }
                     const data = snapshot.docs[0].data().tableData;
                     if (!data || data.length === 0) {
-                         importedTableContainer.innerHTML = `<p style="color:var(--secondary-text);">Il file importato è vuoto.</p>`;
-                         return;
+                        importedTableContainer.innerHTML = `<p style="color:var(--secondary-text);">Il file importato è vuoto.</p>`;
+                        return;
                     }
                     const headers = Object.keys(data[0]);
                     const { headers: orderedHeaders, data: orderedData } = reorderColumns(data, headers);
-                    
+
                     // Aggiungi header per checkbox e azioni se l'utente può gestire
-                    const headerRow = canManage ? 
+                    const headerRow = canManage ?
                         `<tr>
                             <th style="width: 40px;">
                                 <input type="checkbox" id="select-all-contacts-imported" onchange="toggleAllContactsImported(this)">
@@ -7212,16 +7520,16 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                             <th style="text-align:right;">AZIONI</th>
                         </tr>` :
                         `<tr>${orderedHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
-                    
+
                     let tableHTML = '<table class="data-table"><thead>' + headerRow + '</thead><tbody>';
-                    
+
                     orderedData.forEach((row, index) => {
                         tableHTML += '<tr>';
                         if (canManage) {
                             tableHTML += `<td><input type="checkbox" class="contact-checkbox-imported" value="${index}" onchange="updateBulkActionsImported()"></td>`;
                         }
                         orderedHeaders.forEach(h => tableHTML += `<td>${row[h] !== undefined ? row[h] : ''}</td>`);
-                        
+
                         if (canManage) {
                             const editIcon = `<button onclick="editImportedContact(${index}, ${JSON.stringify(row).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica" style="margin-right: 0.5rem;">
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -7238,9 +7546,9 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                         tableHTML += '</tr>';
                     });
                     tableHTML += '</tbody></table>';
-                    
+
                     importedTableContainer.innerHTML = tableHTML;
-                    
+
                     // Aggiungi pulsante per eliminazione multipla se l'utente può gestire
                     if (canManage) {
                         const bulkActionsHtml = `<div class="flex gap-2 mt-4" id="bulk-actions-imported" style="display: none;">
@@ -7296,7 +7604,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 } else { // Risposta multipla
                     const checkedBoxes = document.querySelectorAll(`.poll-option-checkbox-${pollId}:checked`);
                     if (checkedBoxes.length === 0) return alert("Seleziona almeno un'opzione per votare.");
-                    
+
                     checkedBoxes.forEach(box => {
                         const idx = parseInt(box.value, 10);
                         if (!isNaN(idx) && updatedOptions[idx]) {
@@ -7373,7 +7681,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 e.preventDefault();
                 const text = document.getElementById('update-text').value.trim();
                 if (!text) return;
-                
+
                 const newUpdate = {
                     text: text,
                     by: `${userProfile.nome} ${userProfile.cognome}`,
@@ -7401,14 +7709,14 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 await runTransaction(db, async (transaction) => {
                     const reportDoc = await transaction.get(reportRef);
                     if (!reportDoc.exists()) throw "Segnalazione non trovata.";
-                    
+
                     const currentReminderCount = reportDoc.data().reminderCount || 0;
                     const newUpdate = {
                         text: "L'utente ha inviato un sollecito.",
                         by: "Sistema",
                         at: new Date()
                     };
-                    
+
                     transaction.update(reportRef, {
                         lastReminderAt: serverTimestamp(),
                         reminderCount: currentReminderCount + 1,
@@ -7463,7 +7771,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 const newRecipient = document.getElementById('reassign-to').value;
                 const comment = document.getElementById('reassign-comment').value.trim();
                 if (!newRecipient) return;
-                
+
                 await reassignReport(reportId, newRecipient, comment);
             });
         };
@@ -7493,7 +7801,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     reportId: reportId,
                     newRecipient: newRecipient
                 });
-                
+
                 hideModal();
                 alert(`Segnalazione riassegnata con successo a: ${newRecipient}.`);
 
@@ -7508,7 +7816,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             if (!container || !breadcrumbsContainer) return;
 
             container.innerHTML = `<p style="color:var(--secondary-text);">Caricamento elementi...</p>`;
-            
+
             const pathSegments = path.split('/').filter(Boolean);
             let breadcrumbsHtml = `<div class="chip active" onclick="handleBreadcrumbClick('')">Archivio</div>`;
             let currentPath = '';
@@ -7601,16 +7909,16 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 `;
                 progressContainer.appendChild(progressElement);
 
-                uploadTask.on('state_changed', 
+                uploadTask.on('state_changed',
                     (snapshot) => {
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                         const progressBar = document.getElementById(`progress-bar-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`);
-                        if(progressBar) progressBar.style.width = progress + '%';
-                    }, 
+                        if (progressBar) progressBar.style.width = progress + '%';
+                    },
                     (error) => {
                         console.error("Errore di upload:", error);
                         progressElement.innerHTML += `<div class="message-box error" style="display:block; margin-top:0.5rem;">Upload fallito: ${error.code}</div>`;
-                    }, 
+                    },
                     () => {
                         getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
                             await logActivity("file_uploaded", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: filePath });
@@ -7634,7 +7942,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
 
         const openUploadModal = async () => {
             showModal('Seleziona Cartella di Destinazione', '<p>Caricamento struttura cartelle...</p>');
-            
+
             const getFolderTree = async (path = '') => {
                 const listRef = ref(storage, path);
                 const res = await listAll(listRef);
@@ -7701,22 +8009,22 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         };
 
         const moveFolderContents = async (oldPath, newPath) => {
-    const listRef = ref(storage, oldPath);
-    const res = await listAll(listRef);
+            const listRef = ref(storage, oldPath);
+            const res = await listAll(listRef);
 
-    // 1. Sposta tutti i file dalla vecchia alla nuova posizione, uno alla volta (sequenziale).
-    for (const itemRef of res.items) {
-        const newFileRef = ref(storage, newPath + itemRef.name);
-        const blob = await getBlob(itemRef); // Usa getBlob per evitare problemi di CORS
-        await uploadBytes(newFileRef, blob);
-        await deleteObject(itemRef); // Elimina il vecchio file solo dopo la copia
-    }
+            // 1. Sposta tutti i file dalla vecchia alla nuova posizione, uno alla volta (sequenziale).
+            for (const itemRef of res.items) {
+                const newFileRef = ref(storage, newPath + itemRef.name);
+                const blob = await getBlob(itemRef); // Usa getBlob per evitare problemi di CORS
+                await uploadBytes(newFileRef, blob);
+                await deleteObject(itemRef); // Elimina il vecchio file solo dopo la copia
+            }
 
-    // 2. Esegui la stessa operazione ricorsivamente per tutte le sottocartelle.
-    for (const folderRef of res.prefixes) {
-        await moveFolderContents(folderRef.fullPath, newPath + folderRef.name + '/');
-    }
-};
+            // 2. Esegui la stessa operazione ricorsivamente per tutte le sottocartelle.
+            for (const folderRef of res.prefixes) {
+                await moveFolderContents(folderRef.fullPath, newPath + folderRef.name + '/');
+            }
+        };
 
         const handleCreateFolder = async () => {
             const folderName = prompt("Inserisci il nome della nuova cartella:");
@@ -7777,8 +8085,8 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     // Se il placeholder non esiste ma la cartella sì, potrebbe essere un residuo.
                     // In questo caso, l'utente deve gestirlo dalla console Firebase.
                     if (error.code === 'storage/object-not-found') {
-                         await logActivity("folder_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: fullPath });
-                         loadStorageItems(currentStoragePath); // Ricarica per rimuoverla dalla vista
+                        await logActivity("folder_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { path: fullPath });
+                        loadStorageItems(currentStoragePath); // Ricarica per rimuoverla dalla vista
                     } else {
                         console.error(`Errore eliminazione cartella:`, error);
                         alert(`Impossibile eliminare la cartella: ${error.message}`);
@@ -7814,8 +8122,8 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 }
             });
         };
-                        const checkForNewCommunications=()=>{if(!currentUser||"custode"===userProfile?.tipoUtente)return;communicationsListener&&communicationsListener();const e=parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`),10)||0,t=new Date(e),o=query(collection(db,"communications"),where("createdAt",">",t));communicationsListener=onSnapshot(o,snapshot=>{const unreadCount = snapshot.docs.filter(docSnap => { const comm = docSnap.data(); const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || []; if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true; return userGroups.includes(comm.targetGroup); }).length; updateNotificationUI('bacheca', unreadCount)})};
-        
+        const checkForNewCommunications = () => { if (!currentUser || "custode" === userProfile?.tipoUtente) return; communicationsListener && communicationsListener(); const e = parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`), 10) || 0, t = new Date(e), o = query(collection(db, "communications"), where("createdAt", ">", t)); communicationsListener = onSnapshot(o, snapshot => { const unreadCount = snapshot.docs.filter(docSnap => { const comm = docSnap.data(); const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || []; if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true; return userGroups.includes(comm.targetGroup); }).length; updateNotificationUI('bacheca', unreadCount) }) };
+
         const checkForNewPolls = () => {
             if (!currentUser || "custode" === userProfile?.tipoUtente) return;
             pollsListener && pollsListener();
@@ -7833,7 +8141,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             reportsListener && reportsListener();
             const lastSeen = parseInt(localStorage.getItem(`lastSeenReport_${currentUser.uid}`), 10) || 0;
             const lastSeenDate = new Date(lastSeen);
-            
+
             let q;
             if (['supervisore', 'adm'].includes(userProfile.tipoUtente)) {
                 // Supervisore e Admin vedono le notifiche per tutte le nuove segnalazioni
@@ -7848,8 +8156,8 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 updateNotificationUI('segnalazioni', unreadCount);
             });
         };
-        
-                window.navigateTo = navigateTo;
+
+        window.navigateTo = navigateTo;
         window.navigateBack = navigateBack;
         window.logout = logout;
         window.voteOnPoll = voteOnPoll;
@@ -7887,7 +8195,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
         window.openRuleEditor = openRuleEditor;
         window.deleteGroupRule = deleteGroupRule;
         window.toggleRuleStatus = toggleRuleStatus;
-       window.toggleGroupListVisibility = toggleGroupListVisibility;
+        window.toggleGroupListVisibility = toggleGroupListVisibility;
         window.loadElencoCondomini = loadElencoCondomini;
         window.deleteUser = deleteUser;
         window.openUserEditModal = openUserEditModal;
@@ -7929,7 +8237,7 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
             const container = document.getElementById('properties-editor-container');
             if (!container) return;
 
-            const groupOptionsHtml = availableGroups.map(group => 
+            const groupOptionsHtml = availableGroups.map(group =>
                 `<option value="${group.name}">${group.name}</option>`
             ).join('');
 
@@ -7956,11 +8264,11 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                 currentUser = user;
                 await loadUserProfile(user);
                 await loadServicePermissions();
-                
+
                 const userType = userProfile?.tipoUtente;
                 let landingPage = 'dashboard';
                 if (userType === 'custode') landingPage = 'segnalazioni';
-                
+
                 // Se l'utente si trova sulla pagina di login, lo reindirizziamo alla sua home.
                 // Altrimenti (se ha ricaricato la pagina), gli mostriamo la pagina su cui si trovava.
                 if (currentPage === 'login' || !currentPage) {
@@ -7983,17 +8291,29 @@ if (userRole === 'adm' || userRole === 'amministratore' || userRole === 'supervi
                     reportsListener();
                     reportsListener = null;
                 }
-                currentUser = null; 
+                currentUser = null;
                 userProfile = null;
                 navigationHistory = []; // Resetta la cronologia al logout
                 // Resetta lo stato specifico della registrazione per evitare dati "sporchi"
                 groupedProperties = {};
                 partialCondosList = [];
-                
+
                 // Naviga alla pagina di login in modo pulito
                 navigateTo('login');
             }
         });
+
+        // Add keyboard shortcut for refresh (Ctrl+R or F5)
+        document.addEventListener('keydown', (e) => {
+            // Prevent default browser refresh and use our custom refresh function
+            if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+                e.preventDefault();
+                if (currentUser && currentPage !== 'login') {
+                    refreshApplication();
+                }
+            }
+        });
     </script>
 </body>
+
 </html
