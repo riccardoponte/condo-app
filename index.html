@@ -1527,7 +1527,7 @@
                 navigationHistory.push(e);
             }
 
-            if (userType === "custode" && ["dashboard", "bacheca", "sondaggi", "sondaggi_crea", "sondaggi_elenco", "sondaggi_attivi", "sondaggi_conclusi"].includes(e)) {
+            if (userType === "custode" && ["dashboard", "sondaggi", "sondaggi_crea", "sondaggi_elenco", "sondaggi_attivi", "sondaggi_conclusi"].includes(e)) {
                 navigateTo("segnalazioni");
             } else {
                 currentPage = e, renderCurrentPage();
@@ -1760,20 +1760,25 @@
             const isCustodian = userProfile?.tipoUtente === 'custode';
 
             const navItems = isCustodian
-                ? `
-                    <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
-                        <span>Segnala</span>
-                    </a>
-                    <a href="#" onclick="navigateTo('infoUtili')" class="nav-item ${currentPage === 'infoUtili' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z" /></svg>
-                        <span>Orari</span>
-                    </a>
-                    <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}">
-                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
-                        <span>Profilo</span>
-                    </a>
-                `
+    ? `
+        <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
+            <span>Segnala</span>
+        </a>
+        <a href="#" onclick="navigateTo('bacheca')" id="nav-item-bacheca" class="nav-item ${currentPage === 'bacheca' ? 'active' : ''}">
+            <span id="bacheca-notification-badge" class="notification-badge hidden"></span>
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            <span>Bacheca</span>
+        </a>
+        <a href="#" onclick="navigateTo('infoUtili')" class="nav-item ${currentPage === 'infoUtili' ? 'active' : ''}">
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z" /></svg>
+            <span>Orari</span>
+        </a>
+        <a href="#" onclick="navigateTo('profilo')" class="nav-item ${currentPage === 'profilo' ? 'active' : ''}">
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+            <span>Profilo</span>
+        </a>
+    `
                 // --- SOSTITUISCI CON QUESTO BLOCCO ---
                 : `
     <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
@@ -4692,6 +4697,7 @@
                             createdByUserType: userProfile.tipoUtente,
                             createdById: currentUser.uid,
                             createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(), // Added for notification consistency
                             recipientType: recipient,
                             updates: [],
                             lastReminderAt: null,
@@ -6860,7 +6866,7 @@
             const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
             onSnapshot(q, snapshot => {
                 const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
-                const canSeeAll = ['adm', 'supervisore', 'amministratore'].includes(userProfile.tipoUtente);
+                const canSeeAll = ['adm', 'supervisore', 'amministratore', 'consigliere'].includes(userProfile.tipoUtente);
 
                 const filteredDocs = snapshot.docs.filter(docSnap => {
                     const comm = docSnap.data();
@@ -7230,8 +7236,11 @@
                 }
                 if (userProfile?.tipoUtente === 'amministratore' && (report.status === 'aperta' || report.status === 'in-corso')) {
                     actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
-                }
             }
+            if (userProfile?.tipoUtente === 'custode' && (report.status === 'aperta' || report.status === 'in-corso')) {
+                actionButtonsHtml += `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--accent-color-dark); color: white;">Inoltra ad Amministratore</button>`;
+            }
+        }
 
             // Logica pulsanti per il creatore (solo se è un "condomino")
             if (isCreator && userProfile?.tipoUtente === 'condomino') {
@@ -7322,7 +7331,7 @@
             let reportsQuery;
 
             // RUOLI "MANAGER" (Amministratore, Supervisore, ADM): Vedono tutte le segnalazioni per una data categoria.
-            if (['amministratore', 'supervisore', 'adm'].includes(userRole)) {
+            if (['amministratore', 'supervisore', 'adm', 'consigliere'].includes(userRole)) {
                 // Query semplice: filtra solo per destinatario e ordina. Funziona senza indici custom.
                 reportsQuery = query(
                     collection(db, "reports"),
@@ -7398,7 +7407,7 @@
                 let docsToRender = snapshot.docs;
 
                 // Se l'utente NON è un supervisore o admin, applichiamo un filtro post-query
-                if (userRole !== 'supervisore' && userRole !== 'adm') {
+                if (userRole !== 'supervisore' && userRole !== 'adm' && userRole !== 'consigliere') {
                     if (userRole === 'amministratore') {
                         // L'amministratore vede le sue segnalazioni E quelle per lo sviluppatore.
                         docsToRender = snapshot.docs.filter(doc => ['amministratore', 'sviluppatore'].includes(doc.data().recipientType));
@@ -8131,16 +8140,43 @@
         };
 
         const confirmReportResolution = async (reportId, isResolved) => {
-            if (isResolved) {
-                await updateReportStatus(reportId, 'chiusa', 'Utente ha confermato la risoluzione.');
-            } else {
-                if (confirm("Sei sicuro che il problema non sia stato risolto? La segnalazione verrà riaperta.")) {
-                    await updateReportStatus(reportId, 'aperta', 'Utente ha indicato che il problema non è risolto. Segnalazione riaperta.');
-                }
-            }
-        };
+        if (isResolved) {
+            await updateReportStatus(reportId, 'chiusa', 'Utente ha confermato la risoluzione.');
+        } else {
+            openJustificationModal(reportId);
+        }
+    };
 
-        const openReassignmentModal = (reportId) => {
+        const openJustificationModal = (reportId) => {
+        const modalContent = `
+            <form id="justification-form" class="space-y-4">
+                <p class="form-label" style="color:var(--secondary-text);">Per favore, descrivi perché ritieni che il problema non sia stato risolto. Questo aiuterà a gestirlo più rapidamente.</p>
+                <div>
+                    <label for="justification-text" class="form-label">Motivazione</label>
+                    <textarea id="justification-text" rows="4" required class="form-textarea" placeholder="Es. La perdita continua, anche se più lentamente..."></textarea>
+                </div>
+                <div class="flex justify-end gap-4 pt-2">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                    <button type="submit" class="btn btn-primary">Riapri Segnalazione</button>
+                </div>
+            </form>
+        `;
+        showModal('Problema Non Risolto', modalContent);
+
+        document.getElementById('justification-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const justification = document.getElementById('justification-text').value.trim();
+            if (!justification) {
+                alert('Per favore, fornisci una motivazione.');
+                return;
+            }
+            const updateText = `Utente ha riaperto il ticket. Motivazione: "${justification}"`;
+            await updateReportStatus(reportId, 'aperta', updateText);
+            hideModal();
+        });
+    };
+
+    const openReassignmentModal = (reportId) => {
             const modalContent = `
                 <form id="report-reassignment-form" class="space-y-4">
                     <input type="hidden" id="reassign-report-id" value="${reportId}">
@@ -8204,10 +8240,43 @@
                 alert(`Segnalazione riassegnata con successo a: ${newRecipient}.`);
 
             } catch (error) {
-                console.error("Errore durante la riassegnazione:", error);
-                alert("Si è verificato un errore durante la riassegnazione.");
-            }
-        };
+            console.error("Errore durante la riassegnazione:", error);
+            alert("Si è verificato un errore durante la riassegnazione.");
+        }
+    };
+
+    const forwardReportToAdmin = async (reportId) => {
+        if (!confirm("Sei sicuro di voler inoltrare questa segnalazione all'amministratore?")) {
+            return;
+        }
+
+        try {
+            const reportRef = doc(db, "reports", reportId);
+            const newUpdate = {
+                text: `Inoltrato all'Amministratore dal Custode.`,
+                by: `${userProfile.nome} ${userProfile.cognome}`,
+                at: new Date()
+            };
+
+            await updateDoc(reportRef, {
+                recipientType: 'amministratore',
+                status: 'aperta',
+                updates: arrayUnion(newUpdate),
+                updatedAt: serverTimestamp()
+            });
+
+            await logActivity("report_forwarded", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                reportId: reportId,
+                newRecipient: 'amministratore'
+            });
+
+            alert('Segnalazione inoltrata con successo.');
+
+        } catch (error) {
+            console.error("Errore durante l'inoltro della segnalazione:", error);
+            alert("Si è verificato un errore durante l'inoltro.");
+        }
+    };
         const loadStorageItems = async (path) => {
             const container = document.getElementById('storage-list-container');
             const breadcrumbsContainer = document.getElementById('storage-breadcrumbs');
@@ -8541,12 +8610,12 @@
             const lastSeenDate = new Date(lastSeen);
 
             let q;
-            if (['supervisore', 'adm'].includes(userProfile.tipoUtente)) {
-                // Supervisore e Admin vedono le notifiche per tutte le nuove segnalazioni
-                q = query(collection(db, "reports"), where("createdAt", ">", lastSeenDate));
+            if (['supervisore', 'adm', 'consigliere'].includes(userProfile.tipoUtente)) {
+                // Supervisore, Admin e Consigliere vedono le notifiche per tutte le nuove e aggiornate segnalazioni
+                q = query(collection(db, "reports"), where("updatedAt", ">", lastSeenDate));
             } else {
-                // Gli altri ruoli manageriali vedono solo quelle a loro destinate
-                q = query(collection(db, "reports"), where("recipientType", "==", userProfile.tipoUtente), where("createdAt", ">", lastSeenDate));
+                // Gli altri ruoli manageriali vedono solo quelle a loro destinate che sono state aggiornate
+                q = query(collection(db, "reports"), where("recipientType", "==", userProfile.tipoUtente), where("updatedAt", ">", lastSeenDate));
             }
 
             reportsListener = onSnapshot(q, snapshot => {
@@ -8566,7 +8635,9 @@
         window.sendReportReminder = sendReportReminder;
         window.confirmReportResolution = confirmReportResolution;
         window.openReassignmentModal = openReassignmentModal;
-        window.showCommunicationDetail = showCommunicationDetail;
+    window.forwardReportToAdmin = forwardReportToAdmin;
+    window.openJustificationModal = openJustificationModal;
+    window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
         window.hideModal = hideModal;
         window.deletePartialCondo = deletePartialCondo;
