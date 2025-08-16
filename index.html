@@ -36,8 +36,8 @@
         /* Light Theme */
         :root[data-theme="light"] {
             --bg-color: #ffffff;
-            --surface-color: #f8f9fa;
-            --surface-color-light: #e9ecef;
+            --surface-color: #e9ecef;
+            --surface-color-light: #dee2e6;
             --primary-text: #212529;
             --secondary-text: #6c757d;
             --accent-color: #1DB954;
@@ -592,29 +592,96 @@
             color: var(--primary-text);
         }
 
-        /* Light mode specific dashboard card styling */
+        /* Light mode specific dashboard card styling - COMPLETE OVERRIDE */
         :root[data-theme="light"] .dashboard-card {
-            background-color: black;
-            border: 2px solid black;
+            background-color: #e9ecef !important;
+            border: 2px solid #dee2e6 !important;
         }
 
         :root[data-theme="light"] .dashboard-item:hover .dashboard-card {
-            background-color: #333333;
+            background-color: #dee2e6 !important;
         }
 
         :root[data-theme="light"] .dashboard-card svg {
-            color: var(--accent-color);
+            color: black !important;
         }
 
         :root[data-theme="light"] .dashboard-item p {
-            color: var(--primary-text);
+            color: black !important;
         }
 
-        .dashboard-item p {
-            font-weight: 600;
-            text-align: left;
-            padding-left: 0.5rem;
+        /* Multiple specific selectors to ensure override */
+        :root[data-theme="light"] .dashboard-grid .dashboard-card {
+            background-color: #e9ecef !important;
+            border: 2px solid #dee2e6 !important;
         }
+
+        :root[data-theme="light"] .dashboard-grid .dashboard-item:hover .dashboard-card {
+            background-color: #dee2e6 !important;
+        }
+
+        :root[data-theme="light"] .dashboard-grid .dashboard-card svg {
+            color: black !important;
+        }
+
+        :root[data-theme="light"] .dashboard-grid .dashboard-item p {
+            color: black !important;
+        }
+
+        /* Even more specific selectors */
+        :root[data-theme="light"] main .dashboard-grid .dashboard-card {
+            background-color: #e9ecef !important;
+            border: 2px solid #dee2e6 !important;
+        }
+
+        :root[data-theme="light"] main .dashboard-grid .dashboard-card svg {
+    color: black !important;
+}
+
+:root[data-theme="light"] main .dashboard-grid .dashboard-item p {
+    color: black !important;
+}
+
+.dashboard-item p {
+    font-weight: 600;
+    text-align: left;
+    padding-left: 0.5rem;
+}
+
+/* NUOVO: Stile per i pulsanti nei menu a lista (es. Funzioni Admin) */
+.menu-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* Spazio tra i pulsanti */
+}
+
+.menu-list-item {
+    background-color: var(--surface-color);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.menu-list-item:hover {
+    background-color: var(--surface-color-light);
+}
+
+.menu-list-item svg {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: var(--accent-color); /* Forza il colore verde dell'icona */
+}
+
+.menu-list-item p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary-text); /* Testo grigio chiaro per contrasto */
+}
 
         /* Pagine a Lista */
         .list-container {
@@ -1567,7 +1634,7 @@
 
             // Only show theme toggle and refresh buttons on Home page
             const showButtons = title === 'Home';
-            
+
             const themeToggleButtonHtml = showButtons ? `
                 <button id="theme-toggle-btn" onclick="toggleTheme()" class="btn-icon" title="Cambia tema" aria-label="Cambia tema" role="button" tabindex="0">
                     <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -2856,63 +2923,63 @@
             <main>
                 <div class="dashboard-grid" style="grid-template-columns: 1fr;">
                     <div onclick="navigateTo('userManagement')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4Z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Utenti</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('gestioneGruppi_lista')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M10 4v4h4V4h-4m6 12v4h4v-4h-4m-6 0v4h4v-4h-4m6-6v4h4v-4h-4m-6 0v4h4v-4h-4m-6-6v4h4V4H4m6 6v4h4v-4h-4M4 16v4h4v-4H4m14-2h2v-4h-2v4m0 6h2v-4h-2v4m-12-2h2v-4H6v4m0 6h2v-4H6v4M2 2v20h20V2H2z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Crea e Visualizza Gruppi</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('gestioneGruppi_regole')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61-.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24-.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Regole</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('importazione')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Importa Dati Millesimi</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('gestione_archivio')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Archivio</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('impostazioniSondaggi')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,15H7V17H5V15M3,13H9V19H3V13Z" /></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Sondaggi</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('orariCustode')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Importa Dati Custode</p>
                         </div>
                     </div>
                     <div onclick="navigateTo('datiAmministratore')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Importa Dati Amministratore</p>
                         </div>
                     </div>
                     ${userProfile?.tipoUtente === 'adm' ? `
                     <div onclick="navigateTo('abilitaServizi')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,1L3,5V11C3,16.55,6.84,21.74,12,23C17.16,21.74,21,16.55,21,11V5L12,1M12,6.19L13.41,7.59L12,9L10.59,7.59L12,6.19M16.5,11H7.5V10C7.5,8.62,8.62,7.5,10,7.5H14C15.38,7.5,16.5,8.62,16.5,10V11M14.12,15.88L15.5,14.5L12,11L8.5,14.5L9.88,15.88L12,13.75L14.12,15.88Z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Abilita Servizi</p>
                         </div>
                     </div>
                     ` : ''}
                     <div onclick="navigateTo('puliziaDati')" class="dashboard-item">
-                        <div class="dashboard-card" style="aspect-ratio: auto; padding: 1.5rem; flex-direction: row; justify-content: flex-start; gap: 1.5rem;">
+                        <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M15 16h4v2h-4v-2zm0-8h7v2h-7V8zm0 4h6v2h-6v-2zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12V5z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Pulizia Dati</p>
                         </div>
