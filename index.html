@@ -90,9 +90,14 @@
         .page-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 1rem;
             margin-bottom: 2rem;
             padding: 1rem 0;
+        }
+
+        .header-buttons {
+            flex-shrink: 0;
         }
 
         .user-avatar {
@@ -192,10 +197,121 @@
             .btn-icon:hover {
                 transform: none;
             }
-            
+
             .btn-icon:active {
                 background: var(--accent-color);
                 transform: scale(0.95);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #app {
+                padding: 0.5rem 0.5rem 100px 0.5rem;
+            }
+
+            .page-header {
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+                padding: 0.5rem 0;
+            }
+
+            .header-buttons {
+                gap: 0.25rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            .form-input,
+            .form-select,
+            .form-textarea {
+                padding: 0.75rem;
+                font-size: 16px;
+                /* Prevents zoom on iOS */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-header {
+                flex-wrap: nowrap;
+                gap: 0.25rem;
+            }
+
+            .header-buttons {
+                gap: 0.25rem;
+            }
+
+            .header-buttons .btn-icon {
+                padding: 0.4rem;
+            }
+
+            .page-title {
+                font-size: 1.25rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .dashboard-card {
+                aspect-ratio: 2 / 1;
+            }
+
+            .btn {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.9rem;
+            }
+
+            .modal-content {
+                margin: 0.5rem;
+                padding: 1rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            #app {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem 2rem 100px 2rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1.5rem;
+            }
+
+            .page-header {
+                margin-bottom: 3rem;
+            }
+
+            .bottom-nav {
+                max-width: 1200px;
+                margin: 0 auto;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 2rem;
+            }
+
+            .card {
+                padding: 2rem;
             }
         }
 
@@ -478,16 +594,16 @@
 
         /* Light mode specific dashboard card styling */
         :root[data-theme="light"] .dashboard-card {
-            background-color: var(--accent-color);
+            background-color: black;
             border: 2px solid black;
         }
 
         :root[data-theme="light"] .dashboard-item:hover .dashboard-card {
-            background-color: var(--accent-color-dark);
+            background-color: #333333;
         }
 
         :root[data-theme="light"] .dashboard-card svg {
-            color: white;
+            color: var(--accent-color);
         }
 
         :root[data-theme="light"] .dashboard-item p {
@@ -1406,7 +1522,7 @@
 
             } catch (error) {
                 console.error('Errore durante l\'aggiornamento:', error);
-                
+
                 // Show error message
                 const errorMessage = document.createElement('div');
                 errorMessage.className = 'message-box error';
@@ -1449,34 +1565,43 @@
                 </button>
             ` : '';
 
-            const themeToggleButtonHtml = `
-                <button id="theme-toggle-btn" onclick="toggleTheme()" class="btn-icon" title="Cambia tema" aria-label="Cambia tema" role="button" tabindex="0" style="margin-left: auto;">
+            // Only show theme toggle and refresh buttons on Home page
+            const showButtons = title === 'Home';
+            
+            const themeToggleButtonHtml = showButtons ? `
+                <button id="theme-toggle-btn" onclick="toggleTheme()" class="btn-icon" title="Cambia tema" aria-label="Cambia tema" role="button" tabindex="0">
                     <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
                     </svg>
                 </button>
-            `;
+            ` : '';
 
-            const refreshButtonHtml = `
+            const refreshButtonHtml = showButtons ? `
                 <button onclick="refreshApplication()" class="btn-icon" title="Aggiorna per ricevere gli ultimi aggiornamenti">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
                     </svg>
                 </button>
-            `;
+            ` : '';
 
-            return `
-            <header class="page-header">
-                ${backButtonHtml}
-                <div class="user-avatar">${userInitial}</div>
-                <div>
-                    <h1 class="page-title">${title}</h1>
-                    <p class="page-subtitle">${userType}</p>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
+            const buttonsContainer = showButtons ? `
+                <div class="header-buttons" style="display: flex; gap: 0.5rem; margin-left: auto;">
                     ${themeToggleButtonHtml}
                     ${refreshButtonHtml}
                 </div>
+            ` : '';
+
+            return `
+            <header class="page-header">
+                <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                    ${backButtonHtml}
+                    <div class="user-avatar">${userInitial}</div>
+                    <div>
+                        <h1 class="page-title">${title}</h1>
+                        <p class="page-subtitle">${userType}</p>
+                    </div>
+                </div>
+                ${buttonsContainer}
             </header>`;
         }
 
