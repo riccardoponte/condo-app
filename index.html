@@ -1151,6 +1151,35 @@
             border-radius: var(--radius-sm);
         }
 
+        .preview-item-document {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background-color: var(--surface-color-light);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            text-align: center;
+            gap: 0.5rem;
+        }
+
+        .preview-item-document svg {
+            width: 40%;
+            height: 40%;
+            flex-shrink: 0;
+            color: var(--secondary-text);
+        }
+
+        .preview-item-document span {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--secondary-text);
+            word-break: break-all;
+            line-height: 1.2;
+        }
+
         .preview-remove-btn {
             position: absolute;
             top: -5px;
@@ -1249,6 +1278,7 @@
         let currentStoragePath = '';
         let selectedUploadPath = ''; // Nuova variabile per il percorso di upload scelto
         let selectedReportFiles = []; // Array per i file della segnalazione
+let selectedCommunicationFiles = []; // Array per i file della comunicazione
 
         // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
         let groupedProperties = {};
@@ -1535,7 +1565,7 @@
                 navigationHistory.push(e);
             }
 
-            if (userType === "custode" && ["dashboard", "sondaggi", "sondaggi_crea", "sondaggi_elenco", "sondaggi_attivi", "sondaggi_conclusi"].includes(e)) {
+            if (userType === "custode" && ["sondaggi", "sondaggi_crea", "sondaggi_elenco", "sondaggi_attivi", "sondaggi_conclusi"].includes(e)) {
                 navigateTo("segnalazioni");
             } else {
                 currentPage = e, renderCurrentPage();
@@ -1769,6 +1799,7 @@
 
             const navItems = isCustodian
                 ? `
+        <a href="#" onclick="navigateTo('dashboard')" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></a>
         <a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${currentPage === 'segnalazioni' ? 'active' : ''}">
             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
             <span>Segnala</span>
@@ -1796,10 +1827,10 @@
         <span>Bacheca</span>
     </a>` : ''}
     ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_amministratore', 'segnalazioni_custode', 'segnalazioni_consiglieri', 'segnalazioni_ricevute'].includes(currentPage) ? 'active' : ''}">
-        <span id="segnalazioni-notification-badge" class="notification-badge hidden"></span>
-        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
-        <span>Segnala</span>
-    </a>` : ''}
+    <span id="segnalazioni-notification-badge" class="notification-badge hidden"></span>
+    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
+    <span>Segnala</span>
+</a>` : ''}
     ${isServiceEnabledForCurrentUser('sondaggi') ? `<a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}">
         <span id="sondaggi-notification-badge" class="notification-badge hidden"></span>
         <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
@@ -1825,16 +1856,16 @@
     `);
             }
             if (isServiceEnabledForCurrentUser('segnalazioni')) {
-                dashboardItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
-                        <div class="dashboard-card" style="position: relative;">
-                            <span id="dashboard-segnalazioni-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-                        </div>
-                        <p>Segnalazioni</p>
-                    </div>
-                `);
-            }
+    dashboardItemsHtml.push(`
+        <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
+            <div class="dashboard-card" style="position: relative;">
+                <span id="dashboard-segnalazioni-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            </div>
+            <p>Segnalazioni</p>
+        </div>
+    `);
+}
             if (isServiceEnabledForCurrentUser('sondaggi') && userProfile?.tipoUtente !== 'fornitore') {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('sondaggi')" class="dashboard-item">
@@ -1913,28 +1944,56 @@
         }
 
         const renderBachecaTutte = () => `
-            ${renderHeader('Tutte le Comunicazioni')}
-            <main>
-                <div id="communications-list" class="list-container"></div>
-            </main>
-            ${renderBottomNavigation()}
-        `;
+    ${renderHeader('Tutte le Comunicazioni')}
+    <main>
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="text" id="communication-search" placeholder="Cerca per titolo o contenuto..." class="form-input">
+            </div>
+        </div>
+        <div id="communications-list" class="list-container"></div>
+    </main>
+    ${renderBottomNavigation()}
+`;
 
-        const renderBachecaCrea = () => `
+        const renderBachecaCrea = () => {
+        const canUpload = ['amministratore', 'supervisore', 'consigliere'].includes(userProfile?.tipoUtente);
+
+        const uploadSectionHtml = canUpload ? `
+            <div>
+                <label class="form-label">Allegati (Foto, Video, Documenti)</label>
+                <div class="attachment-upload-container" onclick="document.getElementById('comm-attachments').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="margin: 0 auto 0.5rem; color: var(--secondary-text);"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                    Tocca per aggiungere file
+                </div>
+                <input type="file" id="comm-attachments" class="hidden" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" onchange="handleCommunicationFileSelection(event)">
+                <div id="comm-attachment-previews-container" class="attachment-previews"></div>
+            </div>
+        ` : '';
+
+        return `
             ${renderHeader('Nuova Comunicazione')}
             <main>
-                <div class="card" style="margin-bottom:2rem;"><h3 class="card-title">Nuova comunicazione</h3><form id="create-communication-form" class="space-y-4"><div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div><div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div>
-<div>
-    <label for="comm-target-group" class="form-label">Destinatari</label>
-    <select id="comm-target-group" class="form-select">
-        <option value="Tutti">Intero Condominio</option>
-        <!-- Groups will be populated dynamically -->
-    </select>
-</div>
-<div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div></form></div>
+                <div class="card" style="margin-bottom:2rem;">
+                    <h3 class="card-title">Nuova comunicazione</h3>
+                    <form id="create-communication-form" class="space-y-4">
+                        <div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div>
+                        <div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div>
+                        <div>
+                            <label for="comm-target-group" class="form-label">Destinatari</label>
+                            <select id="comm-target-group" class="form-select">
+                                <option value="Tutti">Intero Condominio</option>
+                                <!-- Groups will be populated dynamically -->
+                            </select>
+                        </div>
+                        ${uploadSectionHtml}
+                        <div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div>
+                    </form>
+                </div>
             </main>
             ${renderBottomNavigation()}
         `;
+    };
 
 
 
@@ -2108,30 +2167,34 @@
 
             let menuItemsHtml = [];
 
-            // 1. Pulsanti gestionali
-            if (isManager) {
-                if (['supervisore', 'adm', 'amministratore'].includes(userRole)) {
-                    menuItemsHtml.push(`
-                        <div onclick="navigateTo('segnalazioni_urgenti')" class="dashboard-item">
-                            <div class="dashboard-card" style="border: 2px solid var(--danger);">
-                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                            </div>
-                            <p>Solleciti</p>
-                        </div>
-                    `);
-                }
+            // 1. Solleciti - MODIFICATO per includere 'consigliere'
+            if (['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userRole)) {
                 menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_ricevute')" class="dashboard-item">
-                        <div class="dashboard-card" style="position: relative;">
-                            <span id="segnalazioni-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89,3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M17,17H7V15H17V17M17,13H7V11H17V13M17,9H7V7H17V9Z"/></svg>
+                    <div onclick="navigateTo('segnalazioni_urgenti')" class="dashboard-item">
+                        <div class="dashboard-card" style="border: 2px solid var(--danger);">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         </div>
-                        <p>Segnalazioni</p>
+                        <p>Solleciti</p>
                     </div>
                 `);
             }
 
-            // 2. Pulsanti utente (visibili a tutti)
+            // 2. Segnalazioni ricevute
+            if (isManager) {
+    // MODIFICA: Etichetta cambiata in "Segnalazioni Ricevute"
+    const label = userProfile?.tipoUtente === 'amministratore' ? 'Segnalazioni Ricevute' : 'Segnalazioni';
+    menuItemsHtml.push(`
+        <div onclick="navigateTo('segnalazioni_ricevute')" class="dashboard-item">
+            <div class="dashboard-card" style="position: relative;">
+                <span id="segnalazioni-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89,3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19M17,17H7V15H17V17M17,13H7V11H17V13M17,9H7V7H17V9Z"/></svg>
+            </div>
+            <p>${userProfile?.tipoUtente === 'custode' ? 'Segnalazioni Ricevute' : label}</p>
+        </div>
+    `);
+}
+
+            // 3. Crea una segnalazione
             if (userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_crea')" class="dashboard-item">
@@ -2142,19 +2205,20 @@
                     </div>
                 `);
             }
+
+            // 4. Segnalazioni inviate (Segnalazioni Inviate)
             if (userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item">
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
                         </div>
-                        <p>Mie Segnalazioni</p>
+                        <p>Segnalazioni Inviate</p>
                     </div>
                 `);
             }
 
-            // 3. Pulsanti di destinazione: logica aggiornata per nasconderli ai ruoli non pertinenti
-            // Mostra "Ad Amministratore" a tutti tranne all'amministratore, al custode e al fornitore
+            // 5. All'amministratore
             if (userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_amministratore')" class="dashboard-item">
@@ -2166,7 +2230,7 @@
                 `);
             }
 
-            // Mostra "Al Custode" a tutti tranne al custode, all'amministratore e al fornitore
+            // 6. Al custode
             if (userRole !== 'custode' && userRole !== 'amministratore' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_custode')" class="dashboard-item">
@@ -2177,7 +2241,8 @@
                     </div>
                 `);
             }
-            // Mostra "Ai Consiglieri" a tutti tranne al consigliere, all'amministratore, al custode e al fornitore
+            
+            // 7. Ai consiglieri
             if (userRole !== 'consigliere' && userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_consiglieri')" class="dashboard-item">
@@ -2189,19 +2254,7 @@
                 `);
             }
 
-            // Mostra "Al Fornitore" a tutti tranne al fornitore, all'amministratore e al custode
-            if (userRole !== 'fornitore' && userRole !== 'amministratore' && userRole !== 'custode') {
-                menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_fornitore')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
-                        </div>
-                        <p>Al Fornitore</p>
-                    </div>
-                `);
-            }
-
-            // Mostra "Allo Sviluppatore" a tutti tranne all'ADM
+            // 8. Allo sviluppatore
             if (userRole !== 'adm') {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_sviluppatore')" class="dashboard-item">
@@ -2209,6 +2262,18 @@
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z"/></svg>
                         </div>
                         <p>Allo Sviluppatore</p>
+                    </div>
+                `);
+            }
+
+            // Button "Al Fornitore" - MODIFICATO per escludere 'consigliere'
+            if (userRole !== 'fornitore' && userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'supervisore' && userRole !== 'consigliere') {
+                menuItemsHtml.push(`
+                    <div onclick="navigateTo('segnalazioni_fornitore')" class="dashboard-item">
+                        <div class="dashboard-card">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
+                        </div>
+                        <p>Al Fornitore</p>
                     </div>
                 `);
             }
@@ -2226,18 +2291,21 @@
 
         const renderSegnalazioniCrea = () => {
             // Il campo destinatario è ora universale per tutti gli utenti che creano una segnalazione.
+            // --- MODIFICA SUPERVISORE/CONSIGLIERE: Dropdown destinatari condizionale ---
+            const isSupervisor = userProfile?.tipoUtente === 'supervisore';
+            const isConsigliere = userProfile?.tipoUtente === 'consigliere';
             const formRecipientField = `
-                <div>
-                    <label class="form-label">Destinatario</label>
-                    <select id="report-recipient" required class="form-select">
-                        <option value="">Seleziona a chi inviare...</option>
-                        <option value="amministratore">Amministratore</option>
-                        <option value="custode">Custode</option>
-                        <option value="consigliere">Consiglieri</option>
-                        <option value="fornitore">Fornitore</option>
-                        <option value="adm">Sviluppatore</option>
-                    </select>
-                </div>`;
+    <div>
+        <label class="form-label">Destinatario</label>
+        <select id="report-recipient" required class="form-select">
+            <option value="">Seleziona a chi inviare...</option>
+            ${ userProfile?.tipoUtente !== 'amministratore' ? `<option value="amministratore">Amministratore</option>` : '' }
+            ${ userProfile?.tipoUtente !== 'custode' ? `<option value="custode">Custode</option>` : '' }
+            <option value="consigliere">Consiglieri</option>
+            <option value="adm">Sviluppatore</option>
+        </select>
+    </div>`;
+            // --- FINE MODIFICA ---
 
             return `
                 ${renderHeader('Crea Segnalazione')}
@@ -2252,7 +2320,17 @@
                                 <div><label class="form-label">Priorità</label><select id="report-priority" required class="form-select"><option value="">...</option><option value="bassa">Bassa</option><option value="media">Media</option><option value="alta">Alta</option></select></div>
                             </div>
                             <div><label class="form-label">Ubicazione</label><input type="text" id="report-location" required class="form-input" placeholder="es. Scala A, Piano 2"></div>
-                            ${formRecipientField}
+
+<div>
+    <label for="report-interest-type" class="form-label">Tipo di Interesse</label>
+    <select id="report-interest-type" required class="form-select">
+        <option value="">Seleziona...</option>
+        <option value="personale">Segnalazione di interesse personale</option>
+        <option value="condominiale">Segnalazione di interesse condominiale</option>
+    </select>
+</div>
+
+${formRecipientField}
                             
                             <!-- NUOVA SEZIONE PER UPLOAD ALLEGATI -->
                             <div>
@@ -2275,13 +2353,41 @@
              `;
         };
 
-        const renderSegnalazioniElenco = (title) => `
-            ${renderHeader(title)}
-            <main>
-                <div id="reports-main-container" class="list-container"></div>
-            </main>
-            ${renderBottomNavigation()}
-        `;
+        const renderSegnalazioniElenco = (title) => {
+            const isFornitore = userProfile?.tipoUtente === 'fornitore';
+            const shouldShowControls = isFornitore;
+            
+            const fornitoreControlsHtml = shouldShowControls ? `
+                <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;"></div>
+                <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <svg style="position: absolute; left: 1rem; width: 20px; height: 20px; color: var(--secondary-text);" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" id="report-search-input" placeholder="Cerca per titolo, numero o descrizione..." class="form-input" style="padding-left: 3rem;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex-shrink: 0; min-width: 150px; margin-bottom: 0;">
+                            <select id="report-status-filter" class="form-select">
+                                <option value="all">Tutti gli stati</option>
+                                <option value="aperta">Aperta</option>
+                                <option value="in-corso">In Corso</option>
+                                <option value="risolta">Risolta</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            ` : '';
+
+            return `
+                ${renderHeader(shouldShowControls ? 'Segnalazioni Ricevute' : title)}
+                <main>
+                    ${fornitoreControlsHtml}
+                    <div id="reports-main-container" class="list-container"></div>
+                </main>
+                ${renderBottomNavigation()}
+            `;
+        };
 
         const renderProfilo = () => `
             ${renderHeader('Profilo')}
@@ -3970,8 +4076,6 @@
             app.innerHTML = `<div style="padding:1rem;">Caricamento...</div>`;
             const userType = userProfile?.tipoUtente;
 
-            if (userType === 'custode' && currentPage === 'dashboard') currentPage = 'segnalazioni';
-
             let content = '';
             switch (currentPage) {
                 case 'dashboard': content = renderDashboard(); break;
@@ -4108,7 +4212,10 @@
             switch (currentPage) {
                 case 'elencoCondomini': loadElencoCondomini(); break;
                 case 'bacheca': /* No handlers needed for the menu page */ break;
-                case 'bacheca_tutte': loadCommunications(); break;
+                case 'bacheca_tutte':
+                    loadCommunications();
+                    document.getElementById('communication-search')?.addEventListener('input', loadCommunications);
+                    break;
                 case 'bacheca_crea': setupBachecaHandlers(); break;
                 case 'sondaggi': /* No handlers needed for the menu page */ break;
                 case 'sondaggi_crea': if (userType !== 'custode') { setupPollHandlers(); } break;
@@ -4497,19 +4604,43 @@
                     if (!title || !content) return alert("Compila titolo e messaggio.");
 
                     publishBtn.disabled = true;
-                    publishBtn.textContent = "...";
+                    publishBtn.textContent = "Pubblicazione...";
 
                     try {
-                        await addDoc(collection(db, "communications"), {
+                        // 1. Create communication document reference to get ID first
+                        const newCommRef = doc(collection(db, "communications"));
+                        const commId = newCommRef.id;
+                        let fileUrls = [];
+
+                        // 2. Upload files if they exist
+                        if (selectedCommunicationFiles.length > 0) {
+                            publishBtn.textContent = 'Caricamento allegati...';
+                            const uploadPromises = selectedCommunicationFiles.map(file => {
+                                const filePath = `communications/${commId}/${Date.now()}_${file.name}`;
+                                const fileRef = ref(storage, filePath);
+                                return uploadBytes(fileRef, file).then(() => getDownloadURL(fileRef));
+                            });
+                            fileUrls = await Promise.all(uploadPromises);
+                        }
+
+                        // 3. Set the document data
+                        await setDoc(newCommRef, {
                             title: title,
                             content: content,
-                            targetGroup: targetGroup, // <-- FIELD ADDED
+                            targetGroup: targetGroup,
+                            fileUrls: fileUrls, // Add file URLs to the document
                             createdBy: `${userProfile.nome} ${userProfile.cognome}`,
                             createdById: currentUser.uid,
                             createdAt: serverTimestamp()
                         });
-                        await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup });
+
+                        await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup, attachments: fileUrls.length });
+
+                        // Reset form and file state
                         form.reset();
+                        selectedCommunicationFiles = [];
+                        renderCommunicationFilePreviews();
+
                     } catch (error) {
                         console.error("Errore:", error);
                         alert("Si è verificato un errore.");
@@ -4689,9 +4820,51 @@
         };
 
         const removeReportFile = (index) => {
-            selectedReportFiles.splice(index, 1);
-            renderFilePreviews();
-        };
+    selectedReportFiles.splice(index, 1);
+    renderFilePreviews();
+};
+
+const handleCommunicationFileSelection = (event) => {
+    selectedCommunicationFiles = [...selectedCommunicationFiles, ...Array.from(event.target.files)];
+    renderCommunicationFilePreviews();
+    event.target.value = ''; // Permette di selezionare lo stesso file di nuovo
+};
+
+const renderCommunicationFilePreviews = () => {
+    const container = document.getElementById('comm-attachment-previews-container');
+    if (!container) return;
+    container.innerHTML = selectedCommunicationFiles.map((file, index) => {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        const objectURL = URL.createObjectURL(file);
+        let previewHtml;
+
+        if (isImage) {
+            previewHtml = `<img src="${objectURL}" alt="${file.name}">`;
+        } else if (isVideo) {
+            previewHtml = `<video src="${objectURL}" preload="metadata"></video>`;
+        } else {
+            // Generic preview for documents and other files
+            previewHtml = `
+                <div class="preview-item-document">
+                    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    <span>${file.name}</span>
+                </div>
+            `;
+        }
+
+        return `
+        <div class="preview-item">
+            ${previewHtml}
+            <button class="preview-remove-btn" onclick="removeCommunicationFile(${index})">&times;</button>
+        </div>`;
+    }).join('');
+};
+
+const removeCommunicationFile = (index) => {
+    selectedCommunicationFiles.splice(index, 1);
+    renderCommunicationFilePreviews();
+};
 
         const uploadReportFiles = (reportId, files) => {
             const uploadPromises = files.map(file => {
@@ -4716,7 +4889,8 @@
                 const category = document.getElementById("report-category").value;
                 const priority = document.getElementById("report-priority").value;
                 const location = document.getElementById("report-location").value;
-                const recipient = document.getElementById("report-recipient").value;
+const interestType = document.getElementById("report-interest-type").value;
+const recipient = document.getElementById("report-recipient").value;
 
                 if (!title || !description || !category || !priority || !location || !recipient) {
                     alert("Compila tutti i campi, incluso il destinatario.");
@@ -4749,24 +4923,25 @@
                         finalReportNumber = newReportNumber;
 
                         const reportData = {
-                            reportNumber: newReportNumber,
-                            title: title,
-                            description: description,
-                            category: category,
-                            priority: priority,
-                            location: location,
-                            status: "aperta",
-                            createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-                            createdByUserType: userProfile.tipoUtente,
-                            createdById: currentUser.uid,
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(), // Added for notification consistency
-                            recipientType: recipient,
-                            updates: [],
-                            lastReminderAt: null,
-                            reminderCount: 0,
-                            fileUrls: fileUrls // Aggiungiamo gli URL dei file
-                        };
+    reportNumber: newReportNumber,
+    title: title,
+    description: description,
+    category: category,
+    priority: priority,
+    location: location,
+    interestType: interestType, // NUOVO CAMPO AGGIUNTO
+    status: "aperta",
+    createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+    createdByUserType: userProfile.tipoUtente,
+    createdById: currentUser.uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(), // Added for notification consistency
+    recipientType: recipient,
+    updates: [],
+    lastReminderAt: null,
+    reminderCount: 0,
+    fileUrls: fileUrls // Aggiungiamo gli URL dei file
+};
 
                         transaction.set(counterRef, { lastNumber: newReportNumber });
                         transaction.set(newReportDocRef, reportData);
@@ -6904,7 +7079,48 @@
                 const commDoc = await getDoc(doc(db, "communications", commId));
                 if (commDoc.exists()) {
                     const comm = commDoc.data();
-                    const contentHtml = `<p>${comm.content.replace(/\n/g, '<br>')}</p>`;
+                    let attachmentsHtml = '';
+                    if (comm.fileUrls && comm.fileUrls.length > 0) {
+                        attachmentsHtml = `
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem;">Allegati:</h4>
+                        <div class="report-attachments-gallery" style="padding-left: 0;">
+                            ${comm.fileUrls.map(url => {
+                                const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+                                const videoExtensions = ['.mp4', '.mov', '.webm', '.avi'];
+                                const lowerUrl = url.toLowerCase();
+                                
+                                const isImage = imageExtensions.some(ext => lowerUrl.includes(ext));
+                                const isVideo = videoExtensions.some(ext => lowerUrl.includes(ext));
+
+                                let fileName = 'Documento';
+                                try {
+                                    const urlParts = new URL(url);
+                                    const pathParts = urlParts.pathname.split('/');
+                                    fileName = decodeURIComponent(pathParts[pathParts.length - 1].split('?')[0]);
+                                    // Remove the timestamp prefix from the filename for display
+                                    fileName = fileName.substring(fileName.indexOf('_') + 1);
+                                } catch(e) { /* Fallback to simple name if URL parsing fails */ }
+
+
+                                if (isImage) {
+                                    return `<a href="${url}" target="_blank" class="gallery-item"><img src="${url}" alt="Allegato immagine"></a>`;
+                                } else if (isVideo) {
+                                    return `<a href="${url}" target="_blank" class="gallery-item"><video src="${url}" preload="metadata"></video></a>`;
+                                } else {
+                                    return `
+                                    <a href="${url}" target="_blank" class="gallery-item">
+                                        <div class="preview-item-document">
+                                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                                            <span>${fileName}</span>
+                                        </div>
+                                    </a>`;
+                                }
+                            }).join('')}
+                        </div>
+                    `;
+                    }
+
+                    const contentHtml = `<p>${comm.content.replace(/\n/g, '<br>')}</p>${attachmentsHtml}`;
                     showModal(comm.title, contentHtml);
 
                     // Aggiunto per risolvere il bug: quando si apre una comunicazione,
@@ -6914,7 +7130,7 @@
                     const snapshot = await getDocs(latestCommQuery);
                     if (!snapshot.empty) {
                         localStorage.setItem(`lastSeenComm_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
-                        updateNotificationUI(0);
+                        updateNotificationUI('bacheca', 0);
                     }
                 }
             } catch (error) {
@@ -6923,62 +7139,66 @@
         };
 
         const loadCommunications = () => {
-            const listEl = document.getElementById("communications-list");
-            if (!listEl) return;
+    const listEl = document.getElementById("communications-list");
+    if (!listEl) return;
 
-            const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
-            onSnapshot(q, snapshot => {
-                const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
-                const canSeeAll = ['adm', 'supervisore', 'amministratore', 'consigliere'].includes(userProfile.tipoUtente);
+    const searchInput = document.getElementById("communication-search");
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-                const filteredDocs = snapshot.docs.filter(docSnap => {
-                    const comm = docSnap.data();
+    const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
+    onSnapshot(q, snapshot => {
+        const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
+        const canSeeAll = ['adm', 'supervisore', 'amministratore', 'consigliere'].includes(userProfile.tipoUtente);
 
-                    // Un utente vede una comunicazione se:
-                    // 1. Ha un ruolo che può vedere tutto ('canSeeAll').
-                    // 2. La comunicazione è per tutti (targetGroup è 'Tutti' o non è definito).
-                    // 3. La comunicazione è per un gruppo a cui l'utente appartiene.
-                    return canSeeAll ||
-                        !comm.targetGroup ||
-                        comm.targetGroup === 'Tutti' ||
-                        userGroups.includes(comm.targetGroup);
-                });
+        let filteredDocs = snapshot.docs.filter(docSnap => {
+            const comm = docSnap.data();
+            return canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
+        });
 
-                if (filteredDocs.length === 0) {
-                    listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna comunicazione per te.</p>`;
-                } else {
-                    listEl.innerHTML = filteredDocs.map(docSnap => {
-                        const comm = docSnap.data();
-                        if (!comm.createdAt) return "";
-
-                        const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
-                        const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
-                            ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
-                            : '';
-
-                        return `
-                        <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
-                            <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
-                            <div class="list-item-content">
-                                <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                                    <span style="white-space: normal;">${comm.title}</span>
-                                    ${targetGroupHtml}
-                                </div>
-                                <div class="subtitle">${comm.content.substring(0, 50)}...</div>
-                                <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
-                            </div>
-                        </div>`;
-                    }).join("");
-                }
-
-                // Quando si visualizza la lista, si marcano come lette
-                if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
-                    const latestVisibleComm = filteredDocs.length > 0 ? filteredDocs[0].data().createdAt.toMillis() : snapshot.docs[0].data().createdAt.toMillis();
-                    localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestVisibleComm);
-                    updateNotificationUI(0);
-                }
+        if (searchTerm) {
+            filteredDocs = filteredDocs.filter(docSnap => {
+                const comm = docSnap.data();
+                const title = (comm.title || '').toLowerCase();
+                const content = (comm.content || '').toLowerCase();
+                return title.includes(searchTerm) || content.includes(searchTerm);
             });
-        };
+        }
+
+        if (filteredDocs.length === 0) {
+            const message = searchTerm ? 'Nessuna comunicazione trovata con i criteri di ricerca.' : 'Nessuna comunicazione per te.';
+            listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p>`;
+        } else {
+            listEl.innerHTML = filteredDocs.map(docSnap => {
+                const comm = docSnap.data();
+                if (!comm.createdAt) return "";
+
+                const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
+                const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
+                    ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
+                    : '';
+
+                return `
+                <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
+                    <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
+                    <div class="list-item-content">
+                        <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                            <span style="white-space: normal;">${comm.title}</span>
+                            ${targetGroupHtml}
+                        </div>
+                        <div class="subtitle">${comm.content.substring(0, 50)}...</div>
+                        <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
+            const latestCommTimestamp = snapshot.docs.length > 0 ? snapshot.docs[0].data().createdAt.toMillis() : Date.now();
+            localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestCommTimestamp);
+            updateNotificationUI('bacheca', 0);
+        }
+    });
+};
 
         const isUserAllowedToVote = (userType, setting) => {
             // ADM can always vote
@@ -7277,7 +7497,7 @@
             });
         };
 
-        const renderReportCardHTML = (report, reportId) => {
+        const renderReportCardHTML = (report, reportId, index = null) => {
             if (!report.createdAt) return "";
 
             const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente);
@@ -7289,19 +7509,55 @@
             // Logica pulsanti per il gestore
             if (canManageThisReport) {
                 if (report.status === 'aperta') {
-                    actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'in-corso')" class="btn btn-primary" style="flex:1;">Prendi in Carico</button>`;
+                    // --- MODIFICA SUPERVISORE/CONSIGLIERE: Visibilità condizionale "Prendi in Carico" ---
+                    // Il pulsante appare per tutti i manager, tranne per il supervisore se il ticket non è suo e per il consigliere.
+                    const isSupervisor = userProfile?.tipoUtente === 'supervisore';
+                    const isConsigliere = userProfile?.tipoUtente === 'consigliere';
+                    const isForSupervisor = report.recipientType === 'supervisore';
+
+                    if ((!isSupervisor || (isSupervisor && isForSupervisor)) && !isConsigliere) {
+                         actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'in-corso')" class="btn btn-primary" style="flex:1;">Prendi in Carico</button>`;
+                    }
+                    // --- FINE MODIFICA ---
                 }
-                if (report.status === 'in-corso') {
-                    actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
+                if (report.status === 'in-corso' && userProfile?.tipoUtente !== 'consigliere') {
+                    // --- MODIFICA SUPERVISORE INIZIO: Azione "Risolta" personalizzata ---
+                    if (userProfile?.tipoUtente === 'supervisore') {
+                        // Per il supervisore, l'azione aggiunge un commento specifico.
+                        actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta', 'Risolto da Supervisore.')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
+                    } else {
+                        // Gli altri ruoli usano l'azione standard.
+                        actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
+                    }
+                    // --- MODIFICA SUPERVISORE FINE ---
                 }
-                if (report.status !== 'chiusa') {
-                    actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Aggiorna</button>`;
-                }
-                if (userProfile?.tipoUtente === 'amministratore' && (report.status === 'aperta' || report.status === 'in-corso')) {
-                    actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
-                }
+                if (userProfile?.tipoUtente === 'amministratore') {
+    if (report.status === 'aperta' || report.status === 'in-corso') {
+        actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
+    }
+    // NUOVA LOGICA: Pulsante per chiudere ticket risolti
+    if (report.status === 'risolta') {
+        actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'chiusa', 'Segnalazione chiusa dall\\'amministratore.')" class="btn btn-primary" style="flex:1;">Chiudi Segnalazione</button>`;
+    }
+}
                 if (userProfile?.tipoUtente === 'custode' && (report.status === 'aperta' || report.status === 'in-corso')) {
-                    actionButtonsHtml += `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--accent-color-dark); color: white;">Inoltra ad Amministratore</button>`;
+                    actionButtonsHtml += `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--accent-color-dark); color: white; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Inoltra ad Amministratore</button>`;
+                }
+                
+                // Pulsante Aggiorna spostato sotto gli altri pulsanti di controllo
+                if (report.status !== 'chiusa') {
+                    // --- MODIFICA SUPERVISORE/CONSIGLIERE: Pulsante Aggiorna personalizzato ---
+                    if (userProfile?.tipoUtente === 'supervisore') {
+                        // Il supervisore ha un pulsante specifico per aggiungere commenti.
+                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Commento da Supervisor</button>`;
+                    } else if (userProfile?.tipoUtente === 'consigliere') {
+                        // Il consigliere ha un pulsante specifico per i commenti.
+                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Commento da Consigliere</button>`;
+                    } else {
+                        // Gli altri ruoli mantengono il pulsante standard.
+                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Aggiorna</button>`;
+                    }
+                    // --- FINE MODIFICA ---
                 }
             }
 
@@ -7326,11 +7582,19 @@
             ` : '';
 
             return `
-            <div class="card" style="margin-bottom: 1rem;">
+            <div class="card" style="margin-bottom: 1rem; position: relative;">
+                ${index !== null ? `<div style="position: absolute; top: 0.5rem; right: 0.5rem; background: var(--primary); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">${index}</div>` : ''}
                 <div class="list-item" style="padding:0; cursor:default;">
                     <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
                     <div class="list-item-content">
-                        <div class="title">${report.reportNumber ? `#${report.reportNumber}:` : ''} ${report.title}</div>
+                        <div class="title" style="display: flex; align-items: center; gap: 8px;">
+    <span>${report.reportNumber ? `#${report.reportNumber}:` : ''} ${report.title}</span>
+    ${/* Indicatore visivo per segnalazioni modificate */''}
+    ${(report.updates && report.updates.length > 0 && report.updates[report.updates.length - 1].by !== `${userProfile?.nome} ${userProfile?.cognome}`) ? `
+        <span style="width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;" title="Segnalazione modificata"></span>
+        <style> @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } } </style>
+    ` : ''}
+</div>
                         <div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;">
                             <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
                             <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
@@ -7339,6 +7603,7 @@
                     </div>
                 </div>
                 <p class="form-label" style="padding-left: 64px; color: var(--secondary-text); margin-top: 0.75rem;">Inviata da: <strong>${report.createdByUserType ? (report.createdByUserType.charAt(0).toUpperCase() + report.createdByUserType.slice(1)) : report.createdBy}</strong></p>
+                ${report.forwardedBy ? `<p class="form-label" style="padding-left: 64px; color: var(--accent-color); margin-top: 0.5rem;">Inoltrata da: <strong>${report.forwardedBy}</strong> (${report.originalRecipient})</p>` : ''}
                 <p style="color: var(--secondary-text); margin-top: 0.5rem; padding-left: 64px;">${report.description}</p>
                 
                 <!-- NUOVA SEZIONE PER VISUALIZZARE ALLEGATI -->
@@ -7359,7 +7624,7 @@
                 <!-- FINE NUOVA SEZIONE -->
 
                 ${updatesHtml}
-                ${actionButtonsHtml ? `<div class="flex gap-4 mt-4">${actionButtonsHtml}</div>` : ''}
+                ${actionButtonsHtml ? `<div class="flex flex-wrap gap-2 mt-4">${actionButtonsHtml}</div>` : ''}
             </div>`;
         };
 
@@ -7367,7 +7632,7 @@
             const secondaryContainer = document.getElementById('reports-secondary-container');
             if (!secondaryContainer) return;
 
-            const renderSnapshot = (e, t, o) => { if (t.empty) return void (e.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`); const a = t.docs.sort((e, t) => { const o = e.data().createdAt?.toMillis() || 0, n = t.data().createdAt?.toMillis() || 0; return n - o }); e.innerHTML = a.map(e => renderReportCardHTML(e.data(), e.id)).join("") };
+            const renderSnapshot = (e, t, o) => { if (t.empty) return void (e.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">${o}</p>`); const a = t.docs.sort((e, t) => { const o = e.data().createdAt?.toMillis() || 0, n = t.data().createdAt?.toMillis() || 0; return n - o }); e.innerHTML = a.map((e, index) => renderReportCardHTML(e.data(), e.id, index + 1)).join("") };
 
             const userId = currentUser.uid, qSent = query(collection(db, "reports"), where("createdById", "==", userId)); onSnapshot(qSent, s => renderSnapshot(secondaryContainer, s, "Non hai inviato segnalazioni."));
         };
@@ -7388,13 +7653,13 @@
                     const timeB = b.data().createdAt?.toMillis() || 0;
                     return timeB - timeA;
                 });
-                mainContainer.innerHTML = sortedDocs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join("");
+                mainContainer.innerHTML = sortedDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("");
             };
 
             let reportsQuery;
 
-            // RUOLI "MANAGER" (Amministratore, Supervisore, ADM): Vedono tutte le segnalazioni per una data categoria.
-            if (['amministratore', 'supervisore', 'adm', 'consigliere'].includes(userRole)) {
+            // RUOLI "MANAGER" (Amministratore, Supervisore, ADM, Fornitore): Vedono tutte le segnalazioni per una data categoria.
+            if (['amministratore', 'supervisore', 'adm', 'consigliere', 'fornitore'].includes(userRole)) {
                 // Query semplice: filtra solo per destinatario e ordina. Funziona senza indici custom.
                 reportsQuery = query(
                     collection(db, "reports"),
@@ -7402,7 +7667,12 @@
                     orderBy("createdAt", "desc")
                 );
                 onSnapshot(reportsQuery, (snapshot) => {
-                    renderAndSort(snapshot.docs, `Nessuna segnalazione trovata per: ${filterType}.`);
+                    if (userRole === 'fornitore') {
+                        // Per i fornitori, gestiamo i contatori e i filtri
+                        handleFornitoreReports(snapshot.docs, filterType);
+                    } else {
+                        renderAndSort(snapshot.docs, `Nessuna segnalazione trovata per: ${filterType}.`);
+                    }
                 });
             }
             // ALTRI RUOLI (Condomino, Consigliere, etc.): Vedono solo le segnalazioni che LORO hanno inviato.
@@ -7421,69 +7691,239 @@
             }
         };
 
-        const renderSegnalazioniRicevute = () => `
-            ${renderHeader('Segnalazioni')}
-            <main>
-                <div id="reports-main-container" class="list-container"></div>
-            </main>
-            ${renderBottomNavigation()}
-        `;
-
-        const loadReceivedReports = () => {
-            // Logica di reset notifiche
-            const q = query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(1));
-            getDocs(q).then(snapshot => {
-                if (!snapshot.empty) {
-                    localStorage.setItem(`lastSeenReport_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
-                    updateNotificationUI('segnalazioni', 0);
-                }
-            });
+        const handleFornitoreReports = (docs, filterType) => {
             const mainContainer = document.getElementById('reports-main-container');
+            const searchInput = document.getElementById('report-search-input');
+            const statusFilter = document.getElementById('report-status-filter');
+            const counterContainer = document.getElementById('ticket-counters');
+            
             if (!mainContainer) return;
 
-            const renderAndSort = (docs, emptyMessage) => {
-                if (!docs || docs.length === 0) {
-                    mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">${emptyMessage}</p></div>`;
-                    return;
+            // Aggiorna contatori
+            if (counterContainer) {
+                const openCount = docs.filter(doc => doc.data().status === 'aperta').length;
+                const inProgressCount = docs.filter(doc => doc.data().status === 'in-corso').length;
+                const totalCount = docs.length;
+                counterContainer.innerHTML = `
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">${openCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.${openCount}</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">${inProgressCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.${inProgressCount}</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">${totalCount}</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+                `;
+            }
+
+            // Funzione per il rendering con filtri
+            const renderFilteredReports = () => {
+                let filteredDocs = docs;
+                
+                // Filtra per ricerca testuale
+                if (searchInput && searchInput.value) {
+                    const searchTerm = searchInput.value.toLowerCase().trim();
+                    filteredDocs = filteredDocs.filter(doc => {
+                        const data = doc.data();
+                        const reportNum = data.reportNumber ? `#${data.reportNumber}` : '';
+                        return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
+                    });
                 }
-                // L'ordinamento viene fatto qui, garantendo coerenza
-                const sortedDocs = docs.sort((a, b) => {
+                
+                // Filtra per stato
+                if (statusFilter && statusFilter.value !== 'all') {
+                    filteredDocs = filteredDocs.filter(doc => doc.data().status === statusFilter.value);
+                }
+                
+                // Ordina e renderizza
+                const sortedDocs = filteredDocs.sort((a, b) => {
                     const timeA = a.data().createdAt?.toMillis() || 0;
                     const timeB = b.data().createdAt?.toMillis() || 0;
                     return timeB - timeA;
                 });
-                mainContainer.innerHTML = sortedDocs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join("");
+                
+                mainContainer.innerHTML = sortedDocs.length > 0 
+                    ? sortedDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                    : `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna segnalazione trovata per: ${filterType}.</p></div>`;
             };
 
-            const userRole = userProfile?.tipoUtente;
+            // Esegui il primo rendering
+            renderFilteredReports();
 
-            // Protezione per ruoli non autorizzati
-            if (!userRole || !["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userRole)) {
-                mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Accesso non consentito.</p></div>`;
-                return;
+            // Aggiungi event listener ai filtri
+            if (searchInput) {
+                searchInput.oninput = renderFilteredReports;
             }
-
-            // Usiamo una query semplice che ordina solo per data. Questa non richiede indici speciali.
-            const baseQuery = query(collection(db, "reports"), orderBy("createdAt", "desc"));
-
-            onSnapshot(baseQuery, (snapshot) => {
-                let docsToRender = snapshot.docs;
-
-                // Se l'utente NON è un supervisore o admin, applichiamo un filtro post-query
-                if (userRole !== 'supervisore' && userRole !== 'adm' && userRole !== 'consigliere') {
-                    if (userRole === 'amministratore') {
-                        // L'amministratore vede le sue segnalazioni E quelle per lo sviluppatore.
-                        docsToRender = snapshot.docs.filter(doc => ['amministratore', 'sviluppatore'].includes(doc.data().recipientType));
-                    } else {
-                        // Gli altri ruoli (custode, consigliere) vedono solo le proprie.
-                        docsToRender = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
-                    }
-                }
-
-                // Renderizziamo i documenti (filtrati o meno)
-                renderAndSort(docsToRender, "Nessuna segnalazione ricevuta.");
-            });
+            if (statusFilter) {
+                statusFilter.onchange = renderFilteredReports;
+            }
         };
+
+        const renderSegnalazioniRicevute = () => {
+    const isAdmin = userProfile?.tipoUtente === 'amministratore';
+    const isCustode = userProfile?.tipoUtente === 'custode';
+    const isFornitore = userProfile?.tipoUtente === 'fornitore';
+    
+    // Contatori e Filtri per amministratore, custode e fornitore
+    const shouldShowControls = isAdmin || isCustode || isFornitore;
+    const adminControlsHtml = shouldShowControls ? `
+        <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;"></div>
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <svg style="position: absolute; left: 1rem; width: 20px; height: 20px; color: var(--secondary-text);" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <input type="text" id="report-search-input" placeholder="Cerca per titolo, numero o descrizione..." class="form-input" style="padding-left: 3rem;">
+                    </div>
+                </div>
+                <div class="form-group" style="flex-shrink: 0; min-width: 150px; margin-bottom: 0;">
+                    <select id="report-status-filter" class="form-select">
+                        <option value="all">Tutti gli stati</option>
+                        <option value="aperta">Aperta</option>
+                        <option value="in-corso">In Corso</option>
+                        <option value="risolta">Risolta</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    ` : '';
+
+    return `
+    ${renderHeader(shouldShowControls ? 'Segnalazioni Ricevute' : 'Segnalazioni')}
+    <main>
+        ${adminControlsHtml}
+        ${shouldShowControls ? `
+            <div style="margin-bottom: 2.5rem;">
+                <h2 class="section-title">Ticket Attivi</h2>
+                <div id="reports-active-container" class="list-container"></div>
+            </div>
+            <div>
+                <h2 class="section-title">Ticket Chiusi</h2>
+                <div id="reports-closed-container" class="list-container"></div>
+            </div>
+        ` : `
+            <div id="reports-main-container" class="list-container"></div>
+        `}
+    </main>
+    ${renderBottomNavigation()}
+    `;
+};
+
+const loadReceivedReports = () => {
+    const userRole = userProfile?.tipoUtente;
+    const isAdmin = userRole === 'amministratore';
+    const isCustode = userRole === 'custode';
+    const isFornitore = userRole === 'fornitore';
+    const shouldShowControls = isAdmin || isCustode || isFornitore;
+
+    // Riferimenti ai container
+    const mainContainer = document.getElementById('reports-main-container');
+    const activeContainer = document.getElementById('reports-active-container');
+    const closedContainer = document.getElementById('reports-closed-container');
+    const searchInput = document.getElementById('report-search-input');
+    const statusFilter = document.getElementById('report-status-filter');
+    const counterContainer = document.getElementById('ticket-counters');
+
+    // Se non siamo nella pagina giusta (es. altro ruolo), esci
+    if (!mainContainer && !activeContainer) return;
+
+    // Funzione per il rendering dei ticket
+    const renderTickets = (allDocs) => {
+        // Filtra in base ai controlli UI (per admin e custode)
+        let filteredDocs = allDocs;
+        if (shouldShowControls) {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const status = statusFilter.value;
+
+            if (searchTerm) {
+                filteredDocs = filteredDocs.filter(doc => {
+                    const data = doc.data();
+                    const reportNum = data.reportNumber ? `#${data.reportNumber}` : '';
+                    return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
+                });
+            }
+            if (status !== 'all') {
+                filteredDocs = filteredDocs.filter(doc => doc.data().status === status);
+            }
+        }
+        
+        // Aggiorna contatori (per admin e custode)
+        if (shouldShowControls && counterContainer) {
+            const openCount = allDocs.filter(doc => doc.data().status === 'aperta').length;
+            const inProgressCount = allDocs.filter(doc => doc.data().status === 'in-corso').length;
+            const totalCount = allDocs.length;
+            counterContainer.innerHTML = `
+                <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">${openCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.${openCount}</div></div>
+                <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">${inProgressCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.${inProgressCount}</div></div>
+                <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">${totalCount}</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+            `;
+        }
+
+        // Dividi in attivi e chiusi (per admin e custode)
+        if (shouldShowControls) {
+            const activeTickets = filteredDocs.filter(doc => doc.data().status !== 'chiusa' && doc.data().status !== 'risolta');
+            const closedTickets = filteredDocs.filter(doc => doc.data().status === 'chiusa' || doc.data().status === 'risolta');
+
+                            activeContainer.innerHTML = activeTickets.length > 0
+                    ? activeTickets.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                    : `<div class="card"><p style="color:var(--secondary-text);">Nessun ticket attivo trovato.</p></div>`;
+                
+                closedContainer.innerHTML = closedTickets.length > 0
+                    ? closedTickets.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                    : `<div class="card"><p style="color:var(--secondary-text);">Nessun ticket chiuso trovato.</p></div>`;
+        } else {
+            // Logica per gli altri ruoli manager
+            mainContainer.innerHTML = filteredDocs.length > 0
+                ? filteredDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                : `<div class="card"><p style="color:var(--secondary-text);">Nessuna segnalazione ricevuta.</p></div>`;
+        }
+    };
+
+    // Logica di reset notifiche
+    const q = query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(1));
+    getDocs(q).then(snapshot => {
+        if (!snapshot.empty) {
+            localStorage.setItem(`lastSeenReport_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
+            updateNotificationUI('segnalazioni', 0);
+        }
+    });
+
+    // Query base
+    const baseQuery = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+    
+    // Snapshot listener
+    onSnapshot(baseQuery, (snapshot) => {
+        let relevantDocs = [];
+        if (isAdmin) {
+            // L'amministratore vede ticket a lui assegnati, quelli assegnati a fornitori da lui e quelli per lo sviluppatore
+            relevantDocs = snapshot.docs.filter(doc => {
+                const data = doc.data();
+                return data.recipientType === 'amministratore' || 
+                       data.recipientType === 'sviluppatore' || 
+                       (data.recipientType === 'fornitore' && data.reassignedBy === currentUser.uid);
+            });
+        } else if (['custode', 'consigliere', 'fornitore', 'supervisore', 'adm'].includes(userRole)) {
+            // Altri ruoli manager vedono solo i propri ticket
+            if (userRole === 'custode') {
+                // Il custode vede i ticket a lui assegnati e quelli che ha inoltrato all'amministratore
+                relevantDocs = snapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.recipientType === userRole || 
+                           (data.recipientType === 'amministratore' && data.forwardedBy && data.originalRecipient === 'custode');
+                });
+            } else if (userRole === 'fornitore') {
+                // Il fornitore vede i ticket a lui assegnati
+                relevantDocs = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+            } else {
+                relevantDocs = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+            }
+        }
+        
+        // Esegui il primo rendering
+        renderTickets(relevantDocs);
+
+        // Aggiungi event listener ai filtri (per admin, custode e fornitore)
+        if (shouldShowControls) {
+            searchInput.oninput = () => renderTickets(relevantDocs);
+            statusFilter.onchange = () => renderTickets(relevantDocs);
+        }
+    });
+};
 
         const renderSegnalazioniUrgenti = () => `
             ${renderHeader('Solleciti ricevuti')}
@@ -7509,12 +7949,12 @@
                     mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna segnalazione urgente al momento.</p></div>`;
                     return;
                 }
-                mainContainer.innerHTML = snapshot.docs.map(doc => renderReportCardHTML(doc.data(), doc.id)).join("");
+                mainContainer.innerHTML = snapshot.docs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("");
             });
         };
 
         const renderSegnalazioniUtente = () => `
-            ${renderHeader('Mie Segnalazioni')}
+            ${renderHeader('Segnalazioni Inviate')}
             <main>
                 <div style="margin-bottom: 2rem;">
                     <h2 class="section-title">Ticket Attivi</h2>
@@ -7548,8 +7988,8 @@
 
                 snapshot.docs.forEach(doc => {
                     const report = doc.data();
-                    // I ticket con stato 'chiusa' vanno nello storico, tutti gli altri sono considerati attivi.
-                    if (report.status === 'chiusa') {
+                    // I ticket con stato 'chiusa' o 'risolta' vanno nello storico, tutti gli altri sono considerati attivi.
+                    if (report.status === 'chiusa' || report.status === 'risolta') {
                         closedTickets.push({ id: doc.id, data: report });
                     } else {
                         activeTickets.push({ id: doc.id, data: report });
@@ -7559,13 +7999,13 @@
                 if (activeTickets.length === 0) {
                     activeContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket attivo.</p></div>`;
                 } else {
-                    activeContainer.innerHTML = activeTickets.map(t => renderReportCardHTML(t.data, t.id)).join("");
+                    activeContainer.innerHTML = activeTickets.map((t, index) => renderReportCardHTML(t.data, t.id, index + 1)).join("");
                 }
 
                 if (closedTickets.length === 0) {
                     closedContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket chiuso.</p></div>`;
                 } else {
-                    closedContainer.innerHTML = closedTickets.map(t => renderReportCardHTML(t.data, t.id)).join("");
+                    closedContainer.innerHTML = closedTickets.map((t, index) => renderReportCardHTML(t.data, t.id, index + 1)).join("");
                 }
             });
         };
@@ -8288,11 +8728,12 @@
                 };
 
                 await updateDoc(reportRef, {
-                    recipientType: newRecipient,
-                    status: 'aperta', // Il ticket viene riaperto per il nuovo destinatario
-                    updates: arrayUnion(newUpdate),
-                    updatedAt: serverTimestamp()
-                });
+    recipientType: newRecipient,
+    status: 'aperta', // Il ticket viene riaperto per il nuovo destinatario
+    updates: arrayUnion(newUpdate),
+    updatedAt: serverTimestamp(),
+    reassignedBy: newRecipient === 'fornitore' ? currentUser.uid : null // Traccia chi ha riassegnato a un fornitore
+});
 
                 await logActivity("report_reassigned", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
                     reportId: reportId,
@@ -8325,7 +8766,10 @@
                     recipientType: 'amministratore',
                     status: 'aperta',
                     updates: arrayUnion(newUpdate),
-                    updatedAt: serverTimestamp()
+                    updatedAt: serverTimestamp(),
+                    forwardedBy: `${userProfile.nome} ${userProfile.cognome}`,
+                    forwardedAt: serverTimestamp(),
+                    originalRecipient: 'custode'
                 });
 
                 await logActivity("report_forwarded", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
@@ -8735,6 +9179,8 @@
         window.openUserEditModal = openUserEditModal;
         window.handleReportFileSelection = handleReportFileSelection;
         window.removeReportFile = removeReportFile;
+        window.handleCommunicationFileSelection = handleCommunicationFileSelection;
+        window.removeCommunicationFile = removeCommunicationFile;
         window.handleFolderClick = handleFolderClick;
         window.handleBreadcrumbClick = handleBreadcrumbClick;
         window.handleFileUpload = handleFileUpload;
@@ -8805,8 +9251,7 @@
 
                 const userType = userProfile?.tipoUtente;
                 let landingPage = 'dashboard';
-                if (userType === 'custode') landingPage = 'segnalazioni';
-
+                
                 // Se l'utente si trova sulla pagina di login, lo reindirizziamo alla sua home.
                 // Altrimenti (se ha ricaricato la pagina), gli mostriamo la pagina su cui si trovava.
                 if (currentPage === 'login' || !currentPage) {
