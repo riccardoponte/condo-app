@@ -293,40 +293,7 @@
             }
         }
 
-        @media (min-width: 769px) {
-            #app {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 2rem 2rem 100px 2rem;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 1.5rem;
-            }
-
-            .page-header {
-                margin-bottom: 3rem;
-            }
-
-            .bottom-nav {
-                max-width: 1200px;
-                margin: 0 auto;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 2rem;
-            }
-
-            .card {
-                padding: 2rem;
-            }
-        }
+        /* Large screen media queries removed to use mobile-like layout on all screen sizes */
 
         /* Survey Search and Filter */
         .flex {
@@ -1273,12 +1240,13 @@
         let communicationsListener = null;
         let pollsListener = null; // NUOVA RIGA
         let reportsListener = null; // NUOVA RIGA
+        let sollecitisListener = null; // NUOVA RIGA
         let navigationHistory = [];
         let servicePermissions = null;
         let currentStoragePath = '';
         let selectedUploadPath = ''; // Nuova variabile per il percorso di upload scelto
         let selectedReportFiles = []; // Array per i file della segnalazione
-let selectedCommunicationFiles = []; // Array per i file della comunicazione
+        let selectedCommunicationFiles = []; // Array per i file della comunicazione
 
         // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
         let groupedProperties = {};
@@ -1626,6 +1594,15 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
                 if (typeof checkForNewReports === 'function') {
                     checkForNewReports();
                 }
+                if (typeof checkForNewSolleciti === 'function') {
+                    checkForNewSolleciti();
+                }
+                if (typeof checkForUserReportUpdates === 'function') {
+                    checkForUserReportUpdates();
+                }
+                if (typeof checkForNewArchivioActivity === 'function') {
+                    checkForNewArchivioActivity();
+                }
 
                 // Re-render the current page to show latest data
                 renderCurrentPage();
@@ -1831,6 +1808,11 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
     <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
     <span>Segnala</span>
 </a>` : ''}
+    ${['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userProfile?.tipoUtente) ? `<a href="#" onclick="navigateTo('segnalazioni_urgenti')" class="nav-item ${currentPage === 'segnalazioni_urgenti' ? 'active' : ''}">
+    <span id="solleciti-notification-badge" class="notification-badge hidden"></span>
+    <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    <span>Solleciti</span>
+</a>` : ''}
     ${isServiceEnabledForCurrentUser('sondaggi') ? `<a href="#" onclick="navigateTo('sondaggi')" class="nav-item ${['sondaggi', 'sondaggi_crea', 'sondaggi_elenco', 'sondaggi_attivi', 'sondaggi_conclusi'].includes(currentPage) ? 'active' : ''}">
         <span id="sondaggi-notification-badge" class="notification-badge hidden"></span>
         <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>
@@ -1856,7 +1838,7 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
     `);
             }
             if (isServiceEnabledForCurrentUser('segnalazioni')) {
-    dashboardItemsHtml.push(`
+                dashboardItemsHtml.push(`
         <div onclick="navigateTo('segnalazioni')" class="dashboard-item">
             <div class="dashboard-card" style="position: relative;">
                 <span id="dashboard-segnalazioni-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
@@ -1865,7 +1847,18 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             <p>Segnalazioni</p>
         </div>
     `);
-}
+            }
+            if (['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userProfile?.tipoUtente)) {
+                dashboardItemsHtml.push(`
+        <div onclick="navigateTo('segnalazioni_urgenti')" class="dashboard-item">
+            <div class="dashboard-card" style="position: relative;">
+                <span id="dashboard-solleciti-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            </div>
+            <p>Solleciti</p>
+        </div>
+    `);
+            }
             if (isServiceEnabledForCurrentUser('sondaggi') && userProfile?.tipoUtente !== 'fornitore') {
                 dashboardItemsHtml.push(`
                     <div onclick="navigateTo('sondaggi')" class="dashboard-item">
@@ -1896,7 +1889,8 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             // Aggiunta pulsante Archivio
             if (userProfile?.tipoUtente !== 'fornitore') {
                 dashboardItemsHtml.push(`
-                    <div onclick="navigateTo('archivio')" class="dashboard-item">
+                    <div onclick="navigateTo('archivio')" class="dashboard-item" style="position: relative;">
+                        <span id="dashboard-archivio-badge" class="notification-badge hidden" style="position: absolute; top: 8px; right: 8px;"></span>
                         <div class="dashboard-card"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></div>
                         <p>Archivio</p>
                     </div>
@@ -1957,9 +1951,9 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
 `;
 
         const renderBachecaCrea = () => {
-        const canUpload = ['amministratore', 'supervisore', 'consigliere'].includes(userProfile?.tipoUtente);
+            const canUpload = ['amministratore', 'supervisore', 'consigliere'].includes(userProfile?.tipoUtente);
 
-        const uploadSectionHtml = canUpload ? `
+            const uploadSectionHtml = canUpload ? `
             <div>
                 <label class="form-label">Allegati (Foto, Video, Documenti)</label>
                 <div class="attachment-upload-container" onclick="document.getElementById('comm-attachments').click()">
@@ -1971,7 +1965,7 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             </div>
         ` : '';
 
-        return `
+            return `
             ${renderHeader('Nuova Comunicazione')}
             <main>
                 <div class="card" style="margin-bottom:2rem;">
@@ -1993,7 +1987,7 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             </main>
             ${renderBottomNavigation()}
         `;
-    };
+        };
 
 
 
@@ -2171,7 +2165,8 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             if (['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userRole)) {
                 menuItemsHtml.push(`
                     <div onclick="navigateTo('segnalazioni_urgenti')" class="dashboard-item">
-                        <div class="dashboard-card" style="border: 2px solid var(--danger);">
+                        <div class="dashboard-card" style="position: relative; border: 2px solid var(--danger);">
+                            <span id="solleciti-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         </div>
                         <p>Solleciti</p>
@@ -2181,9 +2176,9 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
 
             // 2. Segnalazioni ricevute
             if (isManager) {
-    // MODIFICA: Etichetta cambiata in "Segnalazioni Ricevute"
-    const label = userProfile?.tipoUtente === 'amministratore' ? 'Segnalazioni Ricevute' : 'Segnalazioni';
-    menuItemsHtml.push(`
+                // MODIFICA: Etichetta cambiata in "Segnalazioni Ricevute"
+                const label = 'Segnalazioni Ricevute';
+                menuItemsHtml.push(`
         <div onclick="navigateTo('segnalazioni_ricevute')" class="dashboard-item">
             <div class="dashboard-card" style="position: relative;">
                 <span id="segnalazioni-menu-notification-badge" class="notification-badge hidden" style="top: 8px; right: 8px;"></span>
@@ -2192,7 +2187,7 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             <p>${userProfile?.tipoUtente === 'custode' ? 'Segnalazioni Ricevute' : label}</p>
         </div>
     `);
-}
+            }
 
             // 3. Crea una segnalazione
             if (userRole !== 'fornitore') {
@@ -2209,7 +2204,8 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
             // 4. Segnalazioni inviate (Segnalazioni Inviate)
             if (userRole !== 'fornitore') {
                 menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item">
+                    <div onclick="navigateTo('segnalazioni_utente')" class="dashboard-item" style="position: relative;">
+                        <span id="dashboard-segnalazioni-inviate-badge" class="notification-badge hidden" style="position: absolute; top: 8px; right: 8px;"></span>
                         <div class="dashboard-card">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/></svg>
                         </div>
@@ -2241,7 +2237,7 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
                     </div>
                 `);
             }
-            
+
             // 7. Ai consiglieri
             if (userRole !== 'consigliere' && userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
                 menuItemsHtml.push(`
@@ -2299,8 +2295,8 @@ let selectedCommunicationFiles = []; // Array per i file della comunicazione
         <label class="form-label">Destinatario</label>
         <select id="report-recipient" required class="form-select">
             <option value="">Seleziona a chi inviare...</option>
-            ${ userProfile?.tipoUtente !== 'amministratore' ? `<option value="amministratore">Amministratore</option>` : '' }
-            ${ userProfile?.tipoUtente !== 'custode' ? `<option value="custode">Custode</option>` : '' }
+            ${userProfile?.tipoUtente !== 'amministratore' ? `<option value="amministratore">Amministratore</option>` : ''}
+            ${userProfile?.tipoUtente !== 'custode' ? `<option value="custode">Custode</option>` : ''}
             <option value="consigliere">Consiglieri</option>
             <option value="adm">Sviluppatore</option>
         </select>
@@ -2354,11 +2350,13 @@ ${formRecipientField}
         };
 
         const renderSegnalazioniElenco = (title) => {
-            const isFornitore = userProfile?.tipoUtente === 'fornitore';
-            const shouldShowControls = isFornitore;
-            
-            const fornitoreControlsHtml = shouldShowControls ? `
-                <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;"></div>
+            // Show controls for all user types
+            const controlsHtml = `
+                <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;">
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.0</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.0</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">0</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+                </div>
                 <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
                     <div class="flex flex-col md:flex-row gap-4">
                         <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
@@ -2377,12 +2375,12 @@ ${formRecipientField}
                         </div>
                     </div>
                 </div>
-            ` : '';
+            `;
 
             return `
-                ${renderHeader(shouldShowControls ? 'Segnalazioni Ricevute' : title)}
+                ${renderHeader(title)}
                 <main>
-                    ${fornitoreControlsHtml}
+                    ${controlsHtml}
                     <div id="reports-main-container" class="list-container"></div>
                 </main>
                 ${renderBottomNavigation()}
@@ -3078,7 +3076,8 @@ ${formRecipientField}
                             <p style="text-align: left; font-size: 1.1rem;">Importa Dati Millesimi</p>
                         </div>
                     </div>
-                    <div onclick="navigateTo('gestione_archivio')" class="dashboard-item">
+                    <div onclick="navigateTo('gestione_archivio')" class="dashboard-item" style="position: relative;">
+                        <span id="dashboard-gestione-archivio-badge" class="notification-badge hidden" style="position: absolute; top: 8px; right: 8px;"></span>
                         <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg>
                             <p style="text-align: left; font-size: 1.1rem;">Gestione Archivio</p>
@@ -3339,6 +3338,11 @@ ${formRecipientField}
         };
 
         const setupArchivioHandlers = () => {
+            // Reset notifiche per archivio
+            localStorage.setItem(`lastSeenArchivio_${currentUser.uid}`, Date.now());
+            updateNotificationUI('gestione-archivio', 0);
+            updateNotificationUI('archivio', 0);
+
             loadStorageItems(currentStoragePath);
 
             const createFolderBtn = document.getElementById('create-folder-btn');
@@ -4148,15 +4152,15 @@ ${formRecipientField}
                     else navigateTo('dashboard');
                     break;
                 case 'orariCustode_manuale':
-                    if (userType === 'supervisore') content = renderOrariCustodeManuale();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderOrariCustodeManuale();
                     else navigateTo('dashboard');
                     break;
                 case 'orariCustode_import':
-                    if (userType === 'supervisore') content = renderOrariCustodeImport();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderOrariCustodeImport();
                     else navigateTo('dashboard');
                     break;
                 case 'orariCustode_visualizza':
-                    if (userType === 'supervisore') content = renderOrariCustodeVisualizza();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderOrariCustodeVisualizza();
                     else navigateTo('dashboard');
                     break;
                 case 'datiAmministratore':
@@ -4164,15 +4168,15 @@ ${formRecipientField}
                     else navigateTo('dashboard');
                     break;
                 case 'datiAmministratore_manuale':
-                    if (userType === 'supervisore') content = renderDatiAmministratoreManuale();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderDatiAmministratoreManuale();
                     else navigateTo('dashboard');
                     break;
                 case 'datiAmministratore_import':
-                    if (userType === 'supervisore') content = renderDatiAmministratoreImport();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderDatiAmministratoreImport();
                     else navigateTo('dashboard');
                     break;
                 case 'datiAmministratore_visualizza':
-                    if (userType === 'supervisore') content = renderDatiAmministratoreVisualizza();
+                    if (['supervisore', 'adm'].includes(userType)) content = renderDatiAmministratoreVisualizza();
                     else navigateTo('dashboard');
                     break;
                 case 'reportPage':
@@ -4315,6 +4319,9 @@ ${formRecipientField}
                 checkForNewCommunications();
                 checkForNewPolls();
                 checkForNewReports();
+                checkForNewSolleciti();
+                checkForUserReportUpdates();
+                checkForNewArchivioActivity();
             }
         };
 
@@ -4820,51 +4827,51 @@ ${formRecipientField}
         };
 
         const removeReportFile = (index) => {
-    selectedReportFiles.splice(index, 1);
-    renderFilePreviews();
-};
+            selectedReportFiles.splice(index, 1);
+            renderFilePreviews();
+        };
 
-const handleCommunicationFileSelection = (event) => {
-    selectedCommunicationFiles = [...selectedCommunicationFiles, ...Array.from(event.target.files)];
-    renderCommunicationFilePreviews();
-    event.target.value = ''; // Permette di selezionare lo stesso file di nuovo
-};
+        const handleCommunicationFileSelection = (event) => {
+            selectedCommunicationFiles = [...selectedCommunicationFiles, ...Array.from(event.target.files)];
+            renderCommunicationFilePreviews();
+            event.target.value = ''; // Permette di selezionare lo stesso file di nuovo
+        };
 
-const renderCommunicationFilePreviews = () => {
-    const container = document.getElementById('comm-attachment-previews-container');
-    if (!container) return;
-    container.innerHTML = selectedCommunicationFiles.map((file, index) => {
-        const isImage = file.type.startsWith('image/');
-        const isVideo = file.type.startsWith('video/');
-        const objectURL = URL.createObjectURL(file);
-        let previewHtml;
+        const renderCommunicationFilePreviews = () => {
+            const container = document.getElementById('comm-attachment-previews-container');
+            if (!container) return;
+            container.innerHTML = selectedCommunicationFiles.map((file, index) => {
+                const isImage = file.type.startsWith('image/');
+                const isVideo = file.type.startsWith('video/');
+                const objectURL = URL.createObjectURL(file);
+                let previewHtml;
 
-        if (isImage) {
-            previewHtml = `<img src="${objectURL}" alt="${file.name}">`;
-        } else if (isVideo) {
-            previewHtml = `<video src="${objectURL}" preload="metadata"></video>`;
-        } else {
-            // Generic preview for documents and other files
-            previewHtml = `
+                if (isImage) {
+                    previewHtml = `<img src="${objectURL}" alt="${file.name}">`;
+                } else if (isVideo) {
+                    previewHtml = `<video src="${objectURL}" preload="metadata"></video>`;
+                } else {
+                    // Generic preview for documents and other files
+                    previewHtml = `
                 <div class="preview-item-document">
                     <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                     <span>${file.name}</span>
                 </div>
             `;
-        }
+                }
 
-        return `
+                return `
         <div class="preview-item">
             ${previewHtml}
             <button class="preview-remove-btn" onclick="removeCommunicationFile(${index})">&times;</button>
         </div>`;
-    }).join('');
-};
+            }).join('');
+        };
 
-const removeCommunicationFile = (index) => {
-    selectedCommunicationFiles.splice(index, 1);
-    renderCommunicationFilePreviews();
-};
+        const removeCommunicationFile = (index) => {
+            selectedCommunicationFiles.splice(index, 1);
+            renderCommunicationFilePreviews();
+        };
 
         const uploadReportFiles = (reportId, files) => {
             const uploadPromises = files.map(file => {
@@ -4889,8 +4896,8 @@ const removeCommunicationFile = (index) => {
                 const category = document.getElementById("report-category").value;
                 const priority = document.getElementById("report-priority").value;
                 const location = document.getElementById("report-location").value;
-const interestType = document.getElementById("report-interest-type").value;
-const recipient = document.getElementById("report-recipient").value;
+                const interestType = document.getElementById("report-interest-type").value;
+                const recipient = document.getElementById("report-recipient").value;
 
                 if (!title || !description || !category || !priority || !location || !recipient) {
                     alert("Compila tutti i campi, incluso il destinatario.");
@@ -4923,25 +4930,25 @@ const recipient = document.getElementById("report-recipient").value;
                         finalReportNumber = newReportNumber;
 
                         const reportData = {
-    reportNumber: newReportNumber,
-    title: title,
-    description: description,
-    category: category,
-    priority: priority,
-    location: location,
-    interestType: interestType, // NUOVO CAMPO AGGIUNTO
-    status: "aperta",
-    createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-    createdByUserType: userProfile.tipoUtente,
-    createdById: currentUser.uid,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(), // Added for notification consistency
-    recipientType: recipient,
-    updates: [],
-    lastReminderAt: null,
-    reminderCount: 0,
-    fileUrls: fileUrls // Aggiungiamo gli URL dei file
-};
+                            reportNumber: newReportNumber,
+                            title: title,
+                            description: description,
+                            category: category,
+                            priority: priority,
+                            location: location,
+                            interestType: interestType, // NUOVO CAMPO AGGIUNTO
+                            status: "aperta",
+                            createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                            createdByUserType: userProfile.tipoUtente,
+                            createdById: currentUser.uid,
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(), // Added for notification consistency
+                            recipientType: recipient,
+                            updates: [],
+                            lastReminderAt: null,
+                            reminderCount: 0,
+                            fileUrls: fileUrls // Aggiungiamo gli URL dei file
+                        };
 
                         transaction.set(counterRef, { lastNumber: newReportNumber });
                         transaction.set(newReportDocRef, reportData);
@@ -7085,37 +7092,37 @@ const recipient = document.getElementById("report-recipient").value;
                         <h4 style="font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem;">Allegati:</h4>
                         <div class="report-attachments-gallery" style="padding-left: 0;">
                             ${comm.fileUrls.map(url => {
-                                const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-                                const videoExtensions = ['.mp4', '.mov', '.webm', '.avi'];
-                                const lowerUrl = url.toLowerCase();
-                                
-                                const isImage = imageExtensions.some(ext => lowerUrl.includes(ext));
-                                const isVideo = videoExtensions.some(ext => lowerUrl.includes(ext));
+                            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+                            const videoExtensions = ['.mp4', '.mov', '.webm', '.avi'];
+                            const lowerUrl = url.toLowerCase();
 
-                                let fileName = 'Documento';
-                                try {
-                                    const urlParts = new URL(url);
-                                    const pathParts = urlParts.pathname.split('/');
-                                    fileName = decodeURIComponent(pathParts[pathParts.length - 1].split('?')[0]);
-                                    // Remove the timestamp prefix from the filename for display
-                                    fileName = fileName.substring(fileName.indexOf('_') + 1);
-                                } catch(e) { /* Fallback to simple name if URL parsing fails */ }
+                            const isImage = imageExtensions.some(ext => lowerUrl.includes(ext));
+                            const isVideo = videoExtensions.some(ext => lowerUrl.includes(ext));
+
+                            let fileName = 'Documento';
+                            try {
+                                const urlParts = new URL(url);
+                                const pathParts = urlParts.pathname.split('/');
+                                fileName = decodeURIComponent(pathParts[pathParts.length - 1].split('?')[0]);
+                                // Remove the timestamp prefix from the filename for display
+                                fileName = fileName.substring(fileName.indexOf('_') + 1);
+                            } catch (e) { /* Fallback to simple name if URL parsing fails */ }
 
 
-                                if (isImage) {
-                                    return `<a href="${url}" target="_blank" class="gallery-item"><img src="${url}" alt="Allegato immagine"></a>`;
-                                } else if (isVideo) {
-                                    return `<a href="${url}" target="_blank" class="gallery-item"><video src="${url}" preload="metadata"></video></a>`;
-                                } else {
-                                    return `
+                            if (isImage) {
+                                return `<a href="${url}" target="_blank" class="gallery-item"><img src="${url}" alt="Allegato immagine"></a>`;
+                            } else if (isVideo) {
+                                return `<a href="${url}" target="_blank" class="gallery-item"><video src="${url}" preload="metadata"></video></a>`;
+                            } else {
+                                return `
                                     <a href="${url}" target="_blank" class="gallery-item">
                                         <div class="preview-item-document">
                                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                                             <span>${fileName}</span>
                                         </div>
                                     </a>`;
-                                }
-                            }).join('')}
+                            }
+                        }).join('')}
                         </div>
                     `;
                     }
@@ -7139,45 +7146,45 @@ const recipient = document.getElementById("report-recipient").value;
         };
 
         const loadCommunications = () => {
-    const listEl = document.getElementById("communications-list");
-    if (!listEl) return;
+            const listEl = document.getElementById("communications-list");
+            if (!listEl) return;
 
-    const searchInput = document.getElementById("communication-search");
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const searchInput = document.getElementById("communication-search");
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-    const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
-    onSnapshot(q, snapshot => {
-        const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
-        const canSeeAll = ['adm', 'supervisore', 'amministratore', 'consigliere'].includes(userProfile.tipoUtente);
+            const q = query(collection(db, "communications"), orderBy("createdAt", "desc"));
+            onSnapshot(q, snapshot => {
+                const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
+                const canSeeAll = ['adm', 'supervisore', 'amministratore', 'consigliere'].includes(userProfile.tipoUtente);
 
-        let filteredDocs = snapshot.docs.filter(docSnap => {
-            const comm = docSnap.data();
-            return canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
-        });
+                let filteredDocs = snapshot.docs.filter(docSnap => {
+                    const comm = docSnap.data();
+                    return canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
+                });
 
-        if (searchTerm) {
-            filteredDocs = filteredDocs.filter(docSnap => {
-                const comm = docSnap.data();
-                const title = (comm.title || '').toLowerCase();
-                const content = (comm.content || '').toLowerCase();
-                return title.includes(searchTerm) || content.includes(searchTerm);
-            });
-        }
+                if (searchTerm) {
+                    filteredDocs = filteredDocs.filter(docSnap => {
+                        const comm = docSnap.data();
+                        const title = (comm.title || '').toLowerCase();
+                        const content = (comm.content || '').toLowerCase();
+                        return title.includes(searchTerm) || content.includes(searchTerm);
+                    });
+                }
 
-        if (filteredDocs.length === 0) {
-            const message = searchTerm ? 'Nessuna comunicazione trovata con i criteri di ricerca.' : 'Nessuna comunicazione per te.';
-            listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p>`;
-        } else {
-            listEl.innerHTML = filteredDocs.map(docSnap => {
-                const comm = docSnap.data();
-                if (!comm.createdAt) return "";
+                if (filteredDocs.length === 0) {
+                    const message = searchTerm ? 'Nessuna comunicazione trovata con i criteri di ricerca.' : 'Nessuna comunicazione per te.';
+                    listEl.innerHTML = `<p style="color:var(--secondary-text); padding: 1rem 0;">${message}</p>`;
+                } else {
+                    listEl.innerHTML = filteredDocs.map(docSnap => {
+                        const comm = docSnap.data();
+                        if (!comm.createdAt) return "";
 
-                const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
-                const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
-                    ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
-                    : '';
+                        const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
+                        const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
+                            ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
+                            : '';
 
-                return `
+                        return `
                 <div class="list-item" onclick="showCommunicationDetail('${docSnap.id}')">
                     <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
                     <div class="list-item-content">
@@ -7189,16 +7196,16 @@ const recipient = document.getElementById("report-recipient").value;
                         <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
                     </div>
                 </div>`;
-            }).join("");
-        }
+                    }).join("");
+                }
 
-        if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
-            const latestCommTimestamp = snapshot.docs.length > 0 ? snapshot.docs[0].data().createdAt.toMillis() : Date.now();
-            localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestCommTimestamp);
-            updateNotificationUI('bacheca', 0);
-        }
-    });
-};
+                if (currentPage === 'bacheca_tutte' && !snapshot.empty) {
+                    const latestCommTimestamp = snapshot.docs.length > 0 ? snapshot.docs[0].data().createdAt.toMillis() : Date.now();
+                    localStorage.setItem(`lastSeenComm_${currentUser.uid}`, latestCommTimestamp);
+                    updateNotificationUI('bacheca', 0);
+                }
+            });
+        };
 
         const isUserAllowedToVote = (userType, setting) => {
             // ADM can always vote
@@ -7502,9 +7509,18 @@ const recipient = document.getElementById("report-recipient").value;
 
             const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente);
             const isCreator = report.createdById === currentUser.uid;
-            const canManageThisReport = isManager && (report.recipientType === userProfile.tipoUtente || (report.recipientType === 'consigliere' && userProfile.tipoUtente === 'consigliere') || userProfile.tipoUtente === 'supervisore' || userProfile.tipoUtente === 'adm');
+            const canManageThisReport = isManager && (
+                report.recipientType === userProfile.tipoUtente ||
+                (report.recipientType === 'consigliere' && userProfile.tipoUtente === 'consigliere') ||
+                userProfile.tipoUtente === 'supervisore' ||
+                userProfile.tipoUtente === 'adm' ||
+                (userProfile.tipoUtente === 'amministratore' && report.forwardedByUserId === currentUser.uid) || // Admin can manage tickets they forwarded
+                (userProfile.tipoUtente === 'custode' && report.originalRecipient === 'custode' && report.forwardedBy) // Custode can manage reports they originally received, even if forwarded
+            );
 
-            let actionButtonsHtml = '';
+            let primaryActionButtonsHtml = '';
+            let forwardButtonHtml = '';
+            let updateButtonHtml = '';
 
             // Logica pulsanti per il gestore
             if (canManageThisReport) {
@@ -7516,7 +7532,7 @@ const recipient = document.getElementById("report-recipient").value;
                     const isForSupervisor = report.recipientType === 'supervisore';
 
                     if ((!isSupervisor || (isSupervisor && isForSupervisor)) && !isConsigliere) {
-                         actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'in-corso')" class="btn btn-primary" style="flex:1;">Prendi in Carico</button>`;
+                        primaryActionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'in-corso')" class="btn btn-primary" style="flex:1;">Prendi in Carico</button>`;
                     }
                     // --- FINE MODIFICA ---
                 }
@@ -7524,38 +7540,39 @@ const recipient = document.getElementById("report-recipient").value;
                     // --- MODIFICA SUPERVISORE INIZIO: Azione "Risolta" personalizzata ---
                     if (userProfile?.tipoUtente === 'supervisore') {
                         // Per il supervisore, l'azione aggiunge un commento specifico.
-                        actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta', 'Risolto da Supervisore.')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
+                        primaryActionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta', 'Risolto da Supervisore.')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
                     } else {
                         // Gli altri ruoli usano l'azione standard.
-                        actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
+                        primaryActionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'risolta')" class="btn btn-primary" style="flex:1;">Marca come Risolta</button>`;
                     }
                     // --- MODIFICA SUPERVISORE FINE ---
                 }
                 if (userProfile?.tipoUtente === 'amministratore') {
-    if (report.status === 'aperta' || report.status === 'in-corso') {
-        actionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
-    }
-    // NUOVA LOGICA: Pulsante per chiudere ticket risolti
-    if (report.status === 'risolta') {
-        actionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'chiusa', 'Segnalazione chiusa dall\\'amministratore.')" class="btn btn-primary" style="flex:1;">Chiudi Segnalazione</button>`;
-    }
-}
-                if (userProfile?.tipoUtente === 'custode' && (report.status === 'aperta' || report.status === 'in-corso')) {
-                    actionButtonsHtml += `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--accent-color-dark); color: white; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Inoltra ad Amministratore</button>`;
+                    if (report.status === 'aperta' || report.status === 'in-corso') {
+                        primaryActionButtonsHtml += `<button onclick="openReassignmentModal('${reportId}')" class="btn btn-secondary" style="flex:1; background-color: var(--warning); color: var(--bg-color);">Riassegna</button>`;
+                    }
+                    // NUOVA LOGICA: Pulsante per chiudere ticket risolti
+                    if (report.status === 'risolta') {
+                        primaryActionButtonsHtml += `<button onclick="updateReportStatus('${reportId}', 'chiusa', 'Segnalazione chiusa dall\\'amministratore.')" class="btn btn-primary" style="flex:1;">Chiudi Segnalazione</button>`;
+                    }
                 }
-                
-                // Pulsante Aggiorna spostato sotto gli altri pulsanti di controllo
+
+                if (userProfile?.tipoUtente === 'custode' && (report.status === 'aperta' || report.status === 'in-corso')) {
+                    forwardButtonHtml = `<button onclick="forwardReportToAdmin('${reportId}')" class="btn btn-secondary" style="width: 100%; background-color: var(--accent-color-dark); color: white;">Inoltra ad Amministratore</button>`;
+                }
+
+                // Pulsante Aggiorna separato - andrà in una riga separata
                 if (report.status !== 'chiusa') {
                     // --- MODIFICA SUPERVISORE/CONSIGLIERE: Pulsante Aggiorna personalizzato ---
                     if (userProfile?.tipoUtente === 'supervisore') {
                         // Il supervisore ha un pulsante specifico per aggiungere commenti.
-                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Commento da Supervisor</button>`;
+                        updateButtonHtml = `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="width: 100%;">Commento da Supervisor</button>`;
                     } else if (userProfile?.tipoUtente === 'consigliere') {
                         // Il consigliere ha un pulsante specifico per i commenti.
-                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Commento da Consigliere</button>`;
+                        updateButtonHtml = `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="width: 100%;">Commento da Consigliere</button>`;
                     } else {
                         // Gli altri ruoli mantengono il pulsante standard.
-                        actionButtonsHtml += `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="flex:1;">Aggiorna</button>`;
+                        updateButtonHtml = `<button onclick="openReportUpdateModal('${reportId}')" class="btn btn-secondary" style="width: 100%;">Aggiorna</button>`;
                     }
                     // --- FINE MODIFICA ---
                 }
@@ -7564,20 +7581,48 @@ const recipient = document.getElementById("report-recipient").value;
             // Logica pulsanti per il creatore (solo se è un "condomino")
             if (isCreator && userProfile?.tipoUtente === 'condomino') {
                 if (report.status === 'aperta' || report.status === 'in-corso') {
-                    actionButtonsHtml += `<button onclick="sendReportReminder('${reportId}')" class="btn btn-secondary" style="flex:1;">Sollecita</button>`;
+                    primaryActionButtonsHtml += `<button onclick="sendReportReminder('${reportId}')" class="btn btn-secondary" style="flex:1;">Sollecita</button>`;
                 }
                 if (report.status === 'risolta') {
-                    actionButtonsHtml += `<button onclick="confirmReportResolution('${reportId}', true)" class="btn btn-primary" style="flex:1;">Conferma Risoluzione</button>`;
-                    actionButtonsHtml += `<button onclick="confirmReportResolution('${reportId}', false)" class="btn" style="background:var(--danger); color:white; flex:1;">Non Risolto</button>`;
+                    primaryActionButtonsHtml += `<button onclick="confirmReportResolution('${reportId}', true)" class="btn btn-primary" style="flex:1;">Conferma Risoluzione</button>`;
+                    primaryActionButtonsHtml += `<button onclick="confirmReportResolution('${reportId}', false)" class="btn" style="background:var(--danger); color:white; flex:1;">Non Risolto</button>`;
                 }
             }
 
             const updatesHtml = report.updates && report.updates.length > 0 ? `
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--surface-color-light);">
                     <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Cronologia Aggiornamenti:</h4>
-                    <ul style="font-size: 0.85rem; color: var(--secondary-text); list-style-type: disc; padding-left: 20px;">
-                        ${report.updates.map(upd => `<li><strong>${upd.at.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</strong> (${upd.by}): ${upd.text}</li>`).join('')}
-                    </ul>
+                    <div style="font-size: 0.85rem; color: var(--secondary-text);">
+                        ${report.updates.map(upd => {
+                const attachmentsHtml = upd.fileUrls && upd.fileUrls.length > 0 ? `
+                                <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--surface-color-light); border-radius: 4px;">
+                                    <strong style="font-size: 0.8rem;">Allegati:</strong>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem;">
+                                        ${upd.fileUrls.map(url => {
+                    const fileName = url.split('/').pop().split('?')[0].split('_').slice(1).join('_') || 'File';
+                    const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.gif');
+
+                    if (isImage) {
+                        return `<img src="${url}" alt="${fileName}" style="max-width: 100px; max-height: 100px; border-radius: 4px; cursor: pointer;" onclick="window.open('${url}', '_blank')">`;
+                    } else {
+                        return `<a href="${url}" target="_blank" style="display: inline-flex; align-items: center; padding: 0.25rem 0.5rem; background: var(--primary); color: white; text-decoration: none; border-radius: 4px; font-size: 0.75rem;">
+                                                    <svg fill="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 0.25rem;">
+                                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                                    </svg>
+                                                    ${fileName}
+                                                </a>`;
+                    }
+                }).join('')}
+                                    </div>
+                                </div>
+                            ` : '';
+
+                return `<div style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--surface-color-light);">
+                                <div><strong>${upd.at.toDate().toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</strong> (${upd.by}): ${upd.text}</div>
+                                ${attachmentsHtml}
+                            </div>`;
+            }).join('')}
+                    </div>
                 </div>
             ` : '';
 
@@ -7596,15 +7641,43 @@ const recipient = document.getElementById("report-recipient").value;
     ` : ''}
 </div>
                         <div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;">
-                            <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
-                            <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
-                            <span class="badge status-aperta">Dest: ${report.recipientType.charAt(0).toUpperCase() + report.recipientType.slice(1)}</span>
-                        </div>
+    <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
+    <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
+    ${report.interestType ? `<span class="badge status-in-corso" style="text-transform: capitalize;">${report.interestType}</span>` : ''}
+    <span class="badge status-aperta">Dest: ${report.recipientType.charAt(0).toUpperCase() + report.recipientType.slice(1)}</span>
+</div>
                     </div>
                 </div>
                 <p class="form-label" style="padding-left: 64px; color: var(--secondary-text); margin-top: 0.75rem;">Inviata da: <strong>${report.createdByUserType ? (report.createdByUserType.charAt(0).toUpperCase() + report.createdByUserType.slice(1)) : report.createdBy}</strong></p>
-                ${report.forwardedBy ? `<p class="form-label" style="padding-left: 64px; color: var(--accent-color); margin-top: 0.5rem;">Inoltrata da: <strong>${report.forwardedBy}</strong> (${report.originalRecipient})</p>` : ''}
+                ${report.forwardedBy ? `<p class="form-label" style="padding-left: 64px; color: var(--accent-color); margin-top: 0.5rem;">Inoltrata da: <strong>${report.forwardedBy}</strong> (${report.originalRecipient}) → Attualmente gestita da: <strong>${report.recipientType.charAt(0).toUpperCase() + report.recipientType.slice(1)}</strong></p>` : ''}
                 <p style="color: var(--secondary-text); margin-top: 0.5rem; padding-left: 64px;">${report.description}</p>
+                
+                <!-- SEZIONE TIMESTAMP -->
+                <div style="padding-left: 64px; margin-top: 0.75rem; font-size: 0.85rem; color: var(--secondary-text);">
+                    <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <strong>Creata:</strong> ${report.createdAt.toDate().toLocaleString('it-IT', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}
+                        </div>
+                        ${report.takenInChargeAt ? `
+                            <div>
+                                <strong>Presa in carico:</strong> ${report.takenInChargeAt.toDate().toLocaleString('it-IT', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <!-- FINE SEZIONE TIMESTAMP -->
                 
                 <!-- NUOVA SEZIONE PER VISUALIZZARE ALLEGATI -->
                 ${report.fileUrls && report.fileUrls.length > 0 ? `
@@ -7624,7 +7697,9 @@ const recipient = document.getElementById("report-recipient").value;
                 <!-- FINE NUOVA SEZIONE -->
 
                 ${updatesHtml}
-                ${actionButtonsHtml ? `<div class="flex flex-wrap gap-2 mt-4">${actionButtonsHtml}</div>` : ''}
+                ${primaryActionButtonsHtml ? `<div class="flex flex-wrap gap-2 mt-4">${primaryActionButtonsHtml}</div>` : ''}
+                ${forwardButtonHtml ? `<div class="mt-2">${forwardButtonHtml}</div>` : ''}
+                ${updateButtonHtml ? `<div class="mt-2">${updateButtonHtml}</div>` : ''}
             </div>`;
         };
 
@@ -7667,12 +7742,25 @@ const recipient = document.getElementById("report-recipient").value;
                     orderBy("createdAt", "desc")
                 );
                 onSnapshot(reportsQuery, (snapshot) => {
-                    if (userRole === 'fornitore') {
-                        // Per i fornitori, gestiamo i contatori e i filtri
-                        handleFornitoreReports(snapshot.docs, filterType);
-                    } else {
-                        renderAndSort(snapshot.docs, `Nessuna segnalazione trovata per: ${filterType}.`);
-                    }
+                    // Use the handler with counters and filters for all user types
+                    handleFilteredReports(snapshot.docs, filterType);
+                });
+            }
+            // CUSTODE: Vede le segnalazioni a lui destinate E quelle che ha inoltrato all'amministratore
+            else if (userRole === 'custode' && filterType === 'custode') {
+                // Query per tutte le segnalazioni ordinate per data
+                reportsQuery = query(
+                    collection(db, "reports"),
+                    orderBy("createdAt", "desc")
+                );
+                onSnapshot(reportsQuery, (snapshot) => {
+                    // Filtra per includere sia quelle dirette che quelle inoltrate
+                    const filteredDocs = snapshot.docs.filter(doc => {
+                        const data = doc.data();
+                        return data.recipientType === 'custode' ||
+                            (data.recipientType === 'amministratore' && data.forwardedBy && data.originalRecipient === 'custode');
+                    });
+                    handleFilteredReports(filteredDocs, filterType);
                 });
             }
             // ALTRI RUOLI (Condomino, Consigliere, etc.): Vedono solo le segnalazioni che LORO hanno inviato.
@@ -7684,9 +7772,9 @@ const recipient = document.getElementById("report-recipient").value;
                     orderBy("createdAt", "desc")
                 );
                 onSnapshot(reportsQuery, (snapshot) => {
-                    // Filtriamo in un secondo momento nel codice per il destinatario corretto.
+                    // Filter for the correct recipient type and use the handler with counters and filters
                     const filteredDocs = snapshot.docs.filter(doc => doc.data().recipientType === filterType);
-                    renderAndSort(filteredDocs, `Non hai inviato segnalazioni a: ${filterType}.`);
+                    handleFilteredReports(filteredDocs, filterType);
                 });
             }
         };
@@ -7696,7 +7784,7 @@ const recipient = document.getElementById("report-recipient").value;
             const searchInput = document.getElementById('report-search-input');
             const statusFilter = document.getElementById('report-status-filter');
             const counterContainer = document.getElementById('ticket-counters');
-            
+
             if (!mainContainer) return;
 
             // Aggiorna contatori
@@ -7714,7 +7802,7 @@ const recipient = document.getElementById("report-recipient").value;
             // Funzione per il rendering con filtri
             const renderFilteredReports = () => {
                 let filteredDocs = docs;
-                
+
                 // Filtra per ricerca testuale
                 if (searchInput && searchInput.value) {
                     const searchTerm = searchInput.value.toLowerCase().trim();
@@ -7724,20 +7812,83 @@ const recipient = document.getElementById("report-recipient").value;
                         return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
                     });
                 }
-                
+
                 // Filtra per stato
                 if (statusFilter && statusFilter.value !== 'all') {
                     filteredDocs = filteredDocs.filter(doc => doc.data().status === statusFilter.value);
                 }
-                
+
                 // Ordina e renderizza
                 const sortedDocs = filteredDocs.sort((a, b) => {
                     const timeA = a.data().createdAt?.toMillis() || 0;
                     const timeB = b.data().createdAt?.toMillis() || 0;
                     return timeB - timeA;
                 });
-                
-                mainContainer.innerHTML = sortedDocs.length > 0 
+
+                mainContainer.innerHTML = sortedDocs.length > 0
+                    ? sortedDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                    : `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna segnalazione trovata per: ${filterType}.</p></div>`;
+            };
+
+            // Esegui il primo rendering
+            renderFilteredReports();
+
+            // Aggiungi event listener ai filtri
+            if (searchInput) {
+                searchInput.oninput = renderFilteredReports;
+            }
+            if (statusFilter) {
+                statusFilter.onchange = renderFilteredReports;
+            }
+        };
+
+        const handleFilteredReports = (docs, filterType) => {
+            const mainContainer = document.getElementById('reports-main-container');
+            const searchInput = document.getElementById('report-search-input');
+            const statusFilter = document.getElementById('report-status-filter');
+            const counterContainer = document.getElementById('ticket-counters');
+
+            if (!mainContainer) return;
+
+            // Aggiorna contatori
+            if (counterContainer) {
+                const openCount = docs.filter(doc => doc.data().status === 'aperta').length;
+                const inProgressCount = docs.filter(doc => doc.data().status === 'in-corso').length;
+                const totalCount = docs.length;
+                counterContainer.innerHTML = `
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">${openCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.${openCount}</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">${inProgressCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.${inProgressCount}</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">${totalCount}</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+                `;
+            }
+
+            // Funzione per il rendering con filtri
+            const renderFilteredReports = () => {
+                let filteredDocs = docs;
+
+                // Filtra per ricerca testuale
+                if (searchInput && searchInput.value) {
+                    const searchTerm = searchInput.value.toLowerCase().trim();
+                    filteredDocs = filteredDocs.filter(doc => {
+                        const data = doc.data();
+                        const reportNum = data.reportNumber ? `#${data.reportNumber}` : '';
+                        return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
+                    });
+                }
+
+                // Filtra per stato
+                if (statusFilter && statusFilter.value !== 'all') {
+                    filteredDocs = filteredDocs.filter(doc => doc.data().status === statusFilter.value);
+                }
+
+                // Ordina e renderizza
+                const sortedDocs = filteredDocs.sort((a, b) => {
+                    const timeA = a.data().createdAt?.toMillis() || 0;
+                    const timeB = b.data().createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+
+                mainContainer.innerHTML = sortedDocs.length > 0
                     ? sortedDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
                     : `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna segnalazione trovata per: ${filterType}.</p></div>`;
             };
@@ -7755,14 +7906,18 @@ const recipient = document.getElementById("report-recipient").value;
         };
 
         const renderSegnalazioniRicevute = () => {
-    const isAdmin = userProfile?.tipoUtente === 'amministratore';
-    const isCustode = userProfile?.tipoUtente === 'custode';
-    const isFornitore = userProfile?.tipoUtente === 'fornitore';
-    
-    // Contatori e Filtri per amministratore, custode e fornitore
-    const shouldShowControls = isAdmin || isCustode || isFornitore;
-    const adminControlsHtml = shouldShowControls ? `
-        <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;"></div>
+            const isAdmin = userProfile?.tipoUtente === 'amministratore';
+            const isCustode = userProfile?.tipoUtente === 'custode';
+            const isFornitore = userProfile?.tipoUtente === 'fornitore';
+
+            // Contatori e Filtri per amministratore, custode e fornitore
+            const shouldShowControls = isAdmin || isCustode || isFornitore;
+            const adminControlsHtml = shouldShowControls ? `
+        <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;">
+            <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.0</div></div>
+            <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.0</div></div>
+            <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">0</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+        </div>
         <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
             <div class="flex flex-col md:flex-row gap-4">
                 <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
@@ -7783,8 +7938,8 @@ const recipient = document.getElementById("report-recipient").value;
         </div>
     ` : '';
 
-    return `
-    ${renderHeader(shouldShowControls ? 'Segnalazioni Ricevute' : 'Segnalazioni')}
+            return `
+    ${renderHeader('Segnalazioni Ricevute')}
     <main>
         ${adminControlsHtml}
         ${shouldShowControls ? `
@@ -7802,132 +7957,160 @@ const recipient = document.getElementById("report-recipient").value;
     </main>
     ${renderBottomNavigation()}
     `;
-};
+        };
 
-const loadReceivedReports = () => {
-    const userRole = userProfile?.tipoUtente;
-    const isAdmin = userRole === 'amministratore';
-    const isCustode = userRole === 'custode';
-    const isFornitore = userRole === 'fornitore';
-    const shouldShowControls = isAdmin || isCustode || isFornitore;
+        const loadReceivedReports = () => {
+            const userRole = userProfile?.tipoUtente;
+            const isAdmin = userRole === 'amministratore';
+            const isCustode = userRole === 'custode';
+            const isFornitore = userRole === 'fornitore';
+            const shouldShowControls = isAdmin || isCustode || isFornitore;
 
-    // Riferimenti ai container
-    const mainContainer = document.getElementById('reports-main-container');
-    const activeContainer = document.getElementById('reports-active-container');
-    const closedContainer = document.getElementById('reports-closed-container');
-    const searchInput = document.getElementById('report-search-input');
-    const statusFilter = document.getElementById('report-status-filter');
-    const counterContainer = document.getElementById('ticket-counters');
+            // Riferimenti ai container
+            const mainContainer = document.getElementById('reports-main-container');
+            const activeContainer = document.getElementById('reports-active-container');
+            const closedContainer = document.getElementById('reports-closed-container');
+            const searchInput = document.getElementById('report-search-input');
+            const statusFilter = document.getElementById('report-status-filter');
+            const counterContainer = document.getElementById('ticket-counters');
 
-    // Se non siamo nella pagina giusta (es. altro ruolo), esci
-    if (!mainContainer && !activeContainer) return;
+            // Se non siamo nella pagina giusta (es. altro ruolo), esci
+            if (!mainContainer && !activeContainer) return;
 
-    // Funzione per il rendering dei ticket
-    const renderTickets = (allDocs) => {
-        // Filtra in base ai controlli UI (per admin e custode)
-        let filteredDocs = allDocs;
-        if (shouldShowControls) {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const status = statusFilter.value;
+            // Funzione per il rendering dei ticket
+            const renderTickets = (allDocs) => {
+                // Filtra in base ai controlli UI (per admin e custode)
+                let filteredDocs = allDocs;
+                if (shouldShowControls) {
+                    const searchTerm = searchInput.value.toLowerCase().trim();
+                    const status = statusFilter.value;
 
-            if (searchTerm) {
-                filteredDocs = filteredDocs.filter(doc => {
-                    const data = doc.data();
-                    const reportNum = data.reportNumber ? `#${data.reportNumber}` : '';
-                    return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
-                });
-            }
-            if (status !== 'all') {
-                filteredDocs = filteredDocs.filter(doc => doc.data().status === status);
-            }
-        }
-        
-        // Aggiorna contatori (per admin e custode)
-        if (shouldShowControls && counterContainer) {
-            const openCount = allDocs.filter(doc => doc.data().status === 'aperta').length;
-            const inProgressCount = allDocs.filter(doc => doc.data().status === 'in-corso').length;
-            const totalCount = allDocs.length;
-            counterContainer.innerHTML = `
+                    if (searchTerm) {
+                        filteredDocs = filteredDocs.filter(doc => {
+                            const data = doc.data();
+                            const reportNum = data.reportNumber ? `#${data.reportNumber}` : '';
+                            return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
+                        });
+                    }
+                    if (status !== 'all') {
+                        filteredDocs = filteredDocs.filter(doc => doc.data().status === status);
+                    }
+                }
+
+                // Aggiorna contatori (per admin e custode)
+                if (shouldShowControls && counterContainer) {
+                    const openCount = allDocs.filter(doc => doc.data().status === 'aperta').length;
+                    const inProgressCount = allDocs.filter(doc => doc.data().status === 'in-corso').length;
+                    const totalCount = allDocs.length;
+                    counterContainer.innerHTML = `
                 <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">${openCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.${openCount}</div></div>
                 <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">${inProgressCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.${inProgressCount}</div></div>
                 <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">${totalCount}</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
             `;
-        }
+                }
 
-        // Dividi in attivi e chiusi (per admin e custode)
-        if (shouldShowControls) {
-            const activeTickets = filteredDocs.filter(doc => doc.data().status !== 'chiusa' && doc.data().status !== 'risolta');
-            const closedTickets = filteredDocs.filter(doc => doc.data().status === 'chiusa' || doc.data().status === 'risolta');
+                // Dividi in attivi e chiusi (per admin e custode)
+                if (shouldShowControls) {
+                    const activeTickets = filteredDocs.filter(doc => doc.data().status !== 'chiusa' && doc.data().status !== 'risolta');
+                    const closedTickets = filteredDocs.filter(doc => doc.data().status === 'chiusa' || doc.data().status === 'risolta');
 
-                            activeContainer.innerHTML = activeTickets.length > 0
-                    ? activeTickets.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
-                    : `<div class="card"><p style="color:var(--secondary-text);">Nessun ticket attivo trovato.</p></div>`;
-                
-                closedContainer.innerHTML = closedTickets.length > 0
-                    ? closedTickets.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
-                    : `<div class="card"><p style="color:var(--secondary-text);">Nessun ticket chiuso trovato.</p></div>`;
-        } else {
-            // Logica per gli altri ruoli manager
-            mainContainer.innerHTML = filteredDocs.length > 0
-                ? filteredDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
-                : `<div class="card"><p style="color:var(--secondary-text);">Nessuna segnalazione ricevuta.</p></div>`;
-        }
-    };
+                    activeContainer.innerHTML = activeTickets.length > 0
+                        ? activeTickets.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                        : `<div class="card"><p style="color:var(--secondary-text);">Nessun ticket attivo trovato.</p></div>`;
 
-    // Logica di reset notifiche
-    const q = query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(1));
-    getDocs(q).then(snapshot => {
-        if (!snapshot.empty) {
-            localStorage.setItem(`lastSeenReport_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
-            updateNotificationUI('segnalazioni', 0);
-        }
-    });
+                    closedContainer.innerHTML = closedTickets.length > 0
+                        ? closedTickets.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                        : `<div class="card"><p style="color:var(--secondary-text);">Nessun ticket chiuso trovato.</p></div>`;
+                } else {
+                    // Logica per gli altri ruoli manager
+                    mainContainer.innerHTML = filteredDocs.length > 0
+                        ? filteredDocs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("")
+                        : `<div class="card"><p style="color:var(--secondary-text);">Nessuna segnalazione ricevuta.</p></div>`;
+                }
+            };
 
-    // Query base
-    const baseQuery = query(collection(db, "reports"), orderBy("createdAt", "desc"));
-    
-    // Snapshot listener
-    onSnapshot(baseQuery, (snapshot) => {
-        let relevantDocs = [];
-        if (isAdmin) {
-            // L'amministratore vede ticket a lui assegnati, quelli assegnati a fornitori da lui e quelli per lo sviluppatore
-            relevantDocs = snapshot.docs.filter(doc => {
-                const data = doc.data();
-                return data.recipientType === 'amministratore' || 
-                       data.recipientType === 'sviluppatore' || 
-                       (data.recipientType === 'fornitore' && data.reassignedBy === currentUser.uid);
+            // Logica di reset notifiche
+            const q = query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(1));
+            getDocs(q).then(snapshot => {
+                if (!snapshot.empty) {
+                    localStorage.setItem(`lastSeenReport_${currentUser.uid}`, snapshot.docs[0].data().createdAt.toMillis());
+                    updateNotificationUI('segnalazioni', 0);
+                }
             });
-        } else if (['custode', 'consigliere', 'fornitore', 'supervisore', 'adm'].includes(userRole)) {
-            // Altri ruoli manager vedono solo i propri ticket
-            if (userRole === 'custode') {
-                // Il custode vede i ticket a lui assegnati e quelli che ha inoltrato all'amministratore
-                relevantDocs = snapshot.docs.filter(doc => {
-                    const data = doc.data();
-                    return data.recipientType === userRole || 
-                           (data.recipientType === 'amministratore' && data.forwardedBy && data.originalRecipient === 'custode');
-                });
-            } else if (userRole === 'fornitore') {
-                // Il fornitore vede i ticket a lui assegnati
-                relevantDocs = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
-            } else {
-                relevantDocs = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
-            }
-        }
-        
-        // Esegui il primo rendering
-        renderTickets(relevantDocs);
 
-        // Aggiungi event listener ai filtri (per admin, custode e fornitore)
-        if (shouldShowControls) {
-            searchInput.oninput = () => renderTickets(relevantDocs);
-            statusFilter.onchange = () => renderTickets(relevantDocs);
-        }
-    });
-};
+            // Query base
+            const baseQuery = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+
+            // Snapshot listener
+            onSnapshot(baseQuery, (snapshot) => {
+                let relevantDocs = [];
+                // Roles that can see ALL reports + tickets they forwarded
+                if (['amministratore', 'supervisore', 'adm'].includes(userRole)) {
+                    if (userRole === 'amministratore') {
+                        // Administrators see ALL reports + tickets they forwarded to others
+                        relevantDocs = snapshot.docs.filter(doc => {
+                            const data = doc.data();
+                            return data.recipientType === 'amministratore' || // Direct assignments
+                                (data.forwardedByUserId === currentUser.uid) || // Tickets they forwarded
+                                (data.originalRecipient === 'amministratore' && data.forwardedBy); // Tickets forwarded back to admin
+                        });
+                    } else {
+                        // Supervisore and ADM see all reports
+                        relevantDocs = snapshot.docs;
+                    }
+                }
+                // Roles with a restricted view
+                else if (['custode', 'consigliere', 'fornitore'].includes(userRole)) {
+                    if (userRole === 'custode') {
+                        // Custode sees tickets assigned to them AND tickets they forwarded
+                        relevantDocs = snapshot.docs.filter(doc => {
+                            const data = doc.data();
+                            return data.recipientType === userRole ||
+                                (data.recipientType === 'amministratore' && data.forwardedBy && data.originalRecipient === 'custode');
+                        });
+                    } else {
+                        // Consigliere and Fornitore only see tickets assigned directly to them
+                        relevantDocs = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+                    }
+                }
+
+                // Esegui il primo rendering
+                renderTickets(relevantDocs);
+
+                // Aggiungi event listener ai filtri (per admin, custode e fornitore)
+                if (shouldShowControls) {
+                    searchInput.oninput = () => renderTickets(relevantDocs);
+                    statusFilter.onchange = () => renderTickets(relevantDocs);
+                }
+            });
+        };
 
         const renderSegnalazioniUrgenti = () => `
             ${renderHeader('Solleciti ricevuti')}
             <main>
+                <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;">
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.0</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.0</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">0</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+                </div>
+                <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <svg style="position: absolute; left: 1rem; width: 20px; height: 20px; color: var(--secondary-text);" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" id="report-search-input" placeholder="Cerca per titolo, numero o descrizione..." class="form-input" style="padding-left: 3rem;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex-shrink: 0; min-width: 150px; margin-bottom: 0;">
+                            <select id="report-status-filter" class="form-select">
+                                <option value="all">Tutti gli stati</option>
+                                <option value="aperta">Aperta</option>
+                                <option value="in-corso">In Corso</option>
+                                <option value="risolta">Risolta</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
                     Elenco delle segnalazioni per cui è stato inviato un sollecito.
                 </p>
@@ -7940,22 +8123,89 @@ const loadReceivedReports = () => {
             const mainContainer = document.getElementById('reports-main-container');
             if (!mainContainer) return;
 
-            // Nota: Questa query richiede un indice composito in Firestore su (isUrgent, createdAt).
-            // L'errore nella console di Firebase indicherà il link per crearlo automaticamente.
+            // Marca i solleciti come visti
+            const q = query(
+                collection(db, "reports"),
+                where("priority", "==", "alta"),
+                where("status", "in", ["aperta", "in-corso"]),
+                orderBy("updatedAt", "desc"),
+                limit(1)
+            );
+            getDocs(q).then(snapshot => {
+                if (!snapshot.empty) {
+                    localStorage.setItem(`lastSeenSolleciti_${currentUser.uid}`, snapshot.docs[0].data().updatedAt.toMillis());
+                    updateNotificationUI('solleciti', 0);
+                }
+            });
+
+            const userRole = userProfile?.tipoUtente;
+
+            // Query per i solleciti urgenti che l'utente può gestire
             const urgentQuery = query(collection(db, "reports"), where("isUrgent", "==", true), orderBy("createdAt", "desc"));
 
             onSnapshot(urgentQuery, (snapshot) => {
-                if (snapshot.empty) {
-                    mainContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessuna segnalazione urgente al momento.</p></div>`;
-                    return;
+                let relevantDocs = [];
+
+                // Filter urgent tickets based on user role - same logic as loadReceivedReports
+                if (['amministratore', 'supervisore', 'adm'].includes(userRole)) {
+                    if (userRole === 'amministratore') {
+                        // Administrators see urgent reports assigned to them + tickets they forwarded
+                        relevantDocs = snapshot.docs.filter(doc => {
+                            const data = doc.data();
+                            return data.recipientType === 'amministratore' || // Direct assignments
+                                (data.forwardedByUserId === currentUser.uid) || // Tickets they forwarded
+                                (data.originalRecipient === 'amministratore' && data.forwardedBy); // Tickets forwarded back to admin
+                        });
+                    } else {
+                        // Supervisore and ADM see all urgent reports
+                        relevantDocs = snapshot.docs;
+                    }
                 }
-                mainContainer.innerHTML = snapshot.docs.map((doc, index) => renderReportCardHTML(doc.data(), doc.id, index + 1)).join("");
+                else if (['custode', 'consigliere', 'fornitore'].includes(userRole)) {
+                    if (userRole === 'custode') {
+                        // Custode sees urgent tickets assigned to them AND tickets they forwarded
+                        relevantDocs = snapshot.docs.filter(doc => {
+                            const data = doc.data();
+                            return data.recipientType === userRole ||
+                                (data.recipientType === 'amministratore' && data.forwardedBy && data.originalRecipient === 'custode');
+                        });
+                    } else {
+                        // Consigliere and Fornitore only see urgent tickets assigned directly to them
+                        relevantDocs = snapshot.docs.filter(doc => doc.data().recipientType === userRole);
+                    }
+                }
+
+                handleFilteredReports(relevantDocs, 'solleciti urgenti');
             });
         };
 
         const renderSegnalazioniUtente = () => `
             ${renderHeader('Segnalazioni Inviate')}
             <main>
+                <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;">
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.0</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.0</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">0</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+                </div>
+                <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <svg style="position: absolute; left: 1rem; width: 20px; height: 20px; color: var(--secondary-text);" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" id="report-search-input" placeholder="Cerca per titolo, numero o descrizione..." class="form-input" style="padding-left: 3rem;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex-shrink: 0; min-width: 150px; margin-bottom: 0;">
+                            <select id="report-status-filter" class="form-select">
+                                <option value="all">Tutti gli stati</option>
+                                <option value="aperta">Aperta</option>
+                                <option value="in-corso">In Corso</option>
+                                <option value="risolta">Risolta</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-bottom: 2rem;">
                     <h2 class="section-title">Ticket Attivi</h2>
                     <p class="form-label" style="margin-bottom: 1.5rem; color: var(--secondary-text);">
@@ -7980,15 +8230,63 @@ const loadReceivedReports = () => {
             const closedContainer = document.getElementById('user-reports-closed');
             if (!activeContainer || !closedContainer) return;
 
+            // Reset notifiche per aggiornamenti sui report dell'utente
+            localStorage.setItem(`lastSeenSegnalazioniInviate_${currentUser.uid}`, Date.now());
+            updateNotificationUI('segnalazioni-inviate', 0);
+
             const userReportsQuery = query(collection(db, "reports"), where("createdById", "==", currentUser.uid), orderBy("createdAt", "desc"));
 
             onSnapshot(userReportsQuery, (snapshot) => {
+                handleUserReports(snapshot.docs);
+            });
+        };
+
+        const handleUserReports = (docs) => {
+            const activeContainer = document.getElementById('user-reports-active');
+            const closedContainer = document.getElementById('user-reports-closed');
+            const searchInput = document.getElementById('report-search-input');
+            const statusFilter = document.getElementById('report-status-filter');
+            const counterContainer = document.getElementById('ticket-counters');
+
+            if (!activeContainer || !closedContainer) return;
+
+            // Aggiorna contatori
+            if (counterContainer) {
+                const openCount = docs.filter(doc => doc.data().status === 'aperta').length;
+                const inProgressCount = docs.filter(doc => doc.data().status === 'in-corso').length;
+                const totalCount = docs.length;
+                counterContainer.innerHTML = `
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">${openCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.${openCount}</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">${inProgressCount}</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.${inProgressCount}</div></div>
+                    <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--primary);">${totalCount}</div><div class="page-subtitle" style="text-transform: none;">Tutte</div></div>
+                `;
+            }
+
+            // Funzione per il rendering con filtri
+            const renderFilteredUserReports = () => {
+                let filteredDocs = docs;
+
+                // Filtra per ricerca testuale
+                if (searchInput && searchInput.value) {
+                    const searchTerm = searchInput.value.toLowerCase().trim();
+                    filteredDocs = filteredDocs.filter(doc => {
+                        const data = doc.data();
+                        const reportNum = data.reportNumber ? `#${data.reportNumber}` : '';
+                        return `${reportNum} ${data.title} ${data.description}`.toLowerCase().includes(searchTerm);
+                    });
+                }
+
+                // Filtra per stato
+                if (statusFilter && statusFilter.value !== 'all') {
+                    filteredDocs = filteredDocs.filter(doc => doc.data().status === statusFilter.value);
+                }
+
+                // Separa in attivi e chiusi
                 const activeTickets = [];
                 const closedTickets = [];
 
-                snapshot.docs.forEach(doc => {
+                filteredDocs.forEach(doc => {
                     const report = doc.data();
-                    // I ticket con stato 'chiusa' o 'risolta' vanno nello storico, tutti gli altri sono considerati attivi.
                     if (report.status === 'chiusa' || report.status === 'risolta') {
                         closedTickets.push({ id: doc.id, data: report });
                     } else {
@@ -7996,18 +8294,40 @@ const loadReceivedReports = () => {
                     }
                 });
 
+                // Ordina per data di creazione
+                const sortByDate = (a, b) => {
+                    const timeA = a.data.createdAt?.toMillis() || 0;
+                    const timeB = b.data.createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                };
+
+                activeTickets.sort(sortByDate);
+                closedTickets.sort(sortByDate);
+
+                // Renderizza i risultati
                 if (activeTickets.length === 0) {
-                    activeContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket attivo.</p></div>`;
+                    activeContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket attivo trovato.</p></div>`;
                 } else {
                     activeContainer.innerHTML = activeTickets.map((t, index) => renderReportCardHTML(t.data, t.id, index + 1)).join("");
                 }
 
                 if (closedTickets.length === 0) {
-                    closedContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket chiuso.</p></div>`;
+                    closedContainer.innerHTML = `<div class="card"><p style="color:var(--secondary-text); padding: 1rem 0;">Nessun ticket chiuso trovato.</p></div>`;
                 } else {
                     closedContainer.innerHTML = closedTickets.map((t, index) => renderReportCardHTML(t.data, t.id, index + 1)).join("");
                 }
-            });
+            };
+
+            // Esegui il primo rendering
+            renderFilteredUserReports();
+
+            // Aggiungi event listener ai filtri
+            if (searchInput) {
+                searchInput.oninput = renderFilteredUserReports;
+            }
+            if (statusFilter) {
+                statusFilter.onchange = renderFilteredUserReports;
+            }
         };
 
         const deleteUser = async (userId, userName) => {
@@ -8554,6 +8874,54 @@ const loadReceivedReports = () => {
                     updatedAt: serverTimestamp()
                 };
 
+                // Aggiungi timestamp quando viene preso in carico
+                if (newStatus === 'in-corso') {
+                    updateData.takenInChargeAt = serverTimestamp();
+                    // Clear urgent flag when ticket is taken in charge
+                    updateData.isUrgent = false;
+
+                    // Add automatic update message for taking charge
+                    if (!updateText) {
+                        const takeChargeUpdate = {
+                            text: `Segnalazione presa in carico da ${userProfile.nome} ${userProfile.cognome}`,
+                            by: `${userProfile.nome} ${userProfile.cognome}`,
+                            at: new Date()
+                        };
+                        updateData.updates = arrayUnion(takeChargeUpdate);
+                    }
+                }
+
+                // Clear urgent flag and add automatic messages when ticket is resolved or closed
+                if (newStatus === 'risolta') {
+                    updateData.isUrgent = false;
+                    updateData.resolvedAt = serverTimestamp();
+
+                    // Add automatic update message for resolution if no custom text provided
+                    if (!updateText) {
+                        const resolvedUpdate = {
+                            text: `Segnalazione marcata come risolta da ${userProfile.nome} ${userProfile.cognome}`,
+                            by: `${userProfile.nome} ${userProfile.cognome}`,
+                            at: new Date()
+                        };
+                        updateData.updates = arrayUnion(resolvedUpdate);
+                    }
+                }
+
+                if (newStatus === 'chiusa') {
+                    updateData.isUrgent = false;
+                    updateData.closedAt = serverTimestamp();
+
+                    // Add automatic update message for closure if no custom text provided
+                    if (!updateText) {
+                        const closedUpdate = {
+                            text: `Segnalazione chiusa da ${userProfile.nome} ${userProfile.cognome}`,
+                            by: `${userProfile.nome} ${userProfile.cognome}`,
+                            at: new Date()
+                        };
+                        updateData.updates = arrayUnion(closedUpdate);
+                    }
+                }
+
                 if (updateText) {
                     const newUpdate = {
                         text: updateText,
@@ -8565,9 +8933,19 @@ const loadReceivedReports = () => {
 
                 await updateDoc(reportRef, updateData);
                 await logActivity("report_status_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId, newStatus: newStatus });
+
+                // Show success message
+                if (newStatus === 'in-corso') {
+                    alert("Segnalazione presa in carico con successo!");
+                } else if (newStatus === 'risolta') {
+                    alert("Segnalazione marcata come risolta!");
+                } else if (newStatus === 'chiusa') {
+                    alert("Segnalazione chiusa!");
+                }
+
             } catch (error) {
                 console.error("Errore nell'aggiornamento dello stato:", error);
-                alert("Si è verificato un errore.");
+                alert("Si è verificato un errore nell'aggiornamento dello stato della segnalazione.");
             }
         };
 
@@ -8579,6 +8957,21 @@ const loadReceivedReports = () => {
                         <label for="update-text" class="form-label">Testo dell'aggiornamento</label>
                         <textarea id="update-text" rows="4" required class="form-textarea" placeholder="Scrivi qui l'aggiornamento..."></textarea>
                     </div>
+                    
+                    <!-- Sezione per allegati -->
+                    <div>
+                        <label class="form-label">Allegati (opzionale)</label>
+                        <div class="attachment-upload-container" onclick="document.getElementById('update-file-input').click()">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 48px; height: 48px; color: var(--secondary-text); margin-bottom: 0.5rem;">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                            </svg>
+                            <p style="color: var(--secondary-text); margin: 0;">Clicca per aggiungere foto o documenti</p>
+                            <p style="color: var(--secondary-text); font-size: 0.8rem; margin: 0.5rem 0 0 0;">Formati supportati: JPG, PNG, PDF, DOC, DOCX</p>
+                        </div>
+                        <input type="file" id="update-file-input" multiple accept="image/*,.pdf,.doc,.docx" style="display: none;">
+                        <div id="update-attachment-previews" class="attachment-previews"></div>
+                    </div>
+                    
                     <div class="flex justify-end gap-4 pt-2">
                         <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
                         <button type="submit" class="btn btn-primary">Invia Aggiornamento</button>
@@ -8587,18 +8980,76 @@ const loadReceivedReports = () => {
             `;
             showModal('Aggiungi Aggiornamento', modalContent);
 
+            // Setup file input handler
+            const fileInput = document.getElementById('update-file-input');
+            const previewContainer = document.getElementById('update-attachment-previews');
+            let selectedUpdateFiles = [];
+
+            fileInput.addEventListener('change', (e) => {
+                selectedUpdateFiles = Array.from(e.target.files);
+                displayUpdateFilePreviews();
+            });
+
+            const displayUpdateFilePreviews = () => {
+                previewContainer.innerHTML = '';
+                selectedUpdateFiles.forEach((file, index) => {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+
+                    if (file.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = URL.createObjectURL(file);
+                        img.alt = file.name;
+                        previewItem.appendChild(img);
+                    } else {
+                        const docIcon = document.createElement('div');
+                        docIcon.innerHTML = `
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 100%; height: 100%; color: var(--secondary-text);">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                            </svg>
+                            <p style="font-size: 0.7rem; margin-top: 0.25rem; text-align: center;">${file.name}</p>
+                        `;
+                        previewItem.appendChild(docIcon);
+                    }
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.innerHTML = '×';
+                    removeBtn.className = 'preview-remove-btn';
+                    removeBtn.onclick = (e) => {
+                        e.preventDefault();
+                        selectedUpdateFiles.splice(index, 1);
+                        displayUpdateFilePreviews();
+                    };
+                    previewItem.appendChild(removeBtn);
+                    previewContainer.appendChild(previewItem);
+                });
+            };
+
             document.getElementById('report-update-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const text = document.getElementById('update-text').value.trim();
                 if (!text) return;
 
-                const newUpdate = {
-                    text: text,
-                    by: `${userProfile.nome} ${userProfile.cognome}`,
-                    at: new Date()
-                };
-
                 try {
+                    // Upload files if any
+                    let fileUrls = [];
+                    if (selectedUpdateFiles.length > 0) {
+                        for (const file of selectedUpdateFiles) {
+                            const fileName = `${Date.now()}_${file.name}`;
+                            const fileRef = ref(storage, `reports/${reportId}/updates/${fileName}`);
+                            await uploadBytes(fileRef, file);
+                            const downloadURL = await getDownloadURL(fileRef);
+                            fileUrls.push(downloadURL);
+                        }
+                    }
+
+                    const newUpdate = {
+                        text: text,
+                        by: `${userProfile.nome} ${userProfile.cognome}`,
+                        at: new Date(),
+                        fileUrls: fileUrls.length > 0 ? fileUrls : null
+                    };
+
                     await updateDoc(doc(db, "reports", reportId), {
                         updates: arrayUnion(newUpdate),
                         updatedAt: serverTimestamp()
@@ -8727,13 +9178,23 @@ const loadReceivedReports = () => {
                     at: new Date()
                 };
 
-                await updateDoc(reportRef, {
-    recipientType: newRecipient,
-    status: 'aperta', // Il ticket viene riaperto per il nuovo destinatario
-    updates: arrayUnion(newUpdate),
-    updatedAt: serverTimestamp(),
-    reassignedBy: newRecipient === 'fornitore' ? currentUser.uid : null // Traccia chi ha riassegnato a un fornitore
-});
+                const updateData = {
+                    recipientType: newRecipient,
+                    status: 'aperta', // Il ticket viene riaperto per il nuovo destinatario
+                    updates: arrayUnion(newUpdate),
+                    updatedAt: serverTimestamp(),
+                    reassignedBy: currentUser.uid // Always track who reassigned
+                };
+
+                // Track forwarding information when administrator forwards to external parties
+                if (userProfile?.tipoUtente === 'amministratore' && ['fornitore', 'custode', 'consigliere'].includes(newRecipient)) {
+                    updateData.forwardedBy = `${userProfile.nome} ${userProfile.cognome}`;
+                    updateData.forwardedAt = serverTimestamp();
+                    updateData.originalRecipient = 'amministratore';
+                    updateData.forwardedByUserId = currentUser.uid;
+                }
+
+                await updateDoc(reportRef, updateData);
 
                 await logActivity("report_reassigned", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
                     reportId: reportId,
@@ -9096,10 +9557,34 @@ const loadReceivedReports = () => {
                 }
             });
         };
-        const checkForNewCommunications = () => { if (!currentUser || "custode" === userProfile?.tipoUtente) return; communicationsListener && communicationsListener(); const e = parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`), 10) || 0, t = new Date(e), o = query(collection(db, "communications"), where("createdAt", ">", t)); communicationsListener = onSnapshot(o, snapshot => { const unreadCount = snapshot.docs.filter(docSnap => { const comm = docSnap.data(); const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || []; if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true; return userGroups.includes(comm.targetGroup); }).length; updateNotificationUI('bacheca', unreadCount) }) };
+        const checkForNewCommunications = () => {
+            if (!currentUser) return;
+            communicationsListener && communicationsListener();
+
+            let lastSeen = parseInt(localStorage.getItem(`lastSeenComm_${currentUser.uid}`), 10);
+
+            // Se non c'è un timestamp salvato, inizializza con il timestamp corrente per evitare notifiche per vecchie comunicazioni
+            if (!lastSeen) {
+                lastSeen = Date.now();
+                localStorage.setItem(`lastSeenComm_${currentUser.uid}`, lastSeen);
+            }
+
+            const lastSeenDate = new Date(lastSeen);
+            const q = query(collection(db, "communications"), where("createdAt", ">", lastSeenDate));
+
+            communicationsListener = onSnapshot(q, snapshot => {
+                const unreadCount = snapshot.docs.filter(docSnap => {
+                    const comm = docSnap.data();
+                    const userGroups = userProfile.proprieta?.map(p => p.gruppo).filter(Boolean) || [];
+                    if (!comm.targetGroup || comm.targetGroup === 'Tutti') return true;
+                    return userGroups.includes(comm.targetGroup);
+                }).length;
+                updateNotificationUI('bacheca', unreadCount);
+            });
+        };
 
         const checkForNewPolls = () => {
-            if (!currentUser || "custode" === userProfile?.tipoUtente) return;
+            if (!currentUser) return;
             pollsListener && pollsListener();
             const lastSeen = parseInt(localStorage.getItem(`lastSeenPoll_${currentUser.uid}`), 10) || 0;
             const lastSeenDate = new Date(lastSeen);
@@ -9113,7 +9598,15 @@ const loadReceivedReports = () => {
         const checkForNewReports = () => {
             if (!currentUser || !["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente)) return;
             reportsListener && reportsListener();
-            const lastSeen = parseInt(localStorage.getItem(`lastSeenReport_${currentUser.uid}`), 10) || 0;
+
+            let lastSeen = parseInt(localStorage.getItem(`lastSeenReport_${currentUser.uid}`), 10);
+
+            // Se non c'è un timestamp salvato, inizializza con il timestamp corrente per evitare notifiche per vecchi report
+            if (!lastSeen) {
+                lastSeen = Date.now();
+                localStorage.setItem(`lastSeenReport_${currentUser.uid}`, lastSeen);
+            }
+
             const lastSeenDate = new Date(lastSeen);
 
             let q;
@@ -9128,6 +9621,103 @@ const loadReceivedReports = () => {
             reportsListener = onSnapshot(q, snapshot => {
                 const unreadCount = snapshot.size;
                 updateNotificationUI('segnalazioni', unreadCount);
+            });
+        };
+
+        const checkForNewSolleciti = () => {
+            if (!currentUser || !['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userProfile?.tipoUtente)) return;
+            sollecitisListener && sollecitisListener();
+
+            let lastSeen = parseInt(localStorage.getItem(`lastSeenSolleciti_${currentUser.uid}`), 10);
+
+            // Se non c'è un timestamp salvato, inizializza con il timestamp corrente per evitare notifiche per vecchi solleciti
+            if (!lastSeen) {
+                lastSeen = Date.now();
+                localStorage.setItem(`lastSeenSolleciti_${currentUser.uid}`, lastSeen);
+            }
+
+            const lastSeenDate = new Date(lastSeen);
+
+            // Query per solleciti urgenti - segnalazioni con priorità alta che sono ancora aperte
+            const q = query(
+                collection(db, "reports"),
+                where("priority", "==", "alta"),
+                where("status", "in", ["aperta", "in-corso"]),
+                where("updatedAt", ">", lastSeenDate)
+            );
+
+            sollecitisListener = onSnapshot(q, snapshot => {
+                const unreadCount = snapshot.size;
+                updateNotificationUI('solleciti', unreadCount);
+            });
+        };
+
+        // Nuova funzione per notificare di nuovi file/cartelle nell'archivio
+        const checkForNewArchivioActivity = () => {
+            if (!currentUser || !['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userProfile?.tipoUtente)) return;
+
+            let lastSeen = parseInt(localStorage.getItem(`lastSeenArchivio_${currentUser.uid}`), 10);
+
+            // Se non c'è un timestamp salvato, inizializza con il timestamp corrente
+            if (!lastSeen) {
+                lastSeen = Date.now();
+                localStorage.setItem(`lastSeenArchivio_${currentUser.uid}`, lastSeen);
+            }
+
+            const lastSeenDate = new Date(lastSeen);
+
+            // Query per attività di archivio (file caricati, cartelle create)
+            const q = query(
+                collection(db, "activities"),
+                where("action", "in", ["file_uploaded", "folder_created"]),
+                where("timestamp", ">", lastSeenDate)
+            );
+
+            onSnapshot(q, snapshot => {
+                const unreadCount = snapshot.size;
+                updateNotificationUI('gestione-archivio', unreadCount);
+                updateNotificationUI('archivio', unreadCount); // Also update main archivio badge
+            });
+        };
+
+        // Nuova funzione per notificare i creatori di segnalazioni quando i loro report vengono aggiornati
+        const checkForUserReportUpdates = () => {
+            if (!currentUser) return;
+
+            let lastSeen = parseInt(localStorage.getItem(`lastSeenSegnalazioniInviate_${currentUser.uid}`), 10);
+
+            // Se non c'è un timestamp salvato, inizializza con il timestamp corrente per evitare notifiche per vecchi aggiornamenti
+            if (!lastSeen) {
+                lastSeen = Date.now();
+                localStorage.setItem(`lastSeenSegnalazioniInviate_${currentUser.uid}`, lastSeen);
+            }
+
+            const lastSeenDate = new Date(lastSeen);
+
+            // Query per segnalazioni create dall'utente che sono state aggiornate
+            const q = query(
+                collection(db, "reports"),
+                where("createdById", "==", currentUser.uid),
+                where("updatedAt", ">", lastSeenDate)
+            );
+
+            onSnapshot(q, snapshot => {
+                // Filtra solo i report che sono stati aggiornati da altri (non dall'utente stesso)
+                const updatedByOthers = snapshot.docs.filter(doc => {
+                    const report = doc.data();
+                    const lastUpdate = report.updates && report.updates.length > 0 ?
+                        report.updates[report.updates.length - 1] : null;
+
+                    // Se c'è un aggiornamento e non è stato fatto dall'utente corrente, o se lo status è cambiato
+                    const userFullName = `${userProfile?.nome} ${userProfile?.cognome}`;
+                    const wasUpdatedByOthers = lastUpdate && lastUpdate.by !== userFullName;
+                    const statusChanged = report.status !== 'aperta'; // Considera cambiamenti di stato
+
+                    return wasUpdatedByOthers || statusChanged;
+                });
+
+                const unreadCount = updatedByOthers.length;
+                updateNotificationUI('segnalazioni-inviate', unreadCount);
             });
         };
 
@@ -9251,7 +9841,7 @@ const loadReceivedReports = () => {
 
                 const userType = userProfile?.tipoUtente;
                 let landingPage = 'dashboard';
-                
+
                 // Se l'utente si trova sulla pagina di login, lo reindirizziamo alla sua home.
                 // Altrimenti (se ha ricaricato la pagina), gli mostriamo la pagina su cui si trovava.
                 if (currentPage === 'login' || !currentPage) {
