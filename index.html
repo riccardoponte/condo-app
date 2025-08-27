@@ -73,7 +73,7 @@
         }
 
         #app {
-            padding: 1rem 1rem 100px 1rem;
+            padding: 100px 1rem 100px 1rem;
         }
 
         body::-webkit-scrollbar {
@@ -90,12 +90,19 @@
 
         /* Header */
         .page-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
             margin-bottom: 2rem;
-            padding: 1rem 0;
+            padding: 1rem;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--surface-color);
+            z-index: 1000;
         }
 
         .header-buttons {
@@ -220,13 +227,13 @@
         /* Responsive Design */
         @media (max-width: 768px) {
             #app {
-                padding: 0.5rem 0.5rem 100px 0.5rem;
+                padding: 80px 0.5rem 100px 0.5rem;
             }
 
             .page-header {
                 gap: 0.5rem;
                 margin-bottom: 1rem;
-                padding: 0.5rem 0;
+                padding: 0.5rem;
             }
 
             .header-buttons {
@@ -259,6 +266,7 @@
             .page-header {
                 flex-wrap: nowrap;
                 gap: 0.25rem;
+                padding: 0.5rem;
             }
 
             .header-buttons {
@@ -1498,7 +1506,7 @@
             // Service permission check
             const serviceMap = {
                 'bacheca': 'bacheca',
-                'segnalazioni': 'segnalazioni', 'segnalazioni_crea': 'segnalazioni', 'segnalazioni_amministratore': 'segnalazioni', 'segnalazioni_custode': 'segnalazioni', 'segnalazioni_consiglieri': 'segnalazioni', 'segnalazioni_ricevute': 'segnalazioni',
+                'segnalazioni': 'segnalazioni', 'segnalazioni_crea': 'segnalazioni', 'segnalazioni_ricevute': 'segnalazioni', 'segnalazioni_utente': 'segnalazioni',
                 'sondaggi': 'sondaggi', 'sondaggi_crea': 'sondaggi', 'sondaggi_elenco': 'sondaggi', 'sondaggi_attivi': 'sondaggi', 'sondaggi_conclusi': 'sondaggi',
                 'infoUtili': 'numeri_utili', 'numeriUtiliImportati': 'numeri_utili', 'numeriUtiliManuali': 'numeri_utili', 'numeriUtiliRubrica': 'numeri_utili', 'numeriUtiliCustode': 'numeri_utili', 'infoUtili_amministratore': 'numeri_utili',
                 'reportPage': 'report', 'elencoCondomini': 'report'
@@ -1823,7 +1831,7 @@
         <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
         <span>Bacheca</span>
     </a>` : ''}
-    ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_amministratore', 'segnalazioni_custode', 'segnalazioni_consiglieri', 'segnalazioni_ricevute'].includes(currentPage) ? 'active' : ''}">
+    ${isServiceEnabledForCurrentUser('segnalazioni') ? `<a href="#" onclick="navigateTo('segnalazioni')" class="nav-item ${['segnalazioni', 'segnalazioni_crea', 'segnalazioni_ricevute', 'segnalazioni_utente'].includes(currentPage) ? 'active' : ''}">
     <span id="segnalazioni-notification-badge" class="notification-badge hidden"></span>
     <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/></svg>
     <span>Segnala</span>
@@ -2234,65 +2242,7 @@
                 `);
             }
 
-            // 5. All'amministratore
-            if (userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
-                menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_amministratore')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2M12,4.5L11.5,7.5L8.5,8L11.5,8.5L12,11.5L12.5,8.5L15.5,8L12.5,7.5L12,4.5M5,16L6.5,21L12,19L17.5,21L19,16H5Z"/></svg>
-                        </div>
-                        <p>Ad Amministratore</p>
-                    </div>
-                `);
-            }
 
-            // 6. Al custode
-            if (userRole !== 'custode' && userRole !== 'amministratore' && userRole !== 'fornitore') {
-                menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_custode')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M7,2A5,5 0 0,1 12,7A5,5 0 0,1 10.68,10.27L22,21.55L20.45,23.1L9.17,11.82C8.5,11.95 7.77,11.95 7.1,11.82L2,16.92L0.45,15.37L5.55,10.27A5,5 0 0,1 2,7A5,5 0 0,1 7,2M7,4A3,3 0 0,0 4,7A3,3 0 0,0 7,10A3,3 0 0,0 10,7A3,3 0 0,0 7,4Z"/></svg>
-                        </div>
-                        <p>Al Custode</p>
-                    </div>
-                `);
-            }
-
-            // 7. Ai consiglieri
-            if (userRole !== 'consigliere' && userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'fornitore') {
-                menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_consiglieri')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
-                        </div>
-                        <p>Ai Consiglieri</p>
-                    </div>
-                `);
-            }
-
-            // 8. Allo sviluppatore
-            if (userRole !== 'adm') {
-                menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_sviluppatore')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z"/></svg>
-                        </div>
-                        <p>Allo Sviluppatore</p>
-                    </div>
-                `);
-            }
-
-            // Button "Al Fornitore" - MODIFICATO per escludere 'consigliere'
-            if (userRole !== 'fornitore' && userRole !== 'amministratore' && userRole !== 'custode' && userRole !== 'supervisore' && userRole !== 'consigliere') {
-                menuItemsHtml.push(`
-                    <div onclick="navigateTo('segnalazioni_fornitore')" class="dashboard-item">
-                        <div class="dashboard-card">
-                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10,2H14A2,2 0 0,1 16,4V6H20A2,2 0 0,1 22,8V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V8A2,2 0 0,1 4,6H8V4A2,2 0 0,1 10,2M14,6V4H10V6H14Z"/></svg>
-                        </div>
-                        <p>Al Fornitore</p>
-                    </div>
-                `);
-            }
 
             return `
             ${renderHeader('Segnalazioni')}
@@ -2353,10 +2303,8 @@
                                 </select>
                             </div>
                             
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="form-label">Genere di intervento</label><select id="report-priority" required class="form-select"><option value="">...</option><option value="solo-segnalazione">Solo segnalazione</option><option value="richiesta-intervento-propria">Richiesta d'intervento nella propria UI</option><option value="richiesta-intervento-danno">Richiesta d'intervento per danno propria UI da altre parti</option><option value="altre-richieste">Altre richieste</option></select></div>
-                                <div><label class="form-label">Categoria</label><select id="report-category" required class="form-select"><option value="">...</option><option value="idraulico">Idraulico</option><option value="elettrico">Elettrico</option><option value="riscaldamento">Riscaldamento</option><option value="ascensore">Ascensore</option><option value="pulizie">Pulizie</option><option value="sicurezza">Sicurezza</option><option value="altro">Altro</option></select></div>
-                            </div>
+                            <div><label class="form-label">Genere di intervento</label><select id="report-priority" required class="form-select"><option value="">...</option><option value="solo-segnalazione">Solo segnalazione</option><option value="richiesta-intervento-propria">Richiesta d'intervento nella propria UI</option><option value="richiesta-intervento-danno">Richiesta d'intervento per danno propria UI da altre parti</option><option value="altre-richieste">Altre richieste</option></select></div>
+                            <div><label class="form-label">Categoria</label><select id="report-category" required class="form-select"><option value="">...</option><option value="idraulico">Idraulico</option><option value="elettrico">Elettrico</option><option value="riscaldamento">Riscaldamento</option><option value="ascensore">Ascensore</option><option value="pulizie">Pulizie</option><option value="sicurezza">Sicurezza</option><option value="altro">Altro</option></select></div>
                             <div><label class="form-label">Ubicazione</label><input type="text" id="report-location" required class="form-input" placeholder="es. Scala A, Piano 2"></div>
                             
                             <!-- Campi condizionali per checkboxes comunicazione -->
@@ -4135,11 +4083,7 @@ ${formRecipientField}
                 case 'sondaggi_conclusi': if (userType !== 'custode') { content = renderSondaggiConclusi(); } break;
                 case 'segnalazioni': content = renderSegnalazioniMenu(); break;
                 case 'segnalazioni_crea': content = renderSegnalazioniCrea(); break;
-                case 'segnalazioni_amministratore': content = renderSegnalazioniElenco('Segnalazioni ad Amministratore'); break;
-                case 'segnalazioni_custode': content = renderSegnalazioniElenco('Segnalazioni al Custode'); break;
-                case 'segnalazioni_consiglieri': content = renderSegnalazioniElenco('Segnalazioni ai Consiglieri'); break;
-                case 'segnalazioni_fornitore': content = renderSegnalazioniElenco('Segnalazioni al Fornitore'); break;
-                case 'segnalazioni_sviluppatore': content = renderSegnalazioniElenco('Segnalazioni allo Sviluppatore'); break;
+
                 case 'segnalazioni_ricevute': content = renderSegnalazioniRicevute(); break;
                 case 'segnalazioni_urgenti': content = renderSegnalazioniUrgenti(); break;
                 case 'segnalazioni_utente': content = renderSegnalazioniUtente(); break;
@@ -4294,11 +4238,7 @@ ${formRecipientField}
                     break;
                 case 'segnalazioni': /* No handlers needed for the menu page */ break;
                 case 'segnalazioni_crea': loadMyReports(); setupReportHandlers(); break;
-                case 'segnalazioni_amministratore': loadFilteredReports('amministratore'); break;
-                case 'segnalazioni_custode': loadFilteredReports('custode'); break;
-                case 'segnalazioni_consiglieri': loadFilteredReports('consigliere'); break;
-                case 'segnalazioni_fornitore': loadFilteredReports('fornitore'); break;
-                case 'segnalazioni_sviluppatore': loadFilteredReports('adm'); break;
+
                 case 'segnalazioni_ricevute': loadReceivedReports(); break;
                 case 'segnalazioni_urgenti': loadUrgentReports(); break;
                 case 'segnalazioni_utente': loadUserReports(); break;
@@ -8053,6 +7993,16 @@ ${formRecipientField}
                         <option value="risolta">Risolta</option>
                     </select>
                 </div>
+                <div class="form-group" style="flex-shrink: 0; min-width: 150px; margin-bottom: 0;">
+                    <select id="report-recipient-filter" class="form-select">
+                        <option value="all">Tutti i destinatari</option>
+                        <option value="amministratore">Amministratore</option>
+                        <option value="custode">Custode</option>
+                        <option value="consigliere">Consiglieri</option>
+                        <option value="fornitore">Fornitore</option>
+                        <option value="adm">Sviluppatore</option>
+                    </select>
+                </div>
             </div>
         </div>
     ` : '';
@@ -8103,6 +8053,8 @@ ${formRecipientField}
                 if (shouldShowControls) {
                     const searchTerm = searchInput.value.toLowerCase().trim();
                     const status = statusFilter.value;
+                    const recipientFilter = document.getElementById('report-recipient-filter');
+                    const recipient = recipientFilter ? recipientFilter.value : 'all';
 
                     if (searchTerm) {
                         filteredDocs = filteredDocs.filter(doc => {
@@ -8113,6 +8065,9 @@ ${formRecipientField}
                     }
                     if (status !== 'all') {
                         filteredDocs = filteredDocs.filter(doc => doc.data().status === status);
+                    }
+                    if (recipient !== 'all') {
+                        filteredDocs = filteredDocs.filter(doc => doc.data().recipientType === recipient);
                     }
                 }
 
@@ -8200,6 +8155,10 @@ ${formRecipientField}
                 if (shouldShowControls) {
                     searchInput.oninput = () => renderTickets(relevantDocs);
                     statusFilter.onchange = () => renderTickets(relevantDocs);
+                    const recipientFilter = document.getElementById('report-recipient-filter');
+                    if (recipientFilter) {
+                        recipientFilter.onchange = () => renderTickets(relevantDocs);
+                    }
                 }
             });
         };
@@ -8322,6 +8281,16 @@ ${formRecipientField}
                                 <option value="risolta">Risolta</option>
                             </select>
                         </div>
+                        <div class="form-group" style="flex-shrink: 0; min-width: 150px; margin-bottom: 0;">
+                            <select id="report-recipient-filter" class="form-select">
+                                <option value="all">Tutti i destinatari</option>
+                                <option value="amministratore">Amministratore</option>
+                                <option value="custode">Custode</option>
+                                <option value="consigliere">Consiglieri</option>
+                                <option value="fornitore">Fornitore</option>
+                                <option value="adm">Sviluppatore</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -8400,6 +8369,12 @@ ${formRecipientField}
                     filteredDocs = filteredDocs.filter(doc => doc.data().status === statusFilter.value);
                 }
 
+                // Filtra per destinatario
+                const recipientFilter = document.getElementById('report-recipient-filter');
+                if (recipientFilter && recipientFilter.value !== 'all') {
+                    filteredDocs = filteredDocs.filter(doc => doc.data().recipientType === recipientFilter.value);
+                }
+
                 // Separa in attivi e chiusi
                 const activeTickets = [];
                 const closedTickets = [];
@@ -8446,6 +8421,10 @@ ${formRecipientField}
             }
             if (statusFilter) {
                 statusFilter.onchange = renderFilteredUserReports;
+            }
+            const recipientFilter = document.getElementById('report-recipient-filter');
+            if (recipientFilter) {
+                recipientFilter.onchange = renderFilteredUserReports;
             }
         };
 
