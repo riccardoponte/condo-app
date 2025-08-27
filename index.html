@@ -1647,7 +1647,27 @@
             }
         };
 
-        const getPriorityColor = t => ({ alta: "priority-alta", media: "priority-media", bassa: "priority-bassa" }[t] || "priority-bassa");
+        const getPriorityColor = t => ({
+            "solo-segnalazione": "priority-bassa",
+            "richiesta-intervento-propria": "priority-media",
+            "richiesta-intervento-danno": "priority-alta",
+            "altre-richieste": "priority-media",
+            // Legacy support for old values
+            alta: "priority-alta",
+            media: "priority-media",
+            bassa: "priority-bassa"
+        }[t] || "priority-bassa");
+
+        const getPriorityDisplayText = t => ({
+            "solo-segnalazione": "Solo segnalazione",
+            "richiesta-intervento-propria": "Richiesta d'intervento nella propria UI",
+            "richiesta-intervento-danno": "Richiesta d'intervento per danno propria UI da altre parti",
+            "altre-richieste": "Altre richieste",
+            // Legacy support for old values
+            alta: "Alta",
+            media: "Media",
+            bassa: "Bassa"
+        }[t] || t);
         const getStatusColor = t => ({ aperta: "status-aperta", "in-corso": "status-in-corso", risolta: "status-in-corso", chiusa: "status-chiusa" }[t] || "status-aperta");
 
         const renderHeader = (title) => {
@@ -2295,10 +2315,10 @@
         <label class="form-label">Destinatario</label>
         <select id="report-recipient" required class="form-select">
             <option value="">Seleziona a chi inviare...</option>
-            ${userProfile?.tipoUtente !== 'amministratore' ? `<option value="amministratore">Amministratore</option>` : ''}
-            ${userProfile?.tipoUtente !== 'custode' ? `<option value="custode">Custode</option>` : ''}
-            <option value="consigliere">Consiglieri</option>
-            <option value="adm">Sviluppatore</option>
+            <option value="amministratore" id="admin-option">Amministratore</option>
+            <option value="custode" id="custode-option">Custode</option>
+            <option value="consigliere" id="consigliere-option">Consiglieri</option>
+            <option value="adm" id="adm-option">Sviluppatore</option>
         </select>
     </div>`;
             // --- FINE MODIFICA ---
@@ -2311,22 +2331,6 @@
                         <form id="create-report-form" class="space-y-4">
                             <div><label class="form-label">Titolo</label><input type="text" id="report-title" required class="form-input" placeholder="es. Perdita d'acqua"></div>
                             <div><label class="form-label">Descrizione</label><textarea id="report-description" rows="4" required class="form-textarea" placeholder="Descrivi il problema..."></textarea></div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="form-label">Categoria</label><select id="report-category" required class="form-select"><option value="">...</option><option value="idraulico">Idraulico</option><option value="elettrico">Elettrico</option><option value="riscaldamento">Riscaldamento</option><option value="ascensore">Ascensore</option><option value="pulizie">Pulizie</option><option value="sicurezza">Sicurezza</option><option value="altro">Altro</option></select></div>
-                                <div><label class="form-label">Priorità</label><select id="report-priority" required class="form-select"><option value="">...</option><option value="bassa">Bassa</option><option value="media">Media</option><option value="alta">Alta</option></select></div>
-                            </div>
-                            <div><label class="form-label">Ubicazione</label><input type="text" id="report-location" required class="form-input" placeholder="es. Scala A, Piano 2"></div>
-
-<div>
-    <label for="report-interest-type" class="form-label">Tipo di Interesse</label>
-    <select id="report-interest-type" required class="form-select">
-        <option value="">Seleziona...</option>
-        <option value="personale">Segnalazione di interesse personale</option>
-        <option value="condominiale">Segnalazione di interesse condominiale</option>
-    </select>
-</div>
-
-${formRecipientField}
                             
                             <!-- NUOVA SEZIONE PER UPLOAD ALLEGATI -->
                             <div>
@@ -2339,6 +2343,44 @@ ${formRecipientField}
                                 <div id="attachment-previews-container" class="attachment-previews"></div>
                             </div>
                             <!-- FINE NUOVA SEZIONE -->
+                            
+                            <div>
+                                <label for="report-interest-type" class="form-label">Tipo di Interesse</label>
+                                <select id="report-interest-type" required class="form-select">
+                                    <option value="">Seleziona...</option>
+                                    <option value="personale">Segnalazione di interesse personale</option>
+                                    <option value="condominiale">Segnalazione di interesse condominiale</option>
+                                </select>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="form-label">Genere di intervento</label><select id="report-priority" required class="form-select"><option value="">...</option><option value="solo-segnalazione">Solo segnalazione</option><option value="richiesta-intervento-propria">Richiesta d'intervento nella propria UI</option><option value="richiesta-intervento-danno">Richiesta d'intervento per danno propria UI da altre parti</option><option value="altre-richieste">Altre richieste</option></select></div>
+                                <div><label class="form-label">Categoria</label><select id="report-category" required class="form-select"><option value="">...</option><option value="idraulico">Idraulico</option><option value="elettrico">Elettrico</option><option value="riscaldamento">Riscaldamento</option><option value="ascensore">Ascensore</option><option value="pulizie">Pulizie</option><option value="sicurezza">Sicurezza</option><option value="altro">Altro</option></select></div>
+                            </div>
+                            <div><label class="form-label">Ubicazione</label><input type="text" id="report-location" required class="form-input" placeholder="es. Scala A, Piano 2"></div>
+                            
+                            <!-- Campi condizionali per checkboxes comunicazione -->
+                            <div id="phone-communication-checkboxes" class="hidden">
+                                <label class="form-label">Opzioni di comunicazione</label>
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                        <input type="checkbox" id="communicate-owner-phone" style="margin: 0;">
+                                        <span>Comunicare n. telefono condomino</span>
+                                    </label>
+                                    <label id="other-ui-phone-checkbox" class="hidden" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                        <input type="checkbox" id="communicate-other-ui-phone" style="margin: 0;">
+                                        <span>N. telefono altra U.I.</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Campo condizionale per indicazione proprietario altra U.I. -->
+                            <div id="other-ui-owner-field" class="hidden">
+                                <label class="form-label">Indicazione proprietario altra U.I.</label>
+                                <input type="text" id="other-ui-owner" class="form-input" placeholder="Inserisci il nome del proprietario...">
+                            </div>
+
+${formRecipientField}
 
                             <div class="flex justify-end pt-4"><button type="submit" id="submit-report-btn" class="btn btn-primary">Invia Segnalazione</button></div>
                         </form>
@@ -4898,6 +4940,9 @@ ${formRecipientField}
                 const location = document.getElementById("report-location").value;
                 const interestType = document.getElementById("report-interest-type").value;
                 const recipient = document.getElementById("report-recipient").value;
+                const otherUiOwner = document.getElementById("other-ui-owner").value;
+                const communicateOwnerPhone = document.getElementById("communicate-owner-phone").checked;
+                const communicateOtherUiPhone = document.getElementById("communicate-other-ui-phone").checked;
 
                 if (!title || !description || !category || !priority || !location || !recipient) {
                     alert("Compila tutti i campi, incluso il destinatario.");
@@ -4937,6 +4982,10 @@ ${formRecipientField}
                             priority: priority,
                             location: location,
                             interestType: interestType, // NUOVO CAMPO AGGIUNTO
+                            otherUiOwner: otherUiOwner || null,
+                            communicateOwnerPhone: communicateOwnerPhone,
+                            communicateOtherUiPhone: communicateOtherUiPhone,
+                            createdByPhone: userProfile.telefono || null, // Store creator's phone number
                             status: "aperta",
                             createdBy: `${userProfile.nome} ${userProfile.cognome}`,
                             createdByUserType: userProfile.tipoUtente,
@@ -4968,6 +5017,63 @@ ${formRecipientField}
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Invia Segnalazione';
+                }
+            });
+
+            // Conditional logic for "Genere di intervento" field
+            const genereInterventoSelect = document.getElementById("report-priority");
+            const otherUiOwnerField = document.getElementById("other-ui-owner-field");
+            const phoneCommunicationCheckboxes = document.getElementById("phone-communication-checkboxes");
+            const otherUiPhoneCheckbox = document.getElementById("other-ui-phone-checkbox");
+            const recipientSelect = document.getElementById("report-recipient");
+            const adminOption = document.getElementById("admin-option");
+            const custodeOption = document.getElementById("custode-option");
+            const consigliereOption = document.getElementById("consigliere-option");
+            const admOption = document.getElementById("adm-option");
+
+            genereInterventoSelect?.addEventListener("change", function () {
+                const selectedValue = this.value;
+
+                // Show/hide the "Indicazione proprietario altra U.I." field
+                if (selectedValue === "richiesta-intervento-danno") {
+                    otherUiOwnerField?.classList.remove("hidden");
+                } else {
+                    otherUiOwnerField?.classList.add("hidden");
+                }
+
+                // Show/hide communication checkboxes based on selection
+                if (selectedValue === "richiesta-intervento-propria") {
+                    // Show only "comunicare n. telefono condomino" checkbox
+                    phoneCommunicationCheckboxes?.classList.remove("hidden");
+                    otherUiPhoneCheckbox?.classList.add("hidden");
+                } else if (selectedValue === "richiesta-intervento-danno") {
+                    // Show both checkboxes
+                    phoneCommunicationCheckboxes?.classList.remove("hidden");
+                    otherUiPhoneCheckbox?.classList.remove("hidden");
+                } else {
+                    // Hide all communication checkboxes
+                    phoneCommunicationCheckboxes?.classList.add("hidden");
+                    otherUiPhoneCheckbox?.classList.add("hidden");
+                }
+
+                // Enable/disable recipient options based on selection
+                if (selectedValue === "richiesta-intervento-propria" || selectedValue === "richiesta-intervento-danno") {
+                    // Enable only administrator option
+                    adminOption.disabled = false;
+                    custodeOption.disabled = true;
+                    consigliereOption.disabled = true;
+                    admOption.disabled = true;
+
+                    // If current selection is not administrator, reset to empty
+                    if (recipientSelect.value !== "amministratore") {
+                        recipientSelect.value = "";
+                    }
+                } else {
+                    // Enable all options for other selections
+                    adminOption.disabled = false;
+                    custodeOption.disabled = false;
+                    consigliereOption.disabled = false;
+                    admOption.disabled = false;
                 }
             });
         };
@@ -7641,7 +7747,7 @@ ${formRecipientField}
     ` : ''}
 </div>
                         <div class="subtitle" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;">
-    <span class="badge ${getPriorityColor(report.priority)}">${report.priority}</span>
+    <span class="badge ${getPriorityColor(report.priority)}">${getPriorityDisplayText(report.priority)}</span>
     <span class="badge ${getStatusColor(report.status)}">${report.status}</span>
     ${report.interestType ? `<span class="badge status-in-corso" style="text-transform: capitalize;">${report.interestType}</span>` : ''}
     <span class="badge status-aperta">Dest: ${report.recipientType.charAt(0).toUpperCase() + report.recipientType.slice(1)}</span>
@@ -7650,6 +7756,19 @@ ${formRecipientField}
                 </div>
                 <p class="form-label" style="padding-left: 64px; color: var(--secondary-text); margin-top: 0.75rem;">Inviata da: <strong>${report.createdByUserType ? (report.createdByUserType.charAt(0).toUpperCase() + report.createdByUserType.slice(1)) : report.createdBy}</strong></p>
                 ${report.forwardedBy ? `<p class="form-label" style="padding-left: 64px; color: var(--accent-color); margin-top: 0.5rem;">Inoltrata da: <strong>${report.forwardedBy}</strong> (${report.originalRecipient}) → Attualmente gestita da: <strong>${report.recipientType.charAt(0).toUpperCase() + report.recipientType.slice(1)}</strong></p>` : ''}
+                ${report.communicateOwnerPhone && report.createdByPhone ? `<p class="form-label" style="padding-left: 64px; color: var(--accent-color); margin-top: 0.5rem;">📞 Telefono condomino: <strong>${report.createdByPhone}</strong></p>` : ''}
+                ${report.otherUiOwner ? `<p class="form-label" style="padding-left: 64px; color: var(--secondary-text); margin-top: 0.5rem;">Proprietario altra U.I.: <strong>${report.otherUiOwner}</strong></p>` : ''}
+                
+                ${/* Informazioni di contatto specifiche per Fornitore */ userProfile?.tipoUtente === 'fornitore' && report.shareContactWithSupplier ? `
+                    <div style="padding-left: 64px; margin-top: 0.75rem; padding: 0.75rem; background: var(--surface-color-light); border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+                        <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--accent-color);">📋 Informazioni di Contatto</h4>
+                        ${report.createdByPhone ? `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Telefono richiedente:</strong> ${report.createdByPhone}</p>` : ''}
+                        <p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Nome richiedente:</strong> ${report.createdBy}</p>
+                        ${report.otherUiOwner && report.communicateOtherUiPhone ? `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Altra U.I. coinvolta:</strong> ${report.otherUiOwner}</p>` : ''}
+                        <p style="margin: 0.25rem 0; font-size: 0.85rem; color: var(--secondary-text);"><em>Informazioni condivise dall'amministratore</em></p>
+                    </div>
+                ` : ''}
+                
                 <p style="color: var(--secondary-text); margin-top: 0.5rem; padding-left: 64px;">${report.description}</p>
                 
                 <!-- SEZIONE TIMESTAMP -->
@@ -8126,7 +8245,7 @@ ${formRecipientField}
             // Marca i solleciti come visti
             const q = query(
                 collection(db, "reports"),
-                where("priority", "==", "alta"),
+                where("priority", "in", ["alta", "richiesta-intervento-danno"]),
                 where("status", "in", ["aperta", "in-corso"]),
                 orderBy("updatedAt", "desc"),
                 limit(1)
@@ -8949,6 +9068,29 @@ ${formRecipientField}
             }
         };
 
+        const toggleContactSharing = async (reportId, shareContacts) => {
+            try {
+                const reportRef = doc(db, "reports", reportId);
+                await updateDoc(reportRef, {
+                    shareContactWithSupplier: shareContacts,
+                    updatedAt: serverTimestamp()
+                });
+
+                const actionText = shareContacts ? 'abilitata' : 'disabilitata';
+                alert(`Condivisione contatti ${actionText} con successo.`);
+
+                // Log the activity
+                await logActivity("contact_sharing_toggled", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
+                    reportId: reportId,
+                    shareContacts: shareContacts
+                });
+
+            } catch (error) {
+                console.error("Errore nella modifica della condivisione contatti:", error);
+                alert("Si è verificato un errore nella modifica della condivisione contatti.");
+            }
+        };
+
         const openReportUpdateModal = (reportId) => {
             const modalContent = `
                 <form id="report-update-form" class="space-y-4">
@@ -9142,6 +9284,20 @@ ${formRecipientField}
                             <option value="fornitore">Fornitore</option>
                         </select>
                     </div>
+                    
+                    <!-- Opzione condivisione contatti (visibile solo per fornitore) -->
+                    <div id="contact-sharing-option" class="form-group hidden">
+                        <div style="padding: 1rem; background: var(--surface-color-light); border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                                <input type="checkbox" id="share-contacts-checkbox" style="margin: 0;">
+                                <span style="font-weight: 500;">📞 Condividi informazioni di contatto con il fornitore</span>
+                            </label>
+                            <p style="font-size: 0.85rem; color: var(--secondary-text); margin: 0.5rem 0 0 1.5rem;">
+                                Include nome e telefono del richiedente (se disponibili) nella visualizzazione del ticket per il fornitore
+                            </p>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="reassign-comment" class="form-label">Motivo/Commento (opzionale)</label>
                         <textarea id="reassign-comment" rows="3" class="form-textarea" placeholder="Aggiungi una nota per il prossimo gestore..."></textarea>
@@ -9154,22 +9310,39 @@ ${formRecipientField}
             `;
             showModal('Riassegna Segnalazione', modalContent);
 
+            // Add event listener to show/hide contact sharing option
+            const reassignSelect = document.getElementById('reassign-to');
+            const contactSharingOption = document.getElementById('contact-sharing-option');
+
+            reassignSelect.addEventListener('change', function () {
+                if (this.value === 'fornitore') {
+                    contactSharingOption.classList.remove('hidden');
+                } else {
+                    contactSharingOption.classList.add('hidden');
+                    document.getElementById('share-contacts-checkbox').checked = false;
+                }
+            });
+
             document.getElementById('report-reassignment-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const newRecipient = document.getElementById('reassign-to').value;
                 const comment = document.getElementById('reassign-comment').value.trim();
+                const shareContacts = document.getElementById('share-contacts-checkbox').checked;
                 if (!newRecipient) return;
 
-                await reassignReport(reportId, newRecipient, comment);
+                await reassignReport(reportId, newRecipient, comment, shareContacts);
             });
         };
 
-        const reassignReport = async (reportId, newRecipient, comment) => {
+        const reassignReport = async (reportId, newRecipient, comment, shareContacts = false) => {
             try {
                 const reportRef = doc(db, "reports", reportId);
                 let updateText = `Riassegnato a: ${newRecipient}.`;
                 if (comment) {
                     updateText += ` Motivo: ${comment}`;
+                }
+                if (newRecipient === 'fornitore' && shareContacts) {
+                    updateText += ` Contatti condivisi con il fornitore.`;
                 }
 
                 const newUpdate = {
@@ -9185,6 +9358,11 @@ ${formRecipientField}
                     updatedAt: serverTimestamp(),
                     reassignedBy: currentUser.uid // Always track who reassigned
                 };
+
+                // Add contact sharing setting if assigning to fornitore
+                if (newRecipient === 'fornitore') {
+                    updateData.shareContactWithSupplier = shareContacts;
+                }
 
                 // Track forwarding information when administrator forwards to external parties
                 if (userProfile?.tipoUtente === 'amministratore' && ['fornitore', 'custode', 'consigliere'].includes(newRecipient)) {
@@ -9610,8 +9788,8 @@ ${formRecipientField}
             const lastSeenDate = new Date(lastSeen);
 
             let q;
-            if (['supervisore', 'adm', 'consigliere'].includes(userProfile.tipoUtente)) {
-                // Supervisore, Admin e Consigliere vedono le notifiche per tutte le nuove e aggiornate segnalazioni
+            if (['supervisore', 'adm', 'amministratore', 'consigliere'].includes(userProfile.tipoUtente)) {
+                // Supervisore, Admin, Amministratore e Consigliere vedono le notifiche per tutte le nuove e aggiornate segnalazioni
                 q = query(collection(db, "reports"), where("updatedAt", ">", lastSeenDate));
             } else {
                 // Gli altri ruoli manageriali vedono solo quelle a loro destinate che sono state aggiornate
@@ -9641,7 +9819,7 @@ ${formRecipientField}
             // Query per solleciti urgenti - segnalazioni con priorità alta che sono ancora aperte
             const q = query(
                 collection(db, "reports"),
-                where("priority", "==", "alta"),
+                where("priority", "in", ["alta", "richiesta-intervento-danno"]),
                 where("status", "in", ["aperta", "in-corso"]),
                 where("updatedAt", ">", lastSeenDate)
             );
@@ -9728,6 +9906,7 @@ ${formRecipientField}
         window.refreshApplication = refreshApplication;
         window.voteOnPoll = voteOnPoll;
         window.updateReportStatus = updateReportStatus;
+        window.toggleContactSharing = toggleContactSharing;
         window.openReportUpdateModal = openReportUpdateModal;
         window.sendReportReminder = sendReportReminder;
         window.confirmReportResolution = confirmReportResolution;
