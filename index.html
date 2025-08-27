@@ -1979,7 +1979,7 @@
 `;
 
         const renderBachecaCrea = () => {
-            const canUpload = ['amministratore', 'supervisore', 'consigliere'].includes(userProfile?.tipoUtente);
+            const canUpload = ['amministratore', 'supervisore', 'consigliere', 'adm'].includes(userProfile?.tipoUtente);
 
             const uploadSectionHtml = canUpload ? `
             <div>
@@ -2008,6 +2008,17 @@
                                 <!-- Groups will be populated dynamically -->
                             </select>
                         </div>
+
+                        
+                        ${['adm', 'supervisore', 'consigliere', 'amministratore'].includes(userProfile?.tipoUtente) ? `
+                        <div class="form-group">
+                            <label class="flex items-center gap-3 p-3 rounded-md cursor-pointer" style="background-color: var(--surface-color-light);">
+                                <input type="checkbox" id="comm-forward-custode" style="width: 20px; height: 20px; accent-color: var(--accent-color); flex-shrink: 0;">
+                                <span class="font-medium">Da comunicare al custode</span>
+                            </label>
+                        </div>
+                        ` : ''}
+                        
                         ${uploadSectionHtml}
                         <div class="flex justify-end"><button type="submit" id="publish-comm-btn" class="btn btn-primary">Pubblica</button></div>
                     </form>
@@ -4599,6 +4610,8 @@ ${formRecipientField}
                         // 1. Create communication document reference to get ID first
                         const newCommRef = doc(collection(db, "communications"));
                         const commId = newCommRef.id;
+                        const counterRef = doc(db, "counters", "communicationsCounter");
+                        let finalCommNumber;
                         let fileUrls = [];
 
                         // 2. Upload files if they exist
@@ -4612,15 +4625,31 @@ ${formRecipientField}
                             fileUrls = await Promise.all(uploadPromises);
                         }
 
-                        // 3. Set the document data
-                        await setDoc(newCommRef, {
-                            title: title,
-                            content: content,
-                            targetGroup: targetGroup,
-                            fileUrls: fileUrls, // Add file URLs to the document
-                            createdBy: `${userProfile.nome} ${userProfile.cognome}`,
-                            createdById: currentUser.uid,
-                            createdAt: serverTimestamp()
+                        // 3. Use transaction to get communication number and set document data
+                        await runTransaction(db, async (transaction) => {
+                            const counterDoc = await transaction.get(counterRef);
+                            const newCommNumber = (counterDoc.exists() ? counterDoc.data().lastNumber : 0) + 1;
+                            finalCommNumber = newCommNumber;
+
+                            // --- MODIFICATION START ---
+                            // Get the state of the new checkbox. It defaults to false if not present.
+                            const forwardToCustode = document.getElementById("comm-forward-custode")?.checked || false;
+
+                            const commData = {
+                                communicationNumber: newCommNumber,
+                                title: title,
+                                content: content,
+                                targetGroup: targetGroup,
+                                forwardToCustode: forwardToCustode, // Save the checkbox state
+                                fileUrls: fileUrls,
+                                createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                                createdById: currentUser.uid,
+                                createdAt: serverTimestamp()
+                            };
+                            // --- MODIFICATION END ---
+
+                            transaction.set(counterRef, { lastNumber: newCommNumber });
+                            transaction.set(newCommRef, commData);
                         });
 
                         await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup, attachments: fileUrls.length });
@@ -7133,52 +7162,54 @@ ${formRecipientField}
                 if (commDoc.exists()) {
                     const comm = commDoc.data();
                     let attachmentsHtml = '';
+                    
+                    // --- MODIFICATION START ---
+                    // This block now renders a gallery of attachments if fileUrls exist.
                     if (comm.fileUrls && comm.fileUrls.length > 0) {
                         attachmentsHtml = `
                         <h4 style="font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem;">Allegati:</h4>
                         <div class="report-attachments-gallery" style="padding-left: 0;">
                             ${comm.fileUrls.map(url => {
-                            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-                            const videoExtensions = ['.mp4', '.mov', '.webm', '.avi'];
-                            const lowerUrl = url.toLowerCase();
+                                // Simple logic to differentiate file types based on common extensions in the URL
+                                const lowerUrl = url.toLowerCase();
+                                const isImage = /\.(jpg|jpeg|png|gif|webp)$/.test(lowerUrl);
+                                const isVideo = /\.(mp4|mov|webm)$/.test(lowerUrl);
+                                
+                                let fileName = 'Documento';
+                                try {
+                                    // Extract a user-friendly file name from the URL
+                                    const urlPath = new URL(url).pathname;
+                                    const decodedPath = decodeURIComponent(urlPath);
+                                    fileName = decodedPath.substring(decodedPath.lastIndexOf('/') + 1);
+                                    // Remove the timestamp prefix for display
+                                    if (fileName.includes('_')) {
+                                        fileName = fileName.substring(fileName.indexOf('_') + 1);
+                                    }
+                                } catch (e) { /* Fallback if URL parsing fails */ }
 
-                            const isImage = imageExtensions.some(ext => lowerUrl.includes(ext));
-                            const isVideo = videoExtensions.some(ext => lowerUrl.includes(ext));
-
-                            let fileName = 'Documento';
-                            try {
-                                const urlParts = new URL(url);
-                                const pathParts = urlParts.pathname.split('/');
-                                fileName = decodeURIComponent(pathParts[pathParts.length - 1].split('?')[0]);
-                                // Remove the timestamp prefix from the filename for display
-                                fileName = fileName.substring(fileName.indexOf('_') + 1);
-                            } catch (e) { /* Fallback to simple name if URL parsing fails */ }
-
-
-                            if (isImage) {
-                                return `<a href="${url}" target="_blank" class="gallery-item"><img src="${url}" alt="Allegato immagine"></a>`;
-                            } else if (isVideo) {
-                                return `<a href="${url}" target="_blank" class="gallery-item"><video src="${url}" preload="metadata"></video></a>`;
-                            } else {
-                                return `
+                                if (isImage) {
+                                    return `<a href="${url}" target="_blank" class="gallery-item"><img src="${url}" alt="Allegato immagine"></a>`;
+                                } else if (isVideo) {
+                                    return `<a href="${url}" target="_blank" class="gallery-item"><video src="${url}" controls preload="metadata"></video></a>`;
+                                } else {
+                                    // Fallback for documents (PDF, DOCX, etc.)
+                                    return `
                                     <a href="${url}" target="_blank" class="gallery-item">
                                         <div class="preview-item-document">
                                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                                             <span>${fileName}</span>
                                         </div>
                                     </a>`;
-                            }
-                        }).join('')}
+                                }
+                            }).join('')}
                         </div>
-                    `;
+                        `;
                     }
+                    // --- MODIFICATION END ---
 
                     const contentHtml = `<p>${comm.content.replace(/\n/g, '<br>')}</p>${attachmentsHtml}`;
                     showModal(comm.title, contentHtml);
 
-                    // Aggiunto per risolvere il bug: quando si apre una comunicazione,
-                    // le notifiche vengono azzerate. Si recupera la comunicazione più recente
-                    // per marcare tutte le precedenti come lette.
                     const latestCommQuery = query(collection(db, "communications"), orderBy("createdAt", "desc"), limit(1));
                     const snapshot = await getDocs(latestCommQuery);
                     if (!snapshot.empty) {
@@ -7205,7 +7236,16 @@ ${formRecipientField}
 
                 let filteredDocs = snapshot.docs.filter(docSnap => {
                     const comm = docSnap.data();
-                    return canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
+                    // --- MODIFICATION START ---
+                    // The communication is visible if:
+                    // 1. The user has general permissions to see it (based on role or group).
+                    // OR
+                    // 2. The user is a 'custode' AND the communication was specifically flagged for them.
+                    const isForCustodian = userProfile?.tipoUtente === 'custode' && comm.forwardToCustode === true;
+                    const hasGeneralPermission = canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
+                    
+                    return hasGeneralPermission || isForCustodian;
+                    // --- MODIFICATION END ---
                 });
 
                 if (searchTerm) {
@@ -7235,7 +7275,7 @@ ${formRecipientField}
                     <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
                     <div class="list-item-content">
                         <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                            <span style="white-space: normal;">${comm.title}</span>
+                            <span style="white-space: normal;">${comm.communicationNumber ? `#${comm.communicationNumber}: ` : ''}${comm.title}</span>
                             ${targetGroupHtml}
                         </div>
                         <div class="subtitle">${comm.content.substring(0, 50)}...</div>
