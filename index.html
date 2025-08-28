@@ -4065,6 +4065,12 @@ ${formRecipientField}
 
                 await Promise.all(deletePromises);
 
+                // NUOVO: Resetta il contatore se si stanno eliminando le comunicazioni
+                if (type === 'communications') {
+                    const counterRef = doc(db, "counters", "communicationsCounter");
+                    await setDoc(counterRef, { lastNumber: 0 });
+                }
+
                 await logActivity("bulk_delete", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, {
                     dataType: type,
                     count: idsToDelete.length,
@@ -4970,7 +4976,7 @@ ${formRecipientField}
                 // --- SECURITY BEST PRACTICE ---
                 // This URL should be stored in a secure backend or environment variable,
                 // not exposed in client-side code.
-                const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/ytp02u2qlsoinvvt72r5tbrn8tw85awa";
+                const MAKE_WEBHOOK_URL = "https://primary-production-36d20.up.railway.app/webhook-test/daf02a0d-306e-49c6-9f79-210a88f81de0";
 
                 try {
                     // 1. Fetch all registered user emails from Firestore.
@@ -7504,16 +7510,16 @@ ${formRecipientField}
 
                 let filteredDocs = snapshot.docs.filter(docSnap => {
                     const comm = docSnap.data();
-                    // --- MODIFICATION START ---
-                    // The communication is visible if:
-                    // 1. The user has general permissions to see it (based on role or group).
-                    // OR
-                    // 2. The user is a 'custode' AND the communication was specifically flagged for them.
-                    const isForCustodian = userProfile?.tipoUtente === 'custode' && comm.forwardToCustode === true;
-                    const hasGeneralPermission = canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
+                    const userRole = userProfile?.tipoUtente;
+
+                    // Logica specifica per il Custode: vede solo le comunicazioni a lui inoltrate.
+                    if (userRole === 'custode') {
+                        return comm.forwardToCustode === true;
+                    }
                     
-                    return hasGeneralPermission || isForCustodian;
-                    // --- MODIFICATION END ---
+                    // Logica generale per tutti gli altri utenti.
+                    const hasGeneralPermission = canSeeAll || !comm.targetGroup || comm.targetGroup === 'Tutti' || userGroups.includes(comm.targetGroup);
+                    return hasGeneralPermission;
                 });
 
                 if (searchTerm) {
@@ -7540,7 +7546,7 @@ ${formRecipientField}
                             : '';
 
                         const custodeBadgeHtml = comm.forwardToCustode
-                            ? `<span class="badge status-in-corso" style="font-size: 0.7rem; text-transform: uppercase;">Per Custode</span>`
+                            ? `<span class="badge status-in-corso" style="font-size: 0.7rem; text-transform: uppercase;">CUSTODE</span>`
                             : '';
 
                         return `
