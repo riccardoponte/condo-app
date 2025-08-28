@@ -552,6 +552,11 @@
             line-height: 1;
         }
 
+        :root[data-theme="light"] .notification-badge {
+            background-color: black;
+            color: white;
+        }
+
         /* Dashboard (Home Page) */
         .dashboard-grid {
             display: grid;
@@ -1998,6 +2003,7 @@
             <main>
                 <div class="card" style="margin-bottom:2rem;">
                     <h3 class="card-title">Nuova comunicazione</h3>
+                    <div id="comm-creation-message" class="message-box"></div>
                     <form id="create-communication-form" class="space-y-4">
                         <div><label for="comm-title" class="form-label">Titolo</label><input type="text" id="comm-title" required class="form-input" placeholder="Es. Interruzione acqua"></div>
                         <div><label for="comm-content" class="form-label">Messaggio</label><textarea id="comm-content" rows="4" required class="form-textarea" placeholder="Scrivi qui..."></textarea></div>
@@ -4577,6 +4583,11 @@ ${formRecipientField}
                     const querySnapshot = await getDocs(q);
                     querySnapshot.forEach(doc => {
                         const group = doc.data();
+                        // --- MODIFICA INIZIO: Nasconde l'opzione "Portineria" ---
+                        if (group.name.toLowerCase() === 'portineria') {
+                            return; // Salta l'aggiunta di questa opzione
+                        }
+                        // --- MODIFICA FINE ---
                         const option = document.createElement('option');
                         option.value = group.name;
                         option.textContent = group.name;
@@ -4653,6 +4664,14 @@ ${formRecipientField}
                         });
 
                         await logActivity("communication_posted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { title: title, targetGroup: targetGroup, attachments: fileUrls.length });
+
+                        const messageBox = document.getElementById('comm-creation-message');
+                        if (messageBox) {
+                            messageBox.className = 'message-box success';
+                            messageBox.textContent = `Comunicazione n. "${finalCommNumber}" pubblicata`;
+                            messageBox.style.display = 'block';
+                            setTimeout(() => { messageBox.style.display = 'none'; }, 4000);
+                        }
 
                         // Reset form and file state
                         form.reset();
@@ -7266,8 +7285,13 @@ ${formRecipientField}
                         if (!comm.createdAt) return "";
 
                         const dateFormatted = comm.createdAt.toDate().toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
+                        
                         const targetGroupHtml = comm.targetGroup && comm.targetGroup !== 'Tutti'
                             ? `<span class="badge status-aperta" style="font-size: 0.7rem; text-transform: uppercase;">${comm.targetGroup}</span>`
+                            : '';
+
+                        const custodeBadgeHtml = comm.forwardToCustode
+                            ? `<span class="badge status-in-corso" style="font-size: 0.7rem; text-transform: uppercase;">Per Custode</span>`
                             : '';
 
                         return `
@@ -7275,8 +7299,11 @@ ${formRecipientField}
                     <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
                     <div class="list-item-content">
                         <div class="title" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                            <span style="white-space: normal;">${comm.communicationNumber ? `#${comm.communicationNumber}: ` : ''}${comm.title}</span>
-                            ${targetGroupHtml}
+                            <span style="white-space: normal; flex-grow: 1; padding-right: 0.5rem;">${comm.communicationNumber ? `#${comm.communicationNumber}: ` : ''}${comm.title}</span>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; flex-shrink: 0;">
+                                ${targetGroupHtml}
+                                ${custodeBadgeHtml}
+                            </div>
                         </div>
                         <div class="subtitle">${comm.content.substring(0, 50)}...</div>
                         <div class="subtitle" style="font-size:0.75rem; margin-top:4px;">${comm.createdBy} - ${dateFormatted}</div>
