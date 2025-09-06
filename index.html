@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
+    
+    <!-- Link al manifest per la PWA -->
+    <link rel="manifest" href="manifest.json">
     <style>
         /* --- NUOVO DESIGN SYSTEM v4 (Stile App Nativa) --- */
 
@@ -464,11 +467,35 @@
             font-weight: 500;
         }
 
-        .property-selection-item .group-select {
-            flex-basis: 160px;
+        .property-selection-item .group-select,
+        .property-selection-item .plan-select {
             flex-shrink: 0;
             font-size: 0.9rem;
             padding: 0.6rem 0.8rem;
+        }
+
+        .property-selection-item .group-select {
+            flex-basis: 160px;
+        }
+
+        .property-selection-item .plan-select {
+            flex-basis: 120px;
+        }
+
+        /* Stili per il contenitore dei menu a tendina impilati */
+        .property-controls-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* Spazio tra i due menu */
+            flex-shrink: 0;
+            width: 160px; /* Larghezza fissa per il contenitore, come il campo 'gruppo' originale */
+        }
+
+        /* Reset e override per i select all'interno del nuovo contenitore */
+        .property-controls-stack .group-select,
+        .property-controls-stack .plan-select {
+            flex-basis: auto; /* Annulla la base flessibile */
+            width: 100%;
         }
 
         /* --- MODIFICA FINE --- */
@@ -1243,6 +1270,7 @@
             measurementId: "G-2SM3DH41EZ"
         };
         const app = initializeApp(firebaseConfig);
+
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app, "gs://condo-app-49255.firebasestorage.app");
@@ -1260,6 +1288,7 @@
         let selectedUploadPath = ''; // Nuova variabile per il percorso di upload scelto
         let selectedReportFiles = []; // Array per i file della segnalazione
         let selectedCommunicationFiles = []; // Array per i file della comunicazione
+        let currentAdministrativePeriod = null; // NUOVO: Oggetto per il periodo amministrativo corrente
 
         // Stato per la registrazione, reso globale a livello di modulo per un reset corretto
         let groupedProperties = {};
@@ -1504,6 +1533,181 @@
 
         const resetPassword = async t => await sendPasswordResetEmail(auth, t);
         const loadUserProfile = async t => { if (t) { const e = await getDoc(doc(db, "users", t.uid)); e.exists() && (userProfile = e.data()) } };
+        
+        // NUOVO: Carica il periodo amministrativo corrente
+        const loadCurrentAdministrativePeriod = async () => {
+            try {
+                const now = new Date();
+                const q = query(collection(db, "administrativePeriods"), 
+                    where("startDate", "<=", now), 
+                    orderBy("startDate", "desc"),
+                    limit(1));
+
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const periodDoc = snapshot.docs[0];
+                    const periodData = periodDoc.data();
+                    if (periodData.endDate.toDate() >= now) {
+                        currentAdministrativePeriod = { id: periodDoc.id, ...periodData };
+                    } else {
+                        currentAdministrativePeriod = null;
+                    }
+                } else {
+                    currentAdministrativePeriod = null;
+                }
+            } catch (error) {
+                console.error("Errore nel caricamento del periodo amministrativo:", error);
+                currentAdministrativePeriod = null;
+            }
+        };
+
+        // NUOVO: Renderizza il banner del periodo amministrativo
+        const renderCurrentPeriodBanner = () => {
+            if (currentAdministrativePeriod) {
+                const startDate = currentAdministrativePeriod.startDate.toDate().toLocaleDateString('it-IT');
+                const endDate = currentAdministrativePeriod.endDate.toDate().toLocaleDateString('it-IT');
+                return `
+                <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--accent-color);">
+                    <p style="font-weight: 500; color: var(--secondary-text);">
+                        Periodo Amministrativo Corrente: <strong style="color: var(--primary-text);">${currentAdministrativePeriod.year}</strong> (dal ${startDate} al ${endDate})
+                    </p>
+                </div>`;
+            }
+            return '';
+        };
+
+        // NUOVO: Pagina di gestione dei periodi amministrativi
+        const renderPeriodiAmministrativi = () => `
+            ${renderHeader('Periodi Amministrativi')}
+            <main>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Crea Nuovo Periodo</h3>
+                    <div id="period-message" class="message-box"></div>
+                    <form id="create-period-form" class="space-y-4">
+                        <div class="form-group">
+                            <label for="period-year" class="form-label">Anno Amministrativo</label>
+                            <input type="text" id="period-year" class="form-input" required placeholder="Es. 2023-2024">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="period-start-date" class="form-label">Dal</label>
+                                <input type="date" id="period-start-date" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="period-end-date" class="form-label">Al</label>
+                                <input type="date" id="period-end-date" class="form-input" required>
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn btn-primary">Crea Periodo</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Periodi Esistenti</h3>
+                    <div id="periods-list-container" class="list-container">
+                        <p style="color:var(--secondary-text);">Caricamento periodi...</p>
+                    </div>
+                </div>
+            </main>
+            ${renderBottomNavigation()}
+        `;
+
+        // NUOVO: Handler per la pagina dei periodi
+        const setupPeriodiAmministrativiHandlers = () => {
+            const form = document.getElementById('create-period-form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const messageBox = document.getElementById('period-message');
+                messageBox.style.display = 'none';
+
+                const year = document.getElementById('period-year').value.trim();
+                const startDateStr = document.getElementById('period-start-date').value;
+                const endDateStr = document.getElementById('period-end-date').value;
+
+                if (!year || !startDateStr || !endDateStr) {
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = 'Tutti i campi sono obbligatori.';
+                    messageBox.style.display = 'block';
+                    return;
+                }
+
+                const startDate = new Date(startDateStr);
+                const endDate = new Date(endDateStr);
+
+                if (endDate < startDate) {
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = 'La data di fine non può essere precedente alla data di inizio.';
+                    messageBox.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    await addDoc(collection(db, "administrativePeriods"), {
+                        year: year,
+                        startDate: startDate,
+                        endDate: endDate,
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    await logActivity("admin_period_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { year });
+                    messageBox.className = 'message-box success';
+                    messageBox.textContent = 'Periodo creato con successo!';
+                    messageBox.style.display = 'block';
+                    form.reset();
+                    await loadCurrentAdministrativePeriod(); // Ricarica il periodo corrente
+
+                } catch (error) {
+                    console.error("Errore creazione periodo:", error);
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = `Errore: ${error.message}`;
+                    messageBox.style.display = 'block';
+                }
+            });
+
+            const listContainer = document.getElementById('periods-list-container');
+            const q = query(collection(db, "administrativePeriods"), orderBy("startDate", "desc"));
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    listContainer.innerHTML = '<p style="color:var(--secondary-text);">Nessun periodo amministrativo creato.</p>';
+                    return;
+                }
+                listContainer.innerHTML = snapshot.docs.map(docSnap => {
+                    const period = docSnap.data();
+                    const startDate = period.startDate.toDate().toLocaleDateString('it-IT');
+                    const endDate = period.endDate.toDate().toLocaleDateString('it-IT');
+                    const isCurrent = currentAdministrativePeriod && currentAdministrativePeriod.id === docSnap.id;
+                    return `
+                    <div class="list-item" style="background: var(--surface-color-light);">
+                        <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z"/></svg></div>
+                        <div class="list-item-content">
+                            <div class="title">${period.year} ${isCurrent ? '<span class="badge status-chiusa" style="margin-left:8px;">In Corso</span>' : ''}</div>
+                            <div class="subtitle">Dal ${startDate} al ${endDate}</div>
+                        </div>
+                        <div class="list-item-action">
+                            <button onclick="deleteAdministrativePeriod('${docSnap.id}')" class="btn-icon" style="background:var(--danger); color:white;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            });
+        };
+
+        // NUOVO: Funzione per eliminare un periodo
+        const deleteAdministrativePeriod = async (periodId) => {
+            if (!confirm("Sei sicuro di voler eliminare questo periodo amministrativo? L'azione è irreversibile.")) {
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, 'administrativePeriods', periodId));
+                await logActivity("admin_period_deleted", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { periodId });
+                await loadCurrentAdministrativePeriod(); // Ricarica per verificare se il periodo corrente è stato eliminato
+            } catch (error) {
+                console.error("Errore eliminazione periodo:", error);
+                alert(`Errore: ${error.message}`);
+            }
+        };
 
         const navigateTo = (e) => {
             const userType = userProfile?.tipoUtente;
@@ -2214,6 +2418,7 @@
         const renderBachecaTutte = () => `
     ${renderHeader('Tutte le Comunicazioni')}
     <main>
+        ${renderCurrentPeriodBanner()}
         <div class="card" style="margin-bottom: 1rem;">
             <div class="form-group" style="margin-bottom: 0;">
                 <input type="text" id="communication-search" placeholder="Cerca per titolo o contenuto..." class="form-input">
@@ -2384,6 +2589,7 @@
         const renderSondaggiElenco = () => `
             ${renderHeader('Elenco Sondaggi')}
             <main>
+                ${renderCurrentPeriodBanner()}
                 <div class="card" style="margin-bottom: 1rem;">
                     <div style="margin-bottom: 1rem;">
                         <input type="text" id="poll-search" placeholder="Cerca sondaggi per parole chiave..." class="form-input w-full">
@@ -2514,33 +2720,43 @@
         };
 
         const renderSegnalazioniCrea = () => {
-            // Il campo destinatario è ora universale per tutti gli utenti che creano una segnalazione.
-            // --- MODIFICA SUPERVISORE/CONSIGLIERE: Dropdown destinatari condizionale ---
-            const isSupervisor = userProfile?.tipoUtente === 'supervisore';
-            const isConsigliere = userProfile?.tipoUtente === 'consigliere';
-            const formRecipientField = `
-    <div>
-        <label class="form-label">Destinatario</label>
-        <select id="report-recipient" required class="form-select">
-            <option value="">Seleziona a chi inviare...</option>
-            <option value="amministratore" id="admin-option">Amministratore</option>
-            <option value="custode" id="custode-option">Custode</option>
-            <option value="consigliere" id="consigliere-option">Consiglieri</option>
-            <option value="adm" id="adm-option">Sviluppatore</option>
-        </select>
-    </div>`;
-            // --- FINE MODIFICA ---
+            const isCustodian = userProfile?.tipoUtente === 'custode';
+
+        const recipientOptions = isCustodian
+            ? `
+                <option value="amministratore" id="admin-option">Amministratore</option>
+                <option value="condomini">Condomini</option>
+                <option value="consigliere" id="consigliere-option">Consiglieri</option>
+                <option value="adm" id="adm-option">Sviluppatore</option>
+              `
+            : `
+                <option value="amministratore" id="admin-option">Amministratore</option>
+                <option value="custode" id="custode-option">Custode</option>
+                <option value="consigliere" id="consigliere-option">Consiglieri</option>
+                <option value="adm" id="adm-option">Sviluppatore</option>
+              `;
+
+        const formRecipientField = `
+        <div>
+            <label class="form-label">Destinatario</label>
+            <select id="report-recipient" required class="form-select">
+                <option value="">Seleziona a chi inviare...</option>
+                ${recipientOptions}
+            </select>
+        </div>`;
 
             return `
                 ${renderHeader('Crea Segnalazione')}
                 <main>
+                    ${renderCurrentPeriodBanner()}
                     <div class="card" style="margin-bottom:2rem;">
                         <h3 class="card-title">Invia una Segnalazione</h3>
                         <form id="create-report-form" class="space-y-4">
                             <div><label class="form-label">Titolo</label><input type="text" id="report-title" required class="form-input" placeholder="es. Perdita d'acqua"></div>
                             <div><label class="form-label">Descrizione</label><textarea id="report-description" rows="4" required class="form-textarea" placeholder="Descrivi il problema..."></textarea></div>
-                            
-                            <!-- NUOVA SEZIONE PER UPLOAD ALLEGATI -->
+                        ${userProfile?.tipoUtente === 'condomino' ? `<p style="font-size: 0.85rem; color: var(--warning); margin-top: -0.5rem; margin-bottom: 1rem;">In caso di richieste d'intervento per danni alla propria U.I. indicare l'U.I. vicina che potrebbe aver creato la richiesta d'intervento</p>` : ''}
+                        
+                        <!-- NUOVA SEZIONE PER UPLOAD ALLEGATI -->
                             <div>
                                 <label class="form-label">Allegati (Foto/Video)</label>
                                 <div class="attachment-upload-container" onclick="document.getElementById('report-attachments').click()">
@@ -2551,6 +2767,8 @@
                                 <div id="attachment-previews-container" class="attachment-previews"></div>
                             </div>
                             <!-- FINE NUOVA SEZIONE -->
+
+                            ${formRecipientField}
                             
                             <div>
                                 <label for="report-interest-type" class="form-label">Tipo di Interesse</label>
@@ -2561,9 +2779,16 @@
                                 </select>
                             </div>
                             
-                            <div><label class="form-label">Genere di intervento</label><select id="report-priority" required class="form-select"><option value="">...</option><option value="solo-segnalazione">Solo segnalazione</option><option value="richiesta-intervento-propria">Richiesta d'intervento nella propria UI</option><option value="richiesta-intervento-danno">Richiesta d'intervento per danno propria UI da altre parti</option><option value="altre-richieste">Altre richieste</option></select></div>
-                            <div><label class="form-label">Categoria</label><select id="report-category" required class="form-select"><option value="">...</option><option value="idraulico">Idraulico</option><option value="elettrico">Elettrico</option><option value="riscaldamento">Riscaldamento</option><option value="ascensore">Ascensore</option><option value="pulizie">Pulizie</option><option value="sicurezza">Sicurezza</option><option value="altro">Altro</option></select></div>
-                            <div><label class="form-label">Ubicazione</label><input type="text" id="report-location" required class="form-input" placeholder="es. Scala A, Piano 2"></div>
+                            <div><label class="form-label">Genere di intervento</label><select id="report-priority" required class="form-select" disabled><option value="">Seleziona prima il destinatario...</option></select></div>
+                            <div><label class="form-label">Categoria</label><select id="report-category" required class="form-select"><option value="">...</option><option value="ascensore">Ascensore</option><option value="elettrico">Elettrico</option><option value="idraulico">Idraulico</option><option value="portierato">Portierato</option><option value="posta">Posta</option><option value="pulizie">Pulizie</option><option value="raccolta-rifiuti">Raccolta rifiuti</option><option value="riscaldamento">Riscaldamento</option><option value="sicurezza">Sicurezza</option><option value="tv">TV</option><option value="altro">Altro</option></select></div>
+                            <div class="form-group">
+    <label for="report-property-select" class="form-label">Unità Immobiliare (Ubicazione)</label>
+    <select id="report-property-select" required class="form-select">
+        <option value="" disabled>Seleziona la tua unità...</option>
+        <!-- Le opzioni verranno popolate dinamicamente via JS -->
+    </select>
+</div>
+<input type="hidden" id="report-location"> <!-- Mantenuto per compatibilità e logica interna -->
                             
                             <!-- Campi condizionali per checkboxes comunicazione -->
                             <div id="phone-communication-checkboxes" class="hidden">
@@ -2571,7 +2796,7 @@
                                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                         <input type="checkbox" id="communicate-owner-phone" style="margin: 0;">
-                                        <span>Comunicare n. telefono condomino</span>
+                                        <span>Comunicare  n. di telefono condomino al fornitore</span>
                                     </label>
                                     <label id="other-ui-phone-checkbox" class="hidden" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                         <input type="checkbox" id="communicate-other-ui-phone" style="margin: 0;">
@@ -2585,8 +2810,6 @@
                                 <label class="form-label">Indicazione proprietario altra U.I.</label>
                                 <input type="text" id="other-ui-owner" class="form-input" placeholder="Inserisci il nome del proprietario...">
                             </div>
-
-${formRecipientField}
 
                             <div class="flex justify-end pt-4"><button type="submit" id="submit-report-btn" class="btn btn-primary">Invia Segnalazione</button></div>
                         </form>
@@ -2652,7 +2875,7 @@ ${formRecipientField}
                             <label class="form-label">Le Tue Proprietà</label>
                             <div style="background: var(--surface-color-light); padding: 1rem; border-radius: var(--radius-sm);">
                                 ${userProfile?.proprieta && userProfile.proprieta.length > 0
-                ? `<ul>${userProfile.proprieta.map(p => `<li style="list-style-type: disc; margin-left: 20px;">${p.interno} (${(p.millesimi || 0).toFixed(2)} ‰) ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')}</ul>
+                ? `<ul>${userProfile.proprieta.map(p => `<li style="list-style-type: disc; margin-left: 20px;">${p.interno} (${(p.millesimi || 0).toFixed(2)} ‰) - Piano: ${p.piano ?? 'N/A'} ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')}</ul>
                                        <hr style="border-color: var(--surface-color); margin: 0.75rem 0;">
                                        <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Millesimi Totali:</span><span>${(userProfile.millesimiTotali || 0).toFixed(2)} ‰</span></div>`
                 : '<p style="color:var(--secondary-text);">Nessuna proprietà associata.</p>'
@@ -2913,7 +3136,7 @@ ${formRecipientField}
                         usersSnapshot.docs.forEach(doc => {
                             const user = doc.data();
                             const propertiesHtml = user.proprieta && user.proprieta.length > 0
-                                ? user.proprieta.map(p => `<div>${p.interno} (${(p.millesimi || 0).toFixed(2)} ‰)</div>`).join('')
+                                ? user.proprieta.map(p => `<div>${p.interno} (Piano: ${p.piano ?? 'N/A'}, ${(p.millesimi || 0).toFixed(2)} ‰)</div>`).join('')
                                 : 'N/D';
                             html += `
                                 <tr>
@@ -3300,6 +3523,12 @@ ${formRecipientField}
             ${renderHeader(userProfile?.tipoUtente === 'adm' ? 'Funzioni Admin' : 'Funzioni Supervisore')}
             <main>
                 <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+                    <div onclick="navigateTo('periodiAmministrativi')" class="dashboard-item">
+                        <div class="menu-list-item">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z"/></svg>
+                            <p style="text-align: left; font-size: 1.1rem;">Periodi Amministrativi</p>
+                        </div>
+                    </div>
                     <div onclick="navigateTo('userManagement')" class="dashboard-item">
                         <div class="menu-list-item">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width: 32px; height: 32px; flex-shrink: 0;"><path d="M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4Z"/></svg>
@@ -3373,11 +3602,24 @@ ${formRecipientField}
             <main>
                 <div class="card" style="margin-bottom:2rem;">
                     <h3 class="card-title">Crea Gruppo Manualmente</h3>
-                    <form id="create-partial-condo-form" class="flex gap-4">
-                        <div class="form-group" style="flex-grow:1; margin-bottom:0;">
+                    <form id="create-partial-condo-form" class="space-y-4">
+                        <div class="form-group">
+                            <label for="partial-condo-name" class="form-label">Nome Gruppo</label>
                             <input type="text" id="partial-condo-name" required class="form-input" placeholder="Es. Scala Bellini 11, Box, Giardino...">
                         </div>
-                        <button type="submit" class="btn btn-primary">Crea Gruppo</button>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="partial-condo-start-plan" class="form-label">Piano Iniziale</label>
+                                <input type="number" id="partial-condo-start-plan" required class="form-input" placeholder="Es. -1">
+                            </div>
+                            <div class="form-group">
+                                <label for="partial-condo-end-plan" class="form-label">Piano Finale</label>
+                                <input type="number" id="partial-condo-end-plan" required class="form-input" placeholder="Es. 8">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn btn-primary">Crea Gruppo</button>
+                        </div>
                     </form>
                 </div>
 
@@ -4459,6 +4701,10 @@ ${formRecipientField}
                     if (['adm', 'amministratore'].includes(userProfile?.tipoUtente)) content = renderStatisticheCondomini();
                     else navigateTo('dashboard');
                     break;
+                case 'periodiAmministrativi': // NUOVO
+                    if (['supervisore', 'adm'].includes(userProfile?.tipoUtente)) content = renderPeriodiAmministrativi();
+                    else navigateTo('dashboard');
+                    break;
                 default: content = renderLoginPage();
             }
 
@@ -4563,6 +4809,7 @@ ${formRecipientField}
                 case 'cronologiaAttivita': if (userProfile?.tipoUtente === 'adm') { setupCronologiaAttivitaHandlers(); } break;
                 case 'puliziaDati': /* No specific handlers needed as logic is in onclick */ break;
                 case 'statisticheCondomini': setupStatisticheCondominiHandlers(); break;
+                case 'periodiAmministrativi': setupPeriodiAmministrativiHandlers(); break; // NUOVO
                 case 'archivio':
                 case 'gestione_archivio':
                     setupArchivioHandlers();
@@ -4614,25 +4861,41 @@ ${formRecipientField}
                 }
             };
 
-            const getAutomaticGroup = (interno) => {
-                if (!interno || localPartialCondosList.length === 0) return '';
-                const lowerInterno = interno.toLowerCase();
-                if (/\be\b|\be-/.test(lowerInterno)) {
-                    const boxCondo = localPartialCondosList.find(c => c.name.toLowerCase() === 'box');
-                    if (boxCondo) return boxCondo.name;
-                }
-                if (lowerInterno.includes('b11')) {
-                    const b11Condo = localPartialCondosList.find(c => c.name.toLowerCase().includes('bellini 11'));
-                    if (b11Condo) return b11Condo.name;
-                }
-                const sortedCondos = [...localPartialCondosList].sort((a, b) => b.name.length - a.name.length);
-                for (const condo of sortedCondos) {
-                    if (lowerInterno.includes(condo.name.toLowerCase())) return condo.name;
-                }
-                return '';
-            };
+            let activeRules = [];
+        let importedHeaders = [];
 
-            const loadPropertyDataForRegistration = async () => {
+        const getAutomaticGroupByRules = (propertyData) => {
+            if (!propertyData || activeRules.length === 0) return '';
+            
+            for (const rule of activeRules) {
+                if (rule.type === 'text_contains_classification' && rule.params) {
+                    const targetColumn = rule.params.targetColumn;
+                    const searchText = rule.params.searchText.toLowerCase();
+                    const propertyValue = (propertyData[targetColumn] || '').toString().toLowerCase();
+                    
+                    if (propertyValue.includes(searchText)) {
+                        return rule.params.classification; // Applica la prima regola che corrisponde
+                    }
+                }
+                // Nota: le regole 'row_range_classification' non sono applicabili in questo contesto.
+            }
+            
+            return ''; // Nessuna regola corrispondente
+        };
+
+        const loadActiveGroupRules = async () => {
+            if (activeRules.length > 0) return;
+            try {
+                const q = query(collection(db, "groupRules"), where("isActive", "==", true));
+                const snapshot = await getDocs(q);
+                activeRules = snapshot.docs.map(doc => doc.data());
+            } catch (error) {
+                console.error("Errore nel caricamento delle regole di gruppo:", error);
+                activeRules = [];
+            }
+        };
+
+        const loadPropertyDataForRegistration = async () => {
                 if (Object.keys(localGroupedProperties).length > 0) return;
                 try {
                     const q = query(collection(db, "importedData"), orderBy("uploadedAt", "desc"), limit(1));
@@ -4656,7 +4919,7 @@ ${formRecipientField}
                         const nominativo = item[nominativoHeader];
                         if (!nominativo) return;
                         if (!localGroupedProperties[nominativo]) localGroupedProperties[nominativo] = [];
-                        localGroupedProperties[nominativo].push({ apartment: item[apartmentHeader], millesimi: item[millesimiHeader] });
+                        localGroupedProperties[nominativo].push(item);
                     });
                 } catch (error) { console.error("Errore nel caricamento dati per la registrazione:", error); }
             };
@@ -4691,23 +4954,60 @@ ${formRecipientField}
                 if (!properties) return;
 
                 await loadPartialCondosForRegistration();
-                const groupOptionsHtml = `<option value="">Nessun Gruppo</option>` + localPartialCondosList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                const groupOptionsHtml = `<option value="" disabled selected>Seleziona gruppo...</option>` + localPartialCondosList.map(c => `<option value="${c.name}" data-start="${c.startPlan}" data-end="${c.endPlan}">${c.name}</option>`).join('');
+
+                const headers = Object.keys(properties[0] || {});
+                const apartmentHeader = findHeader(headers, ['interno', 'appartamento', 'unita']);
+                const millesimiHeader = findHeader(headers, ['millesimi', 'quota']);
 
                 properties.forEach((prop, index) => {
-                    const autoGroup = getAutomaticGroup(prop.apartment);
+                    const autoGroup = getAutomaticGroupByRules(prop);
                     const isMultiProperty = properties.length > 1;
                     const item = document.createElement('div');
                     item.className = 'property-selection-item';
-                    item.dataset.apartment = prop.apartment;
-                    item.dataset.millesimi = prop.millesimi;
+                    item.dataset.apartment = prop[apartmentHeader];
+                    item.dataset.millesimi = prop[millesimiHeader];
                     item.innerHTML = `
-                        <label for="prop-${index}">
-                            ${isMultiProperty ? `<input type="checkbox" id="prop-${index}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">` : ''}
-                            <span>${prop.apartment} - ${prop.millesimi} ‰</span>
-                        </label>
+                    <label for="prop-${index}">
+                        ${isMultiProperty ? `<input type="checkbox" id="prop-${index}" style="width: 20px; height: 20px; accent-color: var(--accent-color);">` : ''}
+                        <span>${prop[apartmentHeader]} - ${prop[millesimiHeader]} ‰</span>
+                    </label>
+                    <div class="property-controls-stack">
                         <select class="form-select group-select">${groupOptionsHtml.replace(`value="${autoGroup}"`, `value="${autoGroup}" selected`)}</select>
-                    `;
+                        <select class="form-select plan-select" disabled><option>Seleziona gruppo</option></select>
+                    </div>
+                `;
                     propertyItemsContainer.appendChild(item);
+                });
+
+                const updatePlanOptions = (itemElement) => {
+                    const groupSelect = itemElement.querySelector('.group-select');
+                    const planSelect = itemElement.querySelector('.plan-select');
+                    const selectedOption = groupSelect.options[groupSelect.selectedIndex];
+                    
+                    if (!selectedOption || !selectedOption.dataset.start) {
+                        planSelect.innerHTML = '<option>Seleziona gruppo</option>';
+                        planSelect.disabled = true;
+                        return;
+                    }
+
+                    const start = parseInt(selectedOption.dataset.start, 10);
+                    const end = parseInt(selectedOption.dataset.end, 10);
+                    
+                    let planOptionsHtml = '<option value="" disabled selected>Piano...</option>';
+                    for (let i = start; i <= end; i++) {
+                        planOptionsHtml += `<option value="${i}">${i}</option>`;
+                    }
+                    planSelect.innerHTML = planOptionsHtml;
+                    planSelect.disabled = false;
+                };
+
+                propertyItemsContainer.querySelectorAll('.property-selection-item').forEach(item => {
+                    updatePlanOptions(item); // Initial population
+                    item.querySelector('.group-select').addEventListener('change', () => {
+                        updatePlanOptions(item);
+                        updateSummary();
+                    });
                 });
 
                 propertySelectionWrapper.classList.remove('hidden');
@@ -4721,10 +5021,12 @@ ${formRecipientField}
                     const checkbox = item.querySelector('input[type="checkbox"]');
                     if (checkbox && !checkbox.checked) return;
                     const groupSelect = item.querySelector('.group-select');
+                    const planSelect = item.querySelector('.plan-select');
                     selectedProperties.push({
                         interno: item.dataset.apartment,
                         millesimi: parseFloat(item.dataset.millesimi) || 0,
-                        gruppo: groupSelect.value
+                        gruppo: groupSelect.value,
+                        piano: planSelect.value ? parseInt(planSelect.value, 10) : null
                     });
                 });
 
@@ -4736,7 +5038,7 @@ ${formRecipientField}
                 let totalMillesimi = selectedProperties.reduce((sum, prop) => sum + prop.millesimi, 0);
                 let summaryHtml = '<strong>Unità Selezionate:</strong><ul>';
                 selectedProperties.forEach(prop => {
-                    summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${prop.interno} (${prop.millesimi.toFixed(2)} ‰) - <strong>Gruppo:</strong> ${prop.gruppo || 'N/A'}</li>`;
+                    summaryHtml += `<li style="list-style-type: disc; margin-left: 20px;">${prop.interno} (${prop.millesimi.toFixed(2)} ‰) - <strong>Piano:</strong> ${prop.piano ?? 'N/A'} - <strong>Gruppo:</strong> ${prop.gruppo || 'N/A'}</li>`;
                 });
                 summaryHtml += `</ul><hr style="border-color: var(--surface-color); margin: 0.5rem 0;"><strong style="display: flex; justify-content: space-between;"><span>Totale Millesimi:</span><span>${totalMillesimi.toFixed(2)} ‰</span></strong>`;
                 summaryEl.innerHTML = summaryHtml;
@@ -4767,8 +5069,11 @@ ${formRecipientField}
                 registerFields.classList.toggle("hidden", !isRegistering);
                 forgotPasswordBtn.classList.toggle("hidden", isRegistering);
                 if (isRegistering) {
-                    await loadPropertyDataForRegistration();
-                }
+                await Promise.all([
+                    loadPropertyDataForRegistration(),
+                    loadActiveGroupRules()
+                ]);
+            }
             });
 
             authForm?.addEventListener("submit", async t => {
@@ -4779,20 +5084,49 @@ ${formRecipientField}
                     if (isRegistering) {
                         const t = document.getElementById("confirm-password").value, i = document.getElementById("nome").value, s = document.getElementById("cognome").value, a = document.getElementById("tipo-utente").value, l = document.getElementById("telefono").value;
                         if (n !== t) throw new Error("Le password non coincidono");
-                        if (!i || !s || !a) throw new Error("Compila tutti i campi obbligatori.");
+                        if (!i || !s || !a || !l.trim()) throw new Error("Compila tutti i campi obbligatori");
 
                         const propertiesForUser = [];
-                        propertyItemsContainer.querySelectorAll('.property-selection-item').forEach(item => {
-                            const checkbox = item.querySelector('input[type="checkbox"]');
-                            if (checkbox && !checkbox.checked) return;
-                            propertiesForUser.push({
-                                interno: item.dataset.apartment,
-                                millesimi: parseFloat(item.dataset.millesimi) || 0,
-                                gruppo: item.querySelector('.group-select').value || ''
-                            });
-                        });
+                    let groupSelectionMissing = false;
+                    propertyItemsContainer.querySelectorAll('.property-selection-item').forEach(item => {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        if (checkbox && !checkbox.checked) return;
 
-                        if (propertiesForUser.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
+                        const selectedGroup = item.querySelector('.group-select').value;
+                        if (!selectedGroup) {
+                            groupSelectionMissing = true;
+                        }
+
+                        propertiesForUser.push({
+                            interno: item.dataset.apartment,
+                            millesimi: parseFloat(item.dataset.millesimi) || 0,
+                            gruppo: selectedGroup
+                        });
+                    });
+
+                    if (propertiesForUser.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
+                    let planSelectionMissing = false;
+                    propertyItemsContainer.querySelectorAll('.property-selection-item').forEach(item => {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        if (checkbox && !checkbox.checked) return;
+
+                        const selectedGroup = item.querySelector('.group-select').value;
+                        if (!selectedGroup) groupSelectionMissing = true;
+
+                        const selectedPlan = item.querySelector('.plan-select').value;
+                        if (!selectedPlan) planSelectionMissing = true;
+
+                        propertiesForUser.push({
+                            interno: item.dataset.apartment,
+                            millesimi: parseFloat(item.dataset.millesimi) || 0,
+                            gruppo: selectedGroup,
+                            piano: selectedPlan ? parseInt(selectedPlan, 10) : null
+                        });
+                    });
+
+                    if (propertiesForUser.length === 0) throw new Error("Seleziona almeno una unità immobiliare.");
+                    if (groupSelectionMissing) throw new Error("È obbligatorio assegnare un gruppo a ogni unità immobiliare selezionata.");
+                    if (planSelectionMissing) throw new Error("È obbligatorio selezionare un piano per ogni unità immobiliare selezionata.");
 
                         const internosToRegister = propertiesForUser.map(p => p.interno);
                         const usersSnapshot = await getDocs(collection(db, "users"));
@@ -4932,6 +5266,57 @@ ${formRecipientField}
                         form.reset();
                         selectedCommunicationFiles = [];
                         renderCommunicationFilePreviews();
+
+                        // --- WEBHOOK TRIGGER: Call webhook after comunicazione creation ---
+                        (async () => {
+                            try {
+                                const WEBHOOK_URL = "https://primary-production-36d20.up.railway.app/webhook-test/e487fd84-2324-4508-9bff-769cce2e7c27";
+                                // Extract destinatari emails based on UI and rule classification
+                                let destinatariEmails = [];
+                                if (targetGroup && targetGroup !== 'Tutti') {
+                                    // Find users whose UI (proprieta.gruppo) matches the selected group
+                                    const usersQuery = query(collection(db, "users"), where("proprieta", ">", []));
+                                    const usersSnapshot = await getDocs(usersQuery);
+                                    usersSnapshot.forEach(docSnap => {
+                                        const user = docSnap.data();
+                                        if (Array.isArray(user.proprieta)) {
+                                            for (const prop of user.proprieta) {
+                                                if (prop.gruppo === targetGroup) {
+                                                    destinatariEmails.push(user.email);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    });
+                                } else if (targetGroup === 'Tutti') {
+                                    // All users with an email
+                                    const usersSnapshot = await getDocs(collection(db, "users"));
+                                    usersSnapshot.forEach(docSnap => {
+                                        const user = docSnap.data();
+                                        if (user.email) destinatariEmails.push(user.email);
+                                    });
+                                }
+
+                                const payload = {
+                                    event: "comunicazione.create",
+                                    communication: {
+                                        title,
+                                        content,
+                                        targetGroup,
+                                        createdBy: `${userProfile.nome} ${userProfile.cognome}`,
+                                        createdById: currentUser.uid
+                                    },
+                                    destinatariEmails
+                                };
+                                await fetch(WEBHOOK_URL, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                            } catch (err) {
+                                console.error("Errore invio webhook comunicazione:", err);
+                            }
+                        })();
 
                     } catch (error) {
                         console.error("Errore:", error);
@@ -5170,87 +5555,176 @@ ${formRecipientField}
 
         const setupReportHandlers = () => {
             const form = document.getElementById("create-report-form");
+
+            // --- INIZIO BLOCCO MODIFICATO: Popolamento e gestione dropdown unità immobiliari ---
+            const propertySelect = document.getElementById("report-property-select");
+            const locationInput = document.getElementById("report-location"); // Campo nascosto
+
+            if (propertySelect && locationInput) {
+                if (userProfile?.proprieta && userProfile.proprieta.length > 0) {
+                    userProfile.proprieta.forEach(prop => {
+                        const option = new Option(
+                            `Interno: ${prop.interno} (Piano: ${prop.piano ?? 'N/D'})`,
+                            `${prop.interno}|${prop.piano ?? 'N/A'}`
+                        );
+                        propertySelect.add(option);
+                    });
+
+                    // Pre-compila se c'è una sola proprietà
+                    if (userProfile.proprieta.length === 1) {
+                        propertySelect.selectedIndex = 1; // Seleziona il primo elemento reale
+                        const [interno, piano] = propertySelect.value.split('|');
+                        locationInput.value = `Interno ${interno}, Piano ${piano}`;
+                    } else {
+                        // Aggiungi un placeholder se ci sono più proprietà
+                        propertySelect.selectedIndex = 0;
+                    }
+                } else {
+                    // Gestisce utenti senza proprietà (es. custode) che devono inserire manualmente
+                    const parentDiv = propertySelect.parentElement;
+                    parentDiv.innerHTML = `
+                        <label for="report-location-manual" class="form-label">Ubicazione</label>
+                        <input type="text" id="report-location-manual" required class="form-input" placeholder="es. Cortile, Ingresso Principale">
+                    `;
+                }
+            }
+            // --- FINE BLOCCO MODIFICATO ---
+
             form?.addEventListener("submit", async (event) => {
                 event.preventDefault();
                 const submitBtn = document.getElementById("submit-report-btn");
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Invio in corso...';
-
+                
+                // --- INIZIO BLOCCO MODIFICATO: Raccolta dati dal form ---
                 const title = document.getElementById("report-title").value;
                 const description = document.getElementById("report-description").value;
                 const category = document.getElementById("report-category").value;
                 const priority = document.getElementById("report-priority").value;
-                const location = document.getElementById("report-location").value;
                 const interestType = document.getElementById("report-interest-type").value;
                 const recipient = document.getElementById("report-recipient").value;
                 const otherUiOwner = document.getElementById("other-ui-owner").value;
                 const communicateOwnerPhone = document.getElementById("communicate-owner-phone").checked;
                 const communicateOtherUiPhone = document.getElementById("communicate-other-ui-phone").checked;
 
+                // Gestione dinamica dell'ubicazione
+                let location = '';
+                let propertyInfo = null;
+                const manualLocationInput = document.getElementById("report-location-manual");
+
+                if (manualLocationInput) {
+                    location = manualLocationInput.value;
+                } else {
+                    const selectedPropValue = propertySelect.value;
+                    if (selectedPropValue) {
+                        const [interno, piano] = selectedPropValue.split('|');
+                        location = `Interno ${interno}, Piano ${piano}`;
+                        propertyInfo = { interno, piano };
+                    }
+                }
+                
                 if (!title || !description || !category || !priority || !location || !recipient) {
-                    alert("Compila tutti i campi, incluso il destinatario.");
+                    alert("Compila tutti i campi obbligatori.");
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Invia Segnalazione';
                     return;
                 }
+                // --- FINE BLOCCO MODIFICATO ---
 
                 try {
                     const counterRef = doc(db, "counters", "reportsCounter");
                     let finalReportNumber;
                     let fileUrls = [];
 
-                    // 1. Creiamo un riferimento al documento per ottenere un ID univoco
                     const newReportDocRef = doc(collection(db, "reports"));
                     const reportId = newReportDocRef.id;
 
-                    // 2. Se ci sono file, li carichiamo
                     if (selectedReportFiles.length > 0) {
                         submitBtn.textContent = 'Caricamento allegati...';
                         fileUrls = await uploadReportFiles(reportId, selectedReportFiles);
                     }
 
                     submitBtn.textContent = 'Salvataggio dati...';
-
-                    // 3. Eseguiamo la transazione per creare il documento e aggiornare il contatore
+                    
+                    let reportData;
                     await runTransaction(db, async (transaction) => {
                         const counterDoc = await transaction.get(counterRef);
                         const newReportNumber = (counterDoc.exists() ? counterDoc.data().lastNumber : 0) + 1;
                         finalReportNumber = newReportNumber;
 
-                        const reportData = {
+                        reportData = {
                             reportNumber: newReportNumber,
-                            title: title,
-                            description: description,
-                            category: category,
-                            priority: priority,
-                            location: location,
-                            interestType: interestType, // NUOVO CAMPO AGGIUNTO
+                            title, description, category, priority,
+                            location, // Ubicazione testuale per compatibilità
+                            propertyInfo, // Dati strutturati della proprietà
+                            interestType,
                             otherUiOwner: otherUiOwner || null,
-                            communicateOwnerPhone: communicateOwnerPhone,
-                            communicateOtherUiPhone: communicateOtherUiPhone,
-                            createdByPhone: userProfile.telefono || null, // Store creator's phone number
+                            communicateOwnerPhone,
+                            communicateOtherUiPhone,
+                            createdByPhone: userProfile.telefono || null,
                             status: "aperta",
                             createdBy: `${userProfile.nome} ${userProfile.cognome}`,
                             createdByUserType: userProfile.tipoUtente,
                             createdById: currentUser.uid,
                             createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(), // Added for notification consistency
+                            updatedAt: serverTimestamp(),
                             recipientType: recipient,
                             updates: [],
                             lastReminderAt: null,
                             reminderCount: 0,
-                            fileUrls: fileUrls // Aggiungiamo gli URL dei file
+                            fileUrls
                         };
 
                         transaction.set(counterRef, { lastNumber: newReportNumber });
                         transaction.set(newReportDocRef, reportData);
                     });
 
+                    (async () => {
+                        try {
+                            const WEBHOOK_URL = "https://primary-production-36d20.up.railway.app/webhook-test/6d501d53-5ec7-449e-b3e4-38316eefd92d";
+                            let receiverEmail = null;
+                            let recipientQuery = null;
+                            if (recipient === "amministratore") {
+                                recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "amministratore"));
+                            } else if (recipient === "custode") {
+                                recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "custode"));
+                            } else if (recipient === "consigliere") {
+                                recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "consigliere"));
+                            } else if (recipient === "adm") {
+                                recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "adm"));
+                            }
+                            if (recipientQuery) {
+                                const snapshot = await getDocs(recipientQuery);
+                                if (!snapshot.empty) {
+                                    receiverEmail = snapshot.docs[0].data().email;
+                                }
+                            }
+
+                            const payload = {
+                                event: "segnalazioni.create",
+                                report: reportData,
+                                user: {
+                                    id: currentUser.uid,
+                                    name: `${userProfile.nome} ${userProfile.cognome}`,
+                                    email: currentUser.email
+                                },
+                                receiverEmail: receiverEmail
+                            };
+                            await fetch(WEBHOOK_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                        } catch (err) {
+                            console.error("Errore invio webhook segnalazione:", err);
+                        }
+                    })();
+
                     await logActivity("report_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId, title: title, attachments: fileUrls.length });
 
                     form.reset();
-                    selectedReportFiles = []; // Pulisce l'array dei file
-                    renderFilePreviews(); // Aggiorna l'UI
+                    selectedReportFiles = [];
+                    renderFilePreviews();
 
                     alert(`Segnalazione #${finalReportNumber} creata con successo!`);
 
@@ -5263,60 +5737,68 @@ ${formRecipientField}
                 }
             });
 
-            // Conditional logic for "Genere di intervento" field
-            const genereInterventoSelect = document.getElementById("report-priority");
+            const recipientSelect = document.getElementById("report-recipient");
+            const prioritySelect = document.getElementById("report-priority");
+
+            const updatePriorityOptions = (options) => {
+                prioritySelect.innerHTML = '';
+                prioritySelect.add(new Option('Seleziona genere...', ''));
+                options.forEach(opt => prioritySelect.add(new Option(opt.text, opt.value)));
+                prioritySelect.disabled = false;
+            };
+
+            recipientSelect?.addEventListener("change", function () {
+                const recipient = this.value;
+
+                if (!recipient) {
+                    prioritySelect.innerHTML = '<option value="">Seleziona prima il destinatario...</option>';
+                    prioritySelect.disabled = true;
+                    return;
+                }
+
+                const allOptions = [
+                    { value: 'solo-segnalazione', text: 'Segnalazione' },
+                    { value: 'richiesta-intervento-propria', text: 'Richiesta d’intervento' },
+                    { value: 'altre-richieste', text: 'Altre richieste' }
+                ];
+                const limitedOptions = [
+                    { value: 'solo-segnalazione', text: 'Segnalazione' }
+                ];
+
+                if (['amministratore', 'custode'].includes(recipient)) {
+                    updatePriorityOptions(allOptions);
+                } else if (['consigliere', 'adm', 'condomini'].includes(recipient)) {
+                    updatePriorityOptions(limitedOptions);
+                } else {
+                    prioritySelect.innerHTML = '<option value="">Seleziona prima il destinatario...</option>';
+                    prioritySelect.disabled = true;
+                }
+            });
+
             const otherUiOwnerField = document.getElementById("other-ui-owner-field");
             const phoneCommunicationCheckboxes = document.getElementById("phone-communication-checkboxes");
             const otherUiPhoneCheckbox = document.getElementById("other-ui-phone-checkbox");
-            const recipientSelect = document.getElementById("report-recipient");
-            const adminOption = document.getElementById("admin-option");
-            const custodeOption = document.getElementById("custode-option");
-            const consigliereOption = document.getElementById("consigliere-option");
-            const admOption = document.getElementById("adm-option");
 
-            genereInterventoSelect?.addEventListener("change", function () {
+            prioritySelect?.addEventListener("change", function () {
                 const selectedValue = this.value;
 
-                // Show/hide the "Indicazione proprietario altra U.I." field
                 if (selectedValue === "richiesta-intervento-danno") {
                     otherUiOwnerField?.classList.remove("hidden");
                 } else {
                     otherUiOwnerField?.classList.add("hidden");
                 }
 
-                // Show/hide communication checkboxes based on selection
-                if (selectedValue === "richiesta-intervento-propria") {
-                    // Show only "comunicare n. telefono condomino" checkbox
+                const interventionTypes = ["richiesta-intervento-propria", "richiesta-intervento-danno", "altre-richieste"];
+                if (interventionTypes.includes(selectedValue)) {
                     phoneCommunicationCheckboxes?.classList.remove("hidden");
-                    otherUiPhoneCheckbox?.classList.add("hidden");
-                } else if (selectedValue === "richiesta-intervento-danno") {
-                    // Show both checkboxes
-                    phoneCommunicationCheckboxes?.classList.remove("hidden");
-                    otherUiPhoneCheckbox?.classList.remove("hidden");
-                } else {
-                    // Hide all communication checkboxes
-                    phoneCommunicationCheckboxes?.classList.add("hidden");
-                    otherUiPhoneCheckbox?.classList.add("hidden");
-                }
-
-                // Enable/disable recipient options based on selection
-                if (selectedValue === "richiesta-intervento-propria" || selectedValue === "richiesta-intervento-danno") {
-                    // Enable only administrator option
-                    adminOption.disabled = false;
-                    custodeOption.disabled = true;
-                    consigliereOption.disabled = true;
-                    admOption.disabled = true;
-
-                    // If current selection is not administrator, reset to empty
-                    if (recipientSelect.value !== "amministratore") {
-                        recipientSelect.value = "";
+                    if (selectedValue === "richiesta-intervento-danno") {
+                        otherUiPhoneCheckbox?.classList.remove("hidden");
+                    } else {
+                        otherUiPhoneCheckbox?.classList.add("hidden");
                     }
                 } else {
-                    // Enable all options for other selections
-                    adminOption.disabled = false;
-                    custodeOption.disabled = false;
-                    consigliereOption.disabled = false;
-                    admOption.disabled = false;
+                    phoneCommunicationCheckboxes?.classList.add("hidden");
+                    otherUiPhoneCheckbox?.classList.add("hidden");
                 }
             });
         };
@@ -6169,16 +6651,32 @@ ${formRecipientField}
             form?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const nameInput = document.getElementById('partial-condo-name');
+                const startPlanInput = document.getElementById('partial-condo-start-plan');
+                const endPlanInput = document.getElementById('partial-condo-end-plan');
+                
                 const name = nameInput.value.trim();
-                if (!name) return;
+                const startPlan = parseInt(startPlanInput.value, 10);
+                const endPlan = parseInt(endPlanInput.value, 10);
+
+                if (!name || isNaN(startPlan) || isNaN(endPlan)) {
+                    alert('Tutti i campi sono obbligatori.');
+                    return;
+                }
+                if (startPlan > endPlan) {
+                    alert('Il piano iniziale non può essere maggiore del piano finale.');
+                    return;
+                }
+
                 try {
                     await addDoc(collection(db, 'partialCondos'), {
                         name: name,
+                        startPlan: startPlan,
+                        endPlan: endPlan,
                         createdBy: currentUser.uid,
                         createdAt: serverTimestamp()
                     });
-                    await logActivity("partial_condo_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { name: name });
-                    nameInput.value = '';
+                    await logActivity("partial_condo_created", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { name: name, planRange: `${startPlan}-${endPlan}` });
+                    form.reset();
                 } catch (error) {
                     console.error("Errore nella creazione del condominio parziale:", error);
                     alert("Si è verificato un errore.");
@@ -6365,14 +6863,74 @@ ${formRecipientField}
                         <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 14h-2v2h2v-2m4-4h-2v2h2V10m0-4h-2v2h2V6M12 2L2 7v13h20V7L12 2z"/></svg></div>
                         <div class="list-item-content">
                             <div class="title">${condo.name}</div>
+                            <div class="subtitle">Piani: ${condo.startPlan ?? 'N/D'} a ${condo.endPlan ?? 'N/D'}</div>
                         </div>
-                        <div class="list-item-action">
+                        <div class="list-item-action flex gap-2">
+                            <button onclick="openGroupEditModal('${docSnap.id}', ${JSON.stringify(condo).replace(/"/g, '&quot;')})" class="btn-icon" title="Modifica Gruppo">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button>
                             <button onclick="deletePartialCondo('${docSnap.id}')" class="btn" style="background:var(--danger); color:white; padding: 0.4rem 0.8rem; font-size:0.8rem;">Elimina</button>
                         </div>
                     </div>
                     `;
                 }).join('');
             });
+        };
+
+        const openGroupEditModal = (groupId, currentData) => {
+            const modalContent = `
+                <form id="edit-group-form" class="space-y-4" onsubmit="updatePartialCondo(event, '${groupId}')">
+                    <div class="form-group">
+                        <label for="edit-group-name" class="form-label">Nome Gruppo</label>
+                        <input type="text" id="edit-group-name" required class="form-input" value="${currentData.name || ''}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="edit-group-start-plan" class="form-label">Piano Iniziale</label>
+                            <input type="number" id="edit-group-start-plan" required class="form-input" value="${currentData.startPlan ?? ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-group-end-plan" class="form-label">Piano Finale</label>
+                            <input type="number" id="edit-group-end-plan" required class="form-input" value="${currentData.endPlan ?? ''}">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 pt-2">
+                        <button type="button" class="btn btn-secondary" onclick="hideModal()">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+                    </div>
+                </form>
+            `;
+            showModal('Modifica Gruppo', modalContent);
+        };
+
+        const updatePartialCondo = async (event, groupId) => {
+            event.preventDefault();
+            const name = document.getElementById('edit-group-name').value.trim();
+            const startPlan = parseInt(document.getElementById('edit-group-start-plan').value, 10);
+            const endPlan = parseInt(document.getElementById('edit-group-end-plan').value, 10);
+
+            if (!name || isNaN(startPlan) || isNaN(endPlan)) {
+                alert('Tutti i campi sono obbligatori.');
+                return;
+            }
+            if (startPlan > endPlan) {
+                alert('Il piano iniziale non può essere maggiore del piano finale.');
+                return;
+            }
+
+            try {
+                const groupRef = doc(db, 'partialCondos', groupId);
+                await updateDoc(groupRef, {
+                    name: name,
+                    startPlan: startPlan,
+                    endPlan: endPlan
+                });
+                await logActivity("partial_condo_updated", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { groupId: groupId, name: name });
+                hideModal();
+            } catch (error) {
+                console.error("Errore nell'aggiornamento del gruppo:", error);
+                alert("Si è verificato un errore durante l'aggiornamento.");
+            }
         };
 
         const deletePartialCondo = async (id) => {
@@ -7873,7 +8431,14 @@ ${formRecipientField}
         };
 
         const renderReportCardHTML = (report, reportId, index = null) => {
+
             if (!report.createdAt) return "";
+
+            // Banner periodo amministrativo corrente (solo se disponibile)
+            let periodBannerHtml = '';
+            if (typeof renderCurrentPeriodBanner === 'function' && currentAdministrativePeriod) {
+                periodBannerHtml = renderCurrentPeriodBanner();
+            }
 
             const isManager = ["amministratore", "custode", "consigliere", "fornitore", "supervisore", "adm"].includes(userProfile?.tipoUtente);
             const isCreator = report.createdById === currentUser.uid;
@@ -7996,6 +8561,7 @@ ${formRecipientField}
 
             return `
             <div class="card" style="margin-bottom: 1rem; position: relative;">
+                ${periodBannerHtml}
                 ${index !== null ? `<div style="position: absolute; top: 0.5rem; right: 0.5rem; background: var(--primary); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">${index}</div>` : ''}
                 <div class="list-item" style="padding:0; cursor:default;">
                     <div class="list-item-icon"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
@@ -8032,6 +8598,11 @@ ${formRecipientField}
                 ` : ''}
                 
                 <p style="color: var(--secondary-text); margin-top: 0.5rem; padding-left: 64px;">${report.description}</p>
+
+                <div style="padding-left: 64px; margin-top: 0.75rem; font-size: 0.9rem;">
+                    <strong style="color: var(--primary-text);">UBICAZIONE (PIANO):</strong> 
+                    <span style="color: var(--secondary-text);">${report.propertyInfo ? `Interno ${report.propertyInfo.interno}, Piano ${report.propertyInfo.piano}` : report.location}</span>
+                </div>
                 
                 <!-- SEZIONE TIMESTAMP -->
                 <div style="padding-left: 64px; margin-top: 0.75rem; font-size: 0.85rem; color: var(--secondary-text);">
@@ -8488,6 +9059,7 @@ ${formRecipientField}
         const renderSegnalazioniUrgenti = () => `
             ${renderHeader('Solleciti ricevuti')}
             <main>
+                ${renderCurrentPeriodBanner()}
                 <div id="ticket-counters" class="grid grid-cols-3 gap-2" style="margin-bottom: 1rem;">
                     <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--danger);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste aperte n.0</div></div>
                     <div class="card" style="padding: 0.75rem; text-align: center;"><div class="page-title" style="font-size: 1.5rem; color: var(--warning);">0</div><div class="page-subtitle" style="text-transform: none;">Richieste in corso n.0</div></div>
@@ -8786,12 +9358,14 @@ ${formRecipientField}
                 propertyRows.forEach(row => {
                     const interno = row.querySelector('input[data-field="interno"]').value.trim();
                     const millesimi = parseFloat(row.querySelector('input[data-field="millesimi"]').value) || 0;
-                    const gruppo = row.querySelector('select[data-field="gruppo"]').value; // <-- MODIFICA QUI
+                    const gruppo = row.querySelector('select[data-field="gruppo"]').value;
+                        const pianoSelect = row.querySelector('select[data-field="piano"]');
+                        const piano = pianoSelect.value ? parseInt(pianoSelect.value, 10) : null;
 
-                    if (interno) {
-                        updatedProperties.push({ interno, millesimi, gruppo });
-                        totalMillesimi += millesimi;
-                    }
+                        if (interno) {
+                            updatedProperties.push({ interno, millesimi, gruppo, piano });
+                            totalMillesimi += millesimi;
+                        }
                 });
 
                 const updatedData = {
@@ -8842,19 +9416,26 @@ ${formRecipientField}
                 return `<option value="${role}" ${user.tipoUtente === role ? 'selected' : ''}>${capitalizedRole}</option>`
             }).join('');
 
-            const propertiesHtml = (user.proprieta || []).map((prop) => {
+            const isSupervisor = ['supervisore', 'adm'].includes(userProfile?.tipoUtente);
+            const propertiesHtml = (user.proprieta || []).map((prop, index) => {
                 const groupOptionsHtml = availableGroups.map(group =>
-                    `<option value="${group.name}" ${prop.gruppo === group.name ? 'selected' : ''}>${group.name}</option>`
+                    `<option value="${group.name}" data-start="${group.startPlan}" data-end="${group.endPlan}" ${prop.gruppo === group.name ? 'selected' : ''}>${group.name}</option>`
                 ).join('');
 
+                let planOptionsHtml = '<option value="">Seleziona gruppo</option>';
+                const selectedGroup = availableGroups.find(g => g.name === prop.gruppo);
+                if (selectedGroup) {
+                    for (let i = selectedGroup.startPlan; i <= selectedGroup.endPlan; i++) {
+                        planOptionsHtml += `<option value="${i}" ${prop.piano === i ? 'selected' : ''}>${i}</option>`;
+                    }
+                }
+
                 return `
-                <div class="property-edit-row grid grid-cols-4 gap-2 items-center" style="margin-bottom: 0.5rem;">
+                <div class="property-edit-row grid grid-cols-5 gap-2 items-center" style="margin-bottom: 0.5rem;" data-row-index="${index}">
                     <input type="text" data-field="interno" value="${prop.interno || ''}" class="form-input" placeholder="ID Unità">
                     <input type="number" step="0.01" data-field="millesimi" value="${prop.millesimi || 0}" class="form-input" placeholder="Millesimi">
-                    <select data-field="gruppo" class="form-select">
-                        <option value="">Nessun Gruppo</option>
-                        ${groupOptionsHtml}
-                    </select>
+                    <select data-field="gruppo" class="form-select">${groupOptionsHtml}</select>
+                    <select data-field="piano" class="form-select" ${!isSupervisor ? 'disabled' : ''}>${planOptionsHtml}</select>
                     <button type="button" onclick="this.parentElement.remove()" class="btn-icon" style="background:var(--danger); color:white;">&times;</button>
                 </div>
                 `;
@@ -8887,6 +9468,29 @@ ${formRecipientField}
             `;
 
             showModal(`Modifica Utente: ${user.nome} ${user.cognome}`, modalContent);
+            
+            // Add event listeners for dynamic plan selects
+            document.querySelectorAll('.property-edit-row .form-select[data-field="gruppo"]').forEach(groupSelect => {
+                groupSelect.addEventListener('change', (e) => {
+                    const row = e.target.closest('.property-edit-row');
+                    const planSelect = row.querySelector('select[data-field="piano"]');
+                    const selectedOption = e.target.options[e.target.selectedIndex];
+
+                    if (!selectedOption || !selectedOption.dataset.start) {
+                        planSelect.innerHTML = '<option>Seleziona gruppo</option>';
+                        return;
+                    }
+
+                    const start = parseInt(selectedOption.dataset.start, 10);
+                    const end = parseInt(selectedOption.dataset.end, 10);
+                    
+                    let planOptionsHtml = '<option value="" disabled selected>Piano...</option>';
+                    for (let i = start; i <= end; i++) {
+                        planOptionsHtml += `<option value="${i}">${i}</option>`;
+                    }
+                    planSelect.innerHTML = planOptionsHtml;
+                });
+            });
         };
 
         const loadUsers = async () => {
@@ -8914,7 +9518,7 @@ ${formRecipientField}
                         const user = docSnap.data();
                         const userId = docSnap.id;
                         const propertiesHtml = user.proprieta && user.proprieta.length > 0
-                            ? user.proprieta.map(p => `<li>${p.interno}: ${(p.millesimi || 0).toFixed(2)} ‰ ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')
+                            ? user.proprieta.map(p => `<li>${p.interno}: Piano ${p.piano ?? 'N/A'}, ${(p.millesimi || 0).toFixed(2)} ‰ ${p.gruppo ? `- <strong>Gruppo:</strong> ${p.gruppo}` : ''}</li>`).join('')
                             : '<li>Nessuna proprietà</li>';
 
                         const userObjectString = JSON.stringify({ id: userId, ...user }).replace(/'/g, "&apos;");
@@ -8974,7 +9578,7 @@ ${formRecipientField}
                     return;
                 }
 
-                let tableHtml = `<table class="data-table"><thead><tr><th>Nome</th><th>Cognome</th><th>Proprietà</th><th>Raggruppamento</th><th>Millesimi</th></tr></thead><tbody>`;
+                let tableHtml = `<table class="data-table"><thead><tr><th>Nome</th><th>Cognome</th><th>Proprietà</th><th>Piano</th><th>Raggruppamento</th><th>Millesimi</th></tr></thead><tbody>`;
 
                 filteredUsers.forEach(docSnap => {
                     const user = docSnap.data();
@@ -8987,6 +9591,7 @@ ${formRecipientField}
                             tableHtml += `<tr>
                                 ${index === 0 ? `<td data-label="Nome" rowspan="${user.proprieta.length}">${createCell(user.nome)}</td><td data-label="Cognome" rowspan="${user.proprieta.length}">${createCell(user.cognome)}</td>` : ''}
                                 <td data-label="Proprietà">${createCell(prop.interno || 'N/D')}</td>
+                                <td data-label="Piano">${createCell(prop.piano ?? 'N/A')}</td>
                                 <td data-label="Raggruppamento">${createCell(prop.gruppo || 'N/D')}</td>
                                 <td data-label="Millesimi">${createCell((prop.millesimi || 0).toFixed(2))}</td>
                             </tr>`;
@@ -8996,6 +9601,7 @@ ${formRecipientField}
                             <td data-label="Nome">${createCell(user.nome)}</td>
                             <td data-label="Cognome">${createCell(user.cognome)}</td>
                             <td data-label="Proprietà">${createCell('Nessuna')}</td>
+                            <td data-label="Piano">${createCell('N/A')}</td>
                             <td data-label="Raggruppamento">${createCell('N/D')}</td>
                             <td data-label="Millesimi">${createCell('0.00')}</td>
                         </tr>`;
@@ -9510,11 +10116,12 @@ ${formRecipientField}
             if (!confirm("Vuoi inviare un sollecito per questa segnalazione?")) return;
             try {
                 const reportRef = doc(db, "reports", reportId);
+                let reportDocSnap;
                 await runTransaction(db, async (transaction) => {
-                    const reportDoc = await transaction.get(reportRef);
-                    if (!reportDoc.exists()) throw "Segnalazione non trovata.";
+                    reportDocSnap = await transaction.get(reportRef);
+                    if (!reportDocSnap.exists()) throw "Segnalazione non trovata.";
 
-                    const currentReminderCount = reportDoc.data().reminderCount || 0;
+                    const currentReminderCount = reportDocSnap.data().reminderCount || 0;
                     const newUpdate = {
                         text: "L'utente ha inviato un sollecito.",
                         by: "Sistema",
@@ -9528,6 +10135,52 @@ ${formRecipientField}
                         isUrgent: true // NUOVO: Marca il ticket come urgente
                     });
                 });
+
+                // --- WEBHOOK TRIGGER: Call webhook after sollecito creation ---
+                (async () => {
+                    try {
+                        const WEBHOOK_URL = "https://primary-production-36d20.up.railway.app/webhook-test/98dd3855-bcf5-4ef3-867b-2888ef3f801c";
+                        // Extract receiver email from Firestore based on report recipientType
+                        let receiverEmail = null;
+                        let recipientType = reportDocSnap.data().recipientType;
+                        let recipientQuery = null;
+                        if (recipientType === "amministratore") {
+                            recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "amministratore"));
+                        } else if (recipientType === "custode") {
+                            recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "custode"));
+                        } else if (recipientType === "consigliere") {
+                            recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "consigliere"));
+                        } else if (recipientType === "adm") {
+                            recipientQuery = query(collection(db, "users"), where("tipoUtente", "==", "adm"));
+                        }
+                        if (recipientQuery) {
+                            const snapshot = await getDocs(recipientQuery);
+                            if (!snapshot.empty) {
+                                receiverEmail = snapshot.docs[0].data().email;
+                            }
+                        }
+
+                        const payload = {
+                            event: "solleciti.create",
+                            reportId: reportId,
+                            report: reportDocSnap.data(),
+                            user: {
+                                id: currentUser.uid,
+                                name: `${userProfile.nome} ${userProfile.cognome}`,
+                                email: currentUser.email
+                            },
+                            receiverEmail: receiverEmail
+                        };
+                        await fetch(WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    } catch (err) {
+                        console.error("Errore invio webhook sollecito:", err);
+                    }
+                })();
+
                 await logActivity("report_reminder_sent", currentUser.uid, `${userProfile.nome} ${userProfile.cognome}`, { reportId: reportId });
                 alert("Sollecito inviato.");
             } catch (error) {
@@ -10217,6 +10870,8 @@ ${formRecipientField}
         window.showCommunicationDetail = showCommunicationDetail;
         window.showPollVoters = showPollVoters;
         window.hideModal = hideModal;
+        window.openGroupEditModal = openGroupEditModal;
+        window.updatePartialCondo = updatePartialCondo;
         window.deletePartialCondo = deletePartialCondo;
         window.deleteUsefulNumber = deleteUsefulNumber;
         window.editUsefulNumber = editUsefulNumber;
@@ -10265,6 +10920,7 @@ ${formRecipientField}
         window.handleCleanupSelectionChange = handleCleanupSelectionChange;
         window.handleBulkDelete = handleBulkDelete;
         window.clearActivityHistory = clearActivityHistory;
+        window.deleteAdministrativePeriod = deleteAdministrativePeriod; // NUOVO
 
         const deletePoll = async (pollId) => {
             if (!confirm('Sei sicuro di voler eliminare questo sondaggio? L\'azione è irreversibile.')) {
@@ -10318,6 +10974,7 @@ ${formRecipientField}
                 currentUser = user;
                 await loadUserProfile(user);
                 await loadServicePermissions();
+                await loadCurrentAdministrativePeriod(); // NUOVO
 
                 const userType = userProfile?.tipoUtente;
                 let landingPage = 'dashboard';
@@ -10367,6 +11024,25 @@ ${formRecipientField}
             }
         });
     </script>
+
+    <!-- Registrazione del Service Worker per la PWA -->
+    <script>
+        // Controlliamo se il browser supporta i service worker
+        if ('serviceWorker' in navigator) {
+            // Aspettiamo che la pagina sia completamente caricata per non rallentare l'avvio
+            window.addEventListener('load', () => {
+                // Registriamo il nostro file sw.js
+                // Il percorso è fondamentale per GitHub Pages!
+                navigator.serviceWorker.register('/Con-bridge/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registrato con successo:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Registrazione Service Worker fallita:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 
-</html
+</html>
